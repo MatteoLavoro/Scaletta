@@ -54,6 +54,13 @@
 | `ProfileModal.jsx` | Modale profilo utente |
 | `index.js`         | Export pubblici       |
 
+### `pwa/` - Componenti PWA
+
+| File               | Descrizione                                     |
+| ------------------ | ----------------------------------------------- |
+| `InstallModal.jsx` | Modale per installare l'app (istruzioni per OS) |
+| `index.js`         | Export pubblici                                 |
+
 ### `ui/` - Componenti UI Base
 
 | File                  | Descrizione                                     |
@@ -101,6 +108,7 @@
 | ---------------------- | ------------------------------- |
 | `useIsMobile.js`       | Rileva viewport mobile (<768px) |
 | `useKeyboardHeight.js` | Altezza tastiera virtuale       |
+| `usePWAInstall.js`     | Gestione installazione PWA      |
 
 ---
 
@@ -427,5 +435,54 @@ Principi:
 
 1. **Dati utente** in alto con InfoBox colorate
 2. **Impostazioni** con ThemeSelector
-3. **Divisore** prima di azioni pericolose
-4. **Azione pericolosa** in fondo con DangerButton
+3. **Bottone Installa App** (visibile solo se non installata)
+4. **Divisore** prima di azioni pericolose
+5. **Azione pericolosa** in fondo con DangerButton
+
+---
+
+## PWA (Progressive Web App)
+
+L'app è configurata come PWA con le seguenti funzionalità:
+
+### File PWA in `public/`
+
+| File                           | Descrizione                       |
+| ------------------------------ | --------------------------------- |
+| `manifest.json`                | Manifest PWA con icone e metadata |
+| `sw.js`                        | Service Worker per caching        |
+| `favicon.svg`                  | Icona vettoriale                  |
+| `favicon.ico`                  | Icona classica                    |
+| `favicon-96x96.png`            | Icona 96x96                       |
+| `apple-touch-icon.png`         | Icona per iOS                     |
+| `web-app-manifest-192x192.png` | Icona PWA 192x192                 |
+| `web-app-manifest-512x512.png` | Icona PWA 512x512                 |
+
+### Hook `usePWAInstall`
+
+```jsx
+import { usePWAInstall } from "../hooks/usePWAInstall";
+
+const MioComponente = () => {
+  const { isInstallable, isInstalled, install, deviceInfo } = usePWAInstall();
+
+  // isInstallable: true se il browser supporta l'installazione diretta
+  // isInstalled: true se l'app è già installata
+  // install(): avvia il prompt di installazione
+  // deviceInfo: { isIOS, isAndroid, isMobile, needsManualInstall }
+};
+```
+
+### InstallModal
+
+Modale che mostra istruzioni per installare l'app, adattate al dispositivo:
+
+- **iOS**: Istruzioni manuali (Condividi → Aggiungi a Home)
+- **Android**: Installazione diretta se disponibile, altrimenti istruzioni
+- **Desktop**: Installazione diretta se disponibile, altrimenti istruzioni
+
+```jsx
+import { InstallModal } from "../components/pwa";
+
+<InstallModal isOpen={isOpen} onClose={() => setIsOpen(false)} />;
+```
