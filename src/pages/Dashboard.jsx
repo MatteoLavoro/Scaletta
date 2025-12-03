@@ -123,7 +123,7 @@ const Dashboard = () => {
 
       {/* Main */}
       <main className="flex-1 p-5">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl md:max-w-5xl mx-auto">
           {/* Lista gruppi */}
           <div className="space-y-3">
             {loadingGroups ? (

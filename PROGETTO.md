@@ -152,12 +152,12 @@ delete: if founder == auth.uid          // Solo founder può eliminare
 
 ### Differenze UI Founder vs Membri
 
-| Azione                | Membri Normali | Founder     |
-| --------------------- | -------------- | ----------- |
-| Modificare nome       | ✅ Visibile     | ✅ Visibile  |
-| Copiare codice        | ✅ Visibile     | ✅ Visibile  |
-| Uscire dal gruppo     | ✅ Visibile     | ❌ Nascosto  |
-| Eliminare il gruppo   | ❌ Nascosto     | ✅ Visibile  |
+| Azione              | Membri Normali | Founder     |
+| ------------------- | -------------- | ----------- |
+| Modificare nome     | ✅ Visibile    | ✅ Visibile |
+| Copiare codice      | ✅ Visibile    | ✅ Visibile |
+| Uscire dal gruppo   | ✅ Visibile    | ❌ Nascosto |
+| Eliminare il gruppo | ❌ Nascosto    | ✅ Visibile |
 
 ---
 

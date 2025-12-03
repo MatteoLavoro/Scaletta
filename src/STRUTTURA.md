@@ -74,22 +74,22 @@
 
 ### `ui/` - Componenti UI Base
 
-| File                  | Descrizione                                          |
-| --------------------- | ---------------------------------------------------- |
-| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato      |
-| `Input.jsx`           | Input base                                           |
-| `PasswordInput.jsx`   | Password base con toggle                             |
-| `Spinner.jsx`         | Indicatore caricamento                               |
-| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                     |
-| `ColorPicker.jsx`     | Selettore colore accent (6 colori)                   |
-| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher               |
-| `InfoBox.jsx`         | Box info con stile (supporta titleExtra)             |
-| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita) centrato         |
-| `CopyableInfoBox.jsx` | InfoBox con tasto copia (clipboard) centrato         |
-| `MemberPillList.jsx`  | Lista pillole membri (Tu/founder/altri differenziati)|
-| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione        |
-| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)                |
-| `index.js`            | Export pubblici                                      |
+| File                  | Descrizione                                           |
+| --------------------- | ----------------------------------------------------- |
+| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato       |
+| `Input.jsx`           | Input base                                            |
+| `PasswordInput.jsx`   | Password base con toggle                              |
+| `Spinner.jsx`         | Indicatore caricamento                                |
+| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                      |
+| `ColorPicker.jsx`     | Selettore colore accent (6 colori)                    |
+| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher                |
+| `InfoBox.jsx`         | Box info con stile (supporta titleExtra)              |
+| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita) centrato          |
+| `CopyableInfoBox.jsx` | InfoBox con tasto copia (clipboard) centrato          |
+| `MemberPillList.jsx`  | Lista pillole membri (Tu/founder/altri differenziati) |
+| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione         |
+| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)                 |
+| `index.js`            | Export pubblici                                       |
 
 ### `icons/` - Icone (wrapper lucide-react)
 
@@ -139,19 +139,19 @@
 
 ## `services/`
 
-| File        | Descrizione                                             |
-| ----------- | ------------------------------------------------------- |
-| `config.js` | Configurazione Firebase                                 |
-| `auth.js`   | Funzioni auth (login, register, logout, updateUsername) |
+| File        | Descrizione                                                         |
+| ----------- | ------------------------------------------------------------------- |
+| `config.js` | Configurazione Firebase                                             |
+| `auth.js`   | Funzioni auth (login, register, logout, updateUsername)             |
 | `groups.js` | Funzioni CRUD gruppi (crea, unisciti, esci, elimina, aggiorna nome) |
 
 ---
 
 ## `utils/`
 
-| File                 | Descrizione                              |
-| -------------------- | ---------------------------------------- |
-| `authValidation.js`  | Validazione email/password/username      |
+| File                 | Descrizione                                                   |
+| -------------------- | ------------------------------------------------------------- |
+| `authValidation.js`  | Validazione email/password/username                           |
 | `groupValidation.js` | Validazione nome gruppo (2-50 char) e codice (8 char alfanum) |
 
 ---
@@ -188,10 +188,11 @@ const colors = ["teal", "blue", "purple", "red", "orange", "green", "gray"];
 // Esempio
 <InfoBox title="Email" color="blue">
   <span>utente@email.com</span>
-</InfoBox>
+</InfoBox>;
 ```
 
 Ogni colore ha:
+
 - `bg`: Sfondo leggero (`bg-{color}-500/10` light, `bg-{color}-500/15` dark)
 - `border`: Bordo colorato (`border-{color}-600/25` light, `border-{color}-500/30` dark)
 - `text`: Testo colorato (`text-{color}-700` light, `text-{color}-400` dark)
@@ -302,13 +303,13 @@ const ParentModal = ({ isOpen }) => {
 
 ### File in `public/`
 
-| File                           | Descrizione               |
-| ------------------------------ | ------------------------- |
-| `manifest.json`                | Manifest PWA              |
-| `sw.js`                        | Service Worker            |
-| `favicon.svg/ico`              | Icone favicon             |
-| `apple-touch-icon.png`         | Icona iOS                 |
-| `web-app-manifest-*.png`       | Icone PWA 192x192, 512x512|
+| File                     | Descrizione                |
+| ------------------------ | -------------------------- |
+| `manifest.json`          | Manifest PWA               |
+| `sw.js`                  | Service Worker             |
+| `favicon.svg/ico`        | Icone favicon              |
+| `apple-touch-icon.png`   | Icona iOS                  |
+| `web-app-manifest-*.png` | Icone PWA 192x192, 512x512 |
 
 ### Hook `usePWAInstall`
 

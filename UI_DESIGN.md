@@ -32,14 +32,14 @@ L'utente può scegliere il **colore principale** (accent color) tra 6 opzioni.
 
 **Colori Disponibili:**
 
-| Colore | Nome   | Light Mode | Dark Mode  |
-| ------ | ------ | ---------- | ---------- |
-| 🟢     | Teal   | `#00796b`  | `#00bcd4`  |
-| 🔵     | Blue   | `#1565c0`  | `#42a5f5`  |
-| 🟣     | Purple | `#7b1fa2`  | `#ba68c8`  |
-| 🔴     | Red    | `#c62828`  | `#ef5350`  |
-| 🟠     | Orange | `#ef6c00`  | `#ffa726`  |
-| 🟢     | Green  | `#2e7d32`  | `#66bb6a`  |
+| Colore | Nome   | Light Mode | Dark Mode |
+| ------ | ------ | ---------- | --------- |
+| 🟢     | Teal   | `#00796b`  | `#00bcd4` |
+| 🔵     | Blue   | `#1565c0`  | `#42a5f5` |
+| 🟣     | Purple | `#7b1fa2`  | `#ba68c8` |
+| 🔴     | Red    | `#c62828`  | `#ef5350` |
+| 🟠     | Orange | `#ef6c00`  | `#ffa726` |
+| 🟢     | Green  | `#2e7d32`  | `#66bb6a` |
 
 > I colori seguono Material Design 3: tone 40 per light mode, tone 80 per dark mode
 
@@ -187,6 +187,7 @@ Modale informazioni gruppo con struttura:
 ### Componenti InfoBox
 
 #### InfoBox (Base)
+
 - Riquadro con sfondo colorato leggero (`bg-{color}-500/10`)
 - Bordo colorato (`border-{color}-600/25`)
 - Titolo uppercase piccolo centrato
@@ -194,11 +195,13 @@ Modale informazioni gruppo con struttura:
 - Supporta `titleExtra` per contatore
 
 #### EditableInfoBox
+
 - Come InfoBox ma con tasto matita a destra
 - Testo centrato indipendentemente dal tasto
 - Apre InputModal per modifica
 
 #### CopyableInfoBox
+
 - Come InfoBox ma con tasto copia a destra
 - Testo monospace per codici
 - Feedback visivo (checkmark) dopo copia
@@ -207,12 +210,12 @@ Modale informazioni gruppo con struttura:
 
 Lista pillole membri con stili differenziati:
 
-| Membro      | Stile                                      |
-| ----------- | ------------------------------------------ |
-| Tu + Founder| Sfondo amber, corona 👑, testo "Tu"        |
-| Tu          | Sfondo primary, icona User, testo "Tu"     |
-| Founder     | Sfondo amber, corona 👑, nome              |
-| Altri       | Sfondo gray, nome                          |
+| Membro       | Stile                                  |
+| ------------ | -------------------------------------- |
+| Tu + Founder | Sfondo amber, corona 👑, testo "Tu"    |
+| Tu           | Sfondo primary, icona User, testo "Tu" |
+| Founder      | Sfondo amber, corona 👑, nome          |
+| Altri        | Sfondo gray, nome                      |
 
 - Pillole ordinate: Tu prima, poi founder, poi altri
 - Se Tu sei founder: pillola unica amber con corona
@@ -221,12 +224,12 @@ Lista pillole membri con stili differenziati:
 
 ## Differenze UI Founder vs Membri
 
-| Elemento              | Membri Normali        | Founder               |
-| --------------------- | --------------------- | --------------------- |
-| Pillola membri        | Primary + "Tu"        | Amber + corona + "Tu" |
-| Azione gruppo         | "Esci dal gruppo"     | "Elimina gruppo"      |
-| Icona azione          | LogOut                | Trash2                |
-| Colore azione         | Rosso (danger)        | Rosso (danger)        |
+| Elemento       | Membri Normali    | Founder               |
+| -------------- | ----------------- | --------------------- |
+| Pillola membri | Primary + "Tu"    | Amber + corona + "Tu" |
+| Azione gruppo  | "Esci dal gruppo" | "Elimina gruppo"      |
+| Icona azione   | LogOut            | Trash2                |
+| Colore azione  | Rosso (danger)    | Rosso (danger)        |
 
 ---
 

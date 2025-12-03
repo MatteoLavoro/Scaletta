@@ -13,12 +13,14 @@
 ## ✨ Funzionalità Implementate
 
 ### Autenticazione
+
 - Registrazione con email/password
 - Login
 - Logout
 - Modifica nome utente
 
 ### Gruppi
+
 - Creazione gruppo con codice univoco (8 caratteri alfanumerici)
 - Partecipazione tramite codice
 - Modifica nome gruppo
@@ -27,11 +29,13 @@
 - Lista membri con identificazione founder (corona 👑)
 
 ### Personalizzazione
+
 - Tema chiaro/scuro
 - 6 colori accent: Teal, Blue, Purple, Red, Orange, Green
 - Preferenze salvate in localStorage
 
 ### PWA
+
 - Installabile su dispositivi
 - Service Worker per caching
 - Manifest con icone
