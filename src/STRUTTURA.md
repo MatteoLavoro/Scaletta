@@ -37,13 +37,14 @@
 
 ### `groups/` - Sistema Gruppi
 
-| File                    | Descrizione                               |
-| ----------------------- | ----------------------------------------- |
-| `GroupCard.jsx`         | Card espandibile per un gruppo            |
-| `GroupInfoModal.jsx`    | Modale info gruppo (stile ProfileModal)   |
-| `CreateGroupButton.jsx` | Tasto tratteggiato per creare gruppo      |
-| `JoinGroupButton.jsx`   | Tasto tratteggiato per unirsi a un gruppo |
-| `index.js`              | Export pubblici                           |
+| File                    | Descrizione                                       |
+| ----------------------- | ------------------------------------------------- |
+| `GroupCard.jsx`         | Card espandibile con chevron centrato             |
+| `GroupInfoModal.jsx`    | Modale info gruppo (nome, codice, membri, azioni) |
+| `CreateGroupButton.jsx` | Tasto con sfondo colorato per creare gruppo       |
+| `JoinGroupButton.jsx`   | Tasto tratteggiato per unirsi a un gruppo         |
+| `EmptyGroupsCard.jsx`   | Card tutorial per stato vuoto (no gruppi)         |
+| `index.js`              | Export pubblici                                   |
 
 ### `modal/` - Sistema Modale
 
@@ -54,7 +55,7 @@
 | `ModalFooter.jsx`  | Footer con bottone conferma (desktop)                   |
 | `ModalFab.jsx`     | FAB conferma fluttuante (mobile)                        |
 | `ConfirmModal.jsx` | Modale di conferma con box colorata                     |
-| `InputModal.jsx`   | Modale di immissione testo                              |
+| `InputModal.jsx`   | Modale di input con validazione e exactLength           |
 | `index.js`         | Export pubblici                                         |
 
 ### `profile/` - Componenti Profilo
@@ -73,22 +74,22 @@
 
 ### `ui/` - Componenti UI Base
 
-| File                  | Descrizione                                        |
-| --------------------- | -------------------------------------------------- |
-| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato    |
-| `Input.jsx`           | Input base (usa TextField invece)                  |
-| `PasswordInput.jsx`   | Password base (usa PasswordField invece)           |
-| `Spinner.jsx`         | Indicatore caricamento                             |
-| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                   |
-| `ColorPicker.jsx`     | Selettore colore accent (6 colori)                 |
-| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher             |
-| `InfoBox.jsx`         | Box info con stile (riquadro colorato)             |
-| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita)                |
-| `CopyableInfoBox.jsx` | InfoBox con tasto copia (clipboard)                |
-| `MemberPillList.jsx`  | Lista pillole membri (colorata per utente/founder) |
-| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione      |
-| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)              |
-| `index.js`            | Export pubblici                                    |
+| File                  | Descrizione                                          |
+| --------------------- | ---------------------------------------------------- |
+| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato      |
+| `Input.jsx`           | Input base                                           |
+| `PasswordInput.jsx`   | Password base con toggle                             |
+| `Spinner.jsx`         | Indicatore caricamento                               |
+| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                     |
+| `ColorPicker.jsx`     | Selettore colore accent (6 colori)                   |
+| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher               |
+| `InfoBox.jsx`         | Box info con stile (supporta titleExtra)             |
+| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita) centrato         |
+| `CopyableInfoBox.jsx` | InfoBox con tasto copia (clipboard) centrato         |
+| `MemberPillList.jsx`  | Lista pillole membri (Tu/founder/altri differenziati)|
+| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione        |
+| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)                |
+| `index.js`            | Export pubblici                                      |
 
 ### `icons/` - Icone (wrapper lucide-react)
 
@@ -142,16 +143,16 @@
 | ----------- | ------------------------------------------------------- |
 | `config.js` | Configurazione Firebase                                 |
 | `auth.js`   | Funzioni auth (login, register, logout, updateUsername) |
-| `groups.js` | Funzioni CRUD gruppi (crea, unisciti, esci, elimina)    |
+| `groups.js` | Funzioni CRUD gruppi (crea, unisciti, esci, elimina, aggiorna nome) |
 
 ---
 
 ## `utils/`
 
-| File                 | Descrizione                         |
-| -------------------- | ----------------------------------- |
-| `authValidation.js`  | Validazione email/password/username |
-| `groupValidation.js` | Validazione nome/codice gruppo      |
+| File                 | Descrizione                              |
+| -------------------- | ---------------------------------------- |
+| `authValidation.js`  | Validazione email/password/username      |
+| `groupValidation.js` | Validazione nome gruppo (2-50 char) e codice (8 char alfanum) |
 
 ---
 
@@ -176,6 +177,27 @@ const MioComponente = () => {
 
 ---
 
+## Colori InfoBox e Pillole
+
+I componenti `InfoBox`, `EditableInfoBox`, `CopyableInfoBox` e `MemberPillList` supportano colori con varianti light/dark:
+
+```jsx
+// Colori disponibili
+const colors = ["teal", "blue", "purple", "red", "orange", "green", "gray"];
+
+// Esempio
+<InfoBox title="Email" color="blue">
+  <span>utente@email.com</span>
+</InfoBox>
+```
+
+Ogni colore ha:
+- `bg`: Sfondo leggero (`bg-{color}-500/10` light, `bg-{color}-500/15` dark)
+- `border`: Bordo colorato (`border-{color}-600/25` light, `border-{color}-500/30` dark)
+- `text`: Testo colorato (`text-{color}-700` light, `text-{color}-400` dark)
+
+---
+
 ## Linee Guida Stile UI
 
 ### Principi Generali
@@ -185,6 +207,7 @@ const MioComponente = () => {
 3. **Spaziatura coerente** - `gap-4` tra elementi, `p-4` padding interno
 4. **Divisori sottili** - `Divider` per separare sezioni logiche
 5. **Bottoni azione in fondo** - Azioni pericolose con `DangerButton` in fondo al modale
+6. **Testo centrato indipendente** - In EditableInfoBox/CopyableInfoBox il testo è centrato rispetto al riquadro, non influenzato dal tasto
 
 ### Stato Disabilitato
 
@@ -204,93 +227,42 @@ Tutti i bottoni quando disabilitati:
 
 ---
 
-## Componenti UI Stilizzati
-
-### InfoBox - Box informativa colorata
+## Struttura GroupInfoModal
 
 ```jsx
-import InfoBox from "../ui/InfoBox";
-
-<InfoBox title="Email" color="blue">
-  <span>utente@email.com</span>
-</InfoBox>;
+<Modal title="Info Gruppo" variant="info">
+  <EditableInfoBox title="Nome gruppo" value={name} color="purple" onEdit={...} />
+  <CopyableInfoBox title="Codice gruppo" value={code} color="blue" />
+  <InfoBox title="Data creazione" color="gray">...</InfoBox>
+  <InfoBox title="Membri" titleExtra="(3)" color="teal">
+    <MemberPillList members={...} currentUserId={...} founderId={...} />
+  </InfoBox>
+  <Divider spacing="sm" />
+  <DangerButton>Elimina/Esci gruppo</DangerButton>
+</Modal>
 ```
 
-Colori disponibili: `teal`, `blue`, `purple`, `red`, `orange`, `green`, `gray`
+---
 
-### EditableInfoBox - Box modificabile
-
-```jsx
-import EditableInfoBox from "../ui/EditableInfoBox";
-
-<EditableInfoBox
-  title="Nome utente"
-  value="MioNome"
-  color="purple"
-  onEdit={() => setEditModalOpen(true)}
-/>;
-```
-
-### Divider - Linea di separazione
+## MemberPillList - Stili Differenziati
 
 ```jsx
-import Divider from "../ui/Divider";
+// Ordine visualizzazione: Tu prima, poi founder, poi altri
 
-// Spaziatura: "sm" | "md" | "lg"
-<Divider spacing="sm" />;
-```
+// Se Tu sei il founder
+<pill amber crown>Tu</pill>
 
-Il Divider ha margine laterale e non arriva fino ai bordi.
+// Se Tu NON sei founder
+<pill primary ring user-icon>Tu</pill>
+<pill amber crown>NomeFounder</pill>
 
-### DangerButton - Tasto con conferma
-
-```jsx
-import DangerButton from "../ui/DangerButton";
-
-<DangerButton
-  confirmTitle="Esci"
-  confirmMessage="Sei sicuro?"
-  confirmText="Esci"
-  onConfirm={handleLogout}
-  zIndex={1010} // Per modali annidati
->
-  <LogOut className="w-5 h-5" />
-  Esci
-</DangerButton>;
+// Altri membri
+<pill gray>NomeMembro</pill>
 ```
 
 ---
 
 ## Modali Annidati
-
-### Concetto
-
-Quando un modale apre un altro modale (es. ProfileModal → InputModal):
-
-1. **z-Index**: Il modale padre usa z-index inferiore, il figlio superiore
-2. **Blur**: Il modale padre applica blur al contenuto
-3. **onClose callback**: Il modale figlio riceve `onClose` per tornare al padre
-4. **History sincronizzata**: Ogni modale (anche annidato) aggiunge un entry nella browser history
-
-### Sistema di Chiusura Modali e Browser History
-
-Il sistema gestisce automaticamente la browser history per garantire che tutti i metodi di chiusura funzionino correttamente (tasto X, ESC, back button Chrome, back Android):
-
-| Metodo di Chiusura  | Comportamento                                         |
-| ------------------- | ----------------------------------------------------- |
-| Tasto × / ←         | `history.back()` → trigghera `popstate` → `onClose()` |
-| Tasto ESC           | `history.back()` → trigghera `popstate` → `onClose()` |
-| Back button browser | `popstate` event → `onClose()`                        |
-| Back Android        | `popstate` event → `onClose()`                        |
-
-**Come funziona internamente:**
-
-1. **Apertura modale normale** (`openModal`): Aggiunge entry nella history con `pushState`
-2. **Apertura modale annidato** (con `onClose`): Aggiunge entry nella history con `pushState` + registra callback in `nestedCloseCallbacksRef`
-3. **Chiusura** (qualsiasi metodo): Usa sempre `history.back()` che triggera `popstate`
-4. **`popstate` handler**: Controlla prima i modali annidati, poi quelli normali, e chiama la callback appropriata
-
-Questo garantisce che la browser history sia sempre sincronizzata con lo stato dei modali.
 
 ### Pattern Implementativo
 
@@ -298,28 +270,12 @@ Questo garantisce che la browser history sia sempre sincronizzata con lo stato d
 const ParentModal = ({ isOpen }) => {
   const [isChildOpen, setIsChildOpen] = useState(false);
 
-  // Apertura modale figlio
-  const openChild = () => {
-    setIsChildOpen(true);
-  };
-
-  // Chiusura modale figlio (chiamata automaticamente da popstate)
-  const closeChild = () => {
-    setIsChildOpen(false);
-  };
-
-  // Salvataggio: chiude figlio e torna al padre
-  const handleSave = async (value) => {
-    await saveData(value);
-    setIsChildOpen(false);
-  };
-
   return (
     <>
       <Modal isOpen={isOpen} zIndex={isChildOpen ? 990 : 1000}>
         <div className={isChildOpen ? "blur-sm pointer-events-none" : ""}>
           {/* Contenuto */}
-          <button onClick={openChild}>Modifica</button>
+          <button onClick={() => setIsChildOpen(true)}>Modifica</button>
         </div>
       </Modal>
 
@@ -327,179 +283,39 @@ const ParentModal = ({ isOpen }) => {
         isOpen={isChildOpen}
         zIndex={1010}
         onConfirm={handleSave}
-        onClose={closeChild} // <-- IMPORTANTE: gestisce TUTTI i metodi di chiusura
+        onClose={() => setIsChildOpen(false)}
       />
     </>
   );
 };
 ```
 
-### Regole Importanti
+### Regole
 
-1. **Passa sempre `onClose`** ai modali annidati - il sistema aggiungerà automaticamente un entry nella history e gestirà la chiusura
-2. **z-Index**: Il modale figlio deve avere z-index maggiore del padre (es. padre 990, figlio 1010)
-3. **Blur**: Applica `blur-sm pointer-events-none` al contenuto del padre quando il figlio è aperto
-4. **Non chiamare mai `onClose()` direttamente** per chiudere - usa sempre il tasto X/← che fa `history.back()`
-
----
-
-## Come Creare un Nuovo Modale
-
-### Modale Standard con Conferma
-
-```jsx
-import { Modal } from "../modal";
-import { TextField, FormSection } from "../form";
-
-const MioModale = ({ isOpen }) => {
-  const [valore, setValore] = useState("");
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      title="Titolo"
-      confirmText="Conferma"
-      onConfirm={handleSubmit}
-      confirmDisabled={!valore.trim()} // Bottone grigio se vuoto
-      isLoading={loading}
-    >
-      <FormSection>
-        <TextField
-          label="Campo"
-          value={valore}
-          onChange={(e) => setValore(e.target.value)}
-        />
-      </FormSection>
-    </Modal>
-  );
-};
-```
-
-### Modale Informativo (senza bottone conferma)
-
-```jsx
-<Modal isOpen={isOpen} title="Info" variant="info">
-  <InfoBox title="Dati" color="teal">
-    <span>Contenuto</span>
-  </InfoBox>
-</Modal>
-```
-
-### Modale di Conferma
-
-Design con box colorata + icona:
-
-```jsx
-import { ConfirmModal } from "../modal";
-
-<ConfirmModal
-  isOpen={isOpen}
-  title="Conferma eliminazione"
-  message="Sei sicuro di voler eliminare questo elemento? L'azione non può essere annullata."
-  confirmText="Elimina"
-  cancelText="Annulla"
-  onConfirm={handleDelete}
-  onCancel={() => setIsOpen(false)}
-  isDanger={true} // Box rossa con AlertTriangle
-  zIndex={1010} // Per modali annidati
-/>;
-```
-
-### Modale di Input
-
-```jsx
-import { InputModal } from "../modal";
-
-<InputModal
-  isOpen={isOpen}
-  title="Modifica nome"
-  label="Nome"
-  placeholder="Inserisci nome"
-  initialValue={currentValue}
-  confirmText="Salva"
-  onConfirm={handleSave}
-  validate={(v) => (v.length < 3 ? "Min 3 caratteri" : null)}
-  zIndex={1010} // Per modali annidati
-/>;
-```
-
----
-
-## Struttura Modale Profilo (Riferimento)
-
-Il ProfileModal è il modello di riferimento per strutturare i modali:
-
-```
-┌─────────────────────────────────────┐
-│  Header: Titolo + X                 │
-├─────────────────────────────────────┤
-│                                     │
-│  InfoBox "Email" (blue, readonly)   │
-│                                     │
-│  EditableInfoBox "Nome" (purple)    │
-│                                     │
-│  InfoBox "Aspetto" (teal)           │
-│    └── ThemeSelector                │
-│                                     │
-│  ──────── Divider ────────          │
-│                                     │
-│  DangerButton "Esci"                │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-Principi:
-
-1. **Dati utente** in alto con InfoBox colorate
-2. **Impostazioni** con ThemeSelector
-3. **Bottone Installa App** (visibile solo se non installata)
-4. **Divisore** prima di azioni pericolose
-5. **Azione pericolosa** in fondo con DangerButton
+1. **z-Index**: Padre < Figlio (es. 990 vs 1010)
+2. **Blur**: Applica `blur-sm pointer-events-none` al contenuto del padre
+3. **onClose**: Sempre passare callback per gestione history
 
 ---
 
 ## PWA (Progressive Web App)
 
-L'app è configurata come PWA con le seguenti funzionalità:
+### File in `public/`
 
-### File PWA in `public/`
-
-| File                           | Descrizione                       |
-| ------------------------------ | --------------------------------- |
-| `manifest.json`                | Manifest PWA con icone e metadata |
-| `sw.js`                        | Service Worker per caching        |
-| `favicon.svg`                  | Icona vettoriale                  |
-| `favicon.ico`                  | Icona classica                    |
-| `favicon-96x96.png`            | Icona 96x96                       |
-| `apple-touch-icon.png`         | Icona per iOS                     |
-| `web-app-manifest-192x192.png` | Icona PWA 192x192                 |
-| `web-app-manifest-512x512.png` | Icona PWA 512x512                 |
+| File                           | Descrizione               |
+| ------------------------------ | ------------------------- |
+| `manifest.json`                | Manifest PWA              |
+| `sw.js`                        | Service Worker            |
+| `favicon.svg/ico`              | Icone favicon             |
+| `apple-touch-icon.png`         | Icona iOS                 |
+| `web-app-manifest-*.png`       | Icone PWA 192x192, 512x512|
 
 ### Hook `usePWAInstall`
 
 ```jsx
-import { usePWAInstall } from "../hooks/usePWAInstall";
-
-const MioComponente = () => {
-  const { isInstallable, isInstalled, install, deviceInfo } = usePWAInstall();
-
-  // isInstallable: true se il browser supporta l'installazione diretta
-  // isInstalled: true se l'app è già installata
-  // install(): avvia il prompt di installazione
-  // deviceInfo: { isIOS, isAndroid, isMobile, needsManualInstall }
-};
+const { isInstallable, isInstalled, install, deviceInfo } = usePWAInstall();
 ```
 
 ### InstallModal
 
-Modale che mostra istruzioni per installare l'app, adattate al dispositivo:
-
-- **iOS**: Istruzioni manuali (Condividi → Aggiungi a Home)
-- **Android**: Installazione diretta se disponibile, altrimenti istruzioni
-- **Desktop**: Installazione diretta se disponibile, altrimenti istruzioni
-
-```jsx
-import { InstallModal } from "../components/pwa";
-
-<InstallModal isOpen={isOpen} onClose={() => setIsOpen(false)} />;
-```
+Mostra istruzioni specifiche per dispositivo (iOS manual, Android/Desktop direct se disponibile).

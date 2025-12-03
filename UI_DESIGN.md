@@ -20,120 +20,213 @@ L'applicazione offre **supporto completo** per entrambi i temi:
 **Comportamento:**
 
 - Il tema di default è **Scuro**
-- L'utente può cambiare tema dalle impostazioni
-- La preferenza viene salvata e mantenuta tra le sessioni
-- Transizione fluida tra i temi (animazione fade)
+- L'utente può cambiare tema dalle impostazioni (ProfileModal)
+- La preferenza viene salvata in localStorage
+- Transizione fluida tra i temi
 
 ### Colore Principale Personalizzabile
 
-L'utente può scegliere il **colore principale** (accent color) dell'interfaccia.
+L'utente può scegliere il **colore principale** (accent color) tra 6 opzioni.
 
-**Colore di Default:** 🟢 **Verde Acqua (Teal/Cyan)**
+**Colore di Default:** 🟢 **Teal (Verde Acqua)**
 
-```css
-/* Colore principale di default */
---color-primary: #00bcd4; /* Cyan/Teal */
---color-primary-light: #4dd0e1;
---color-primary-dark: #0097a7;
-```
+**Colori Disponibili:**
 
-**Colori Disponibili (esempi):**
+| Colore | Nome   | Light Mode | Dark Mode  |
+| ------ | ------ | ---------- | ---------- |
+| 🟢     | Teal   | `#00796b`  | `#00bcd4`  |
+| 🔵     | Blue   | `#1565c0`  | `#42a5f5`  |
+| 🟣     | Purple | `#7b1fa2`  | `#ba68c8`  |
+| 🔴     | Red    | `#c62828`  | `#ef5350`  |
+| 🟠     | Orange | `#ef6c00`  | `#ffa726`  |
+| 🟢     | Green  | `#2e7d32`  | `#66bb6a`  |
 
-| Colore | Nome                  | Codice HEX |
-| ------ | --------------------- | ---------- |
-| 🟢     | Verde Acqua (Default) | `#00BCD4`  |
-| 🔵     | Blu                   | `#2196F3`  |
-| 🟣     | Viola                 | `#9C27B0`  |
-| 🔴     | Rosso                 | `#F44336`  |
-| 🟠     | Arancione             | `#FF9800`  |
-| 🟡     | Giallo                | `#FFEB3B`  |
-| 🟢     | Verde                 | `#4CAF50`  |
-| 🩷      | Rosa                  | `#E91E63`  |
-
-**Utilizzo del Colore Principale:**
-
-- Tasti primari (conferma, salva, ecc.)
-- Link e elementi interattivi
-- Indicatori di selezione/focus
-- Badge e notifiche
-- FAB (Floating Action Button)
-- Barra di caricamento/progresso
-- Elementi di navigazione attivi
+> I colori seguono Material Design 3: tone 40 per light mode, tone 80 per dark mode
 
 ### Palette Tema Scuro (Default)
 
 ```css
-:root[data-theme="dark"] {
-  /* Background */
-  --bg-primary: #121212;
-  --bg-secondary: #1e1e1e;
-  --bg-tertiary: #2d2d2d;
-
-  /* Text */
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --text-muted: #666666;
-
-  /* Accent - Verde Acqua */
-  --color-primary: #00bcd4;
-  --color-primary-light: #4dd0e1;
-  --color-primary-dark: #0097a7;
-
-  /* Borders & Dividers */
-  --border-color: #333333;
-  --divider-color: #404040;
-}
+--bg-primary: #121212;
+--bg-secondary: #1e1e1e;
+--bg-tertiary: #2d2d2d;
+--text-primary: #ffffff;
+--text-secondary: #b3b3b3;
+--text-muted: #666666;
+--border: #333333;
+--divider: #404040;
 ```
 
 ### Palette Tema Chiaro
 
 ```css
-:root[data-theme="light"] {
-  /* Background */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --bg-tertiary: #eeeeee;
-
-  /* Text */
-  --text-primary: #212121;
-  --text-secondary: #757575;
-  --text-muted: #9e9e9e;
-
-  /* Accent - Verde Acqua */
-  --color-primary: #00bcd4;
-  --color-primary-light: #4dd0e1;
-  --color-primary-dark: #0097a7;
-
-  /* Borders & Dividers */
-  --border-color: #e0e0e0;
-  --divider-color: #bdbdbd;
-}
+--bg-primary: #fafafa;
+--bg-secondary: #ffffff;
+--bg-tertiary: #f0f0f0;
+--text-primary: #1a1a1a;
+--text-secondary: #525252;
+--text-muted: #737373;
+--border: #d4d4d4;
+--divider: #a3a3a3;
 ```
-
-### Impostazioni Tema
-
-Nelle impostazioni utente sarà disponibile:
-
-1. **Selettore Tema**: Toggle tra Chiaro/Scuro (o Auto basato su sistema)
-2. **Selettore Colore**: Griglia di colori per scegliere l'accent color
-3. **Anteprima**: Preview in tempo reale delle modifiche
 
 ---
 
-## Differenze UI basate sul Ruolo
+## Layout Principale
 
-### Founder vs Membri Regolari
+### Header (Dashboard)
 
-Nonostante tutti i membri abbiano tecnicamente gli stessi poteri a livello di sistema, la UI presenta alcune differenze per il **founder**:
+```
+┌─────────────────────────────────────────┐
+│  Scaletta          [Profilo tondo]      │
+└─────────────────────────────────────────┘
+```
 
-| Azione                | Membri Regolari | Founder     |
-| --------------------- | --------------- | ----------- |
-| Eliminare il gruppo   | ❌ Nascosto     | ✅ Visibile |
-| Eliminare un progetto | ❌ Nascosto     | ✅ Visibile |
-| Rimuovere un membro   | ❌ Nascosto     | ✅ Visibile |
-| Tutte le altre azioni | ✅ Visibile     | ✅ Visibile |
+- Logo "Scaletta" a sinistra (text-primary colorato)
+- Tasto profilo a destra: cerchio con icona User
+- Sfondo `bg-secondary`, bordo inferiore `border`
+- Sticky top con z-index 50
 
-> **Nota**: Questa è puramente una scelta di UI per semplificare l'interfaccia e prevenire azioni accidentali. A livello di backend, tutti i membri mantengono gli stessi permessi.
+### Contenuto Principale
+
+- Padding 20px (`p-5`)
+- Max-width 672px (`max-w-2xl`) centrato
+- Gap 12px (`space-y-3`) tra elementi
+
+---
+
+## Componenti Gruppi
+
+### EmptyGroupsCard (Stato Vuoto)
+
+Card tutorial che appare quando l'utente non ha gruppi:
+
+```
+┌─────────────────────────────────────────┐
+│            [Icona Users]                │
+│                                         │
+│      Benvenuto in Scaletta!             │
+│   Non fai ancora parte di nessun gruppo │
+│   Crea un nuovo gruppo o unisciti...    │
+├─────────────────────────────────────────┤
+│  [+ Crea gruppo]  [Unisciti tratteggiato]│
+└─────────────────────────────────────────┘
+```
+
+- Icona Users in cerchio colorato `bg-primary/10`
+- Testo di benvenuto centrato
+- Due tasti:
+  - **Crea gruppo**: sfondo `bg-primary/10`, bordo `border-primary/30`
+  - **Unisciti**: bordo tratteggiato `border-dashed`
+
+### GroupCard (Card Gruppo)
+
+```
+┌─────────────────────────────────────────┐
+│  Nome Gruppo           ˅       [i]      │
+│  👥 3 membri                            │
+├─────────────────────────────────────────┤
+│  (Contenuto espandibile)                │
+└─────────────────────────────────────────┘
+```
+
+- **Header cliccabile** per espandere/contrarre
+- **Nome gruppo** a sinistra (truncate se lungo)
+- **Contatore membri** sotto il nome
+- **Chevron** centrato orizzontalmente (absolute)
+- **Tasto info** (i) a destra
+- **Contenuto espandibile** con animazione `grid-rows-[1fr]`
+
+### CreateGroupButton / JoinGroupButton
+
+```
+┌─────────────────────┐ ┌─────────────────────┐
+│   + Crea gruppo     │ │   Unisciti          │
+└─────────────────────┘ └─────────────────────┘
+```
+
+- Stesso padding della card (`p-4`)
+- Bordo tratteggiato (`border-dashed`)
+- Hover: `border-primary`, `text-primary`, `bg-primary/5`
+- Appaiono sotto la lista gruppi (solo quando ci sono gruppi)
+
+---
+
+## GroupInfoModal
+
+Modale informazioni gruppo con struttura:
+
+```
+┌─────────────────────────────────────────┐
+│  Info Gruppo                          × │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─ NOME GRUPPO ─────────────────[✎]┐  │
+│  │         Mio Gruppo                │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌─ CODICE GRUPPO ───────────────[📋]┐  │
+│  │         ABC12DEF                  │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌─ DATA CREAZIONE ──────────────────┐  │
+│  │       3 dicembre 2025             │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌─ MEMBRI (3) ──────────────────────┐  │
+│  │   [👑 Tu] [Mario] [Lucia]         │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ─────────────────────────────────────  │
+│                                         │
+│  [ 🗑️ Elimina gruppo ]  (solo founder)  │
+│  [ 🚪 Esci dal gruppo ] (solo membri)   │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### Componenti InfoBox
+
+#### InfoBox (Base)
+- Riquadro con sfondo colorato leggero (`bg-{color}-500/10`)
+- Bordo colorato (`border-{color}-600/25`)
+- Titolo uppercase piccolo centrato
+- Contenuto centrato
+- Supporta `titleExtra` per contatore
+
+#### EditableInfoBox
+- Come InfoBox ma con tasto matita a destra
+- Testo centrato indipendentemente dal tasto
+- Apre InputModal per modifica
+
+#### CopyableInfoBox
+- Come InfoBox ma con tasto copia a destra
+- Testo monospace per codici
+- Feedback visivo (checkmark) dopo copia
+
+### MemberPillList
+
+Lista pillole membri con stili differenziati:
+
+| Membro      | Stile                                      |
+| ----------- | ------------------------------------------ |
+| Tu + Founder| Sfondo amber, corona 👑, testo "Tu"        |
+| Tu          | Sfondo primary, icona User, testo "Tu"     |
+| Founder     | Sfondo amber, corona 👑, nome              |
+| Altri       | Sfondo gray, nome                          |
+
+- Pillole ordinate: Tu prima, poi founder, poi altri
+- Se Tu sei founder: pillola unica amber con corona
+
+---
+
+## Differenze UI Founder vs Membri
+
+| Elemento              | Membri Normali        | Founder               |
+| --------------------- | --------------------- | --------------------- |
+| Pillola membri        | Primary + "Tu"        | Amber + corona + "Tu" |
+| Azione gruppo         | "Esci dal gruppo"     | "Elimina gruppo"      |
+| Icona azione          | LogOut                | Trash2                |
+| Colore azione         | Rosso (danger)        | Rosso (danger)        |
 
 ---
 

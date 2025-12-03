@@ -6,6 +6,30 @@
 
 ---
 
+## Stato Attuale dell'Implementazione
+
+### ✅ Completato
+
+- **Autenticazione Firebase** (login, registrazione, logout, modifica username)
+- **Sistema Gruppi** completo (creazione, partecipazione, uscita, eliminazione)
+- **Sistema Tema** (chiaro/scuro + 6 colori accent)
+- **PWA** (installabile su dispositivi)
+- **UI/UX responsive** (mobile fullscreen, desktop centrato)
+- **Sistema Modali** con gestione history browser
+
+### 🚧 In Sviluppo
+
+- Contenuto espandibile delle card gruppo (placeholder attuale)
+- Sistema Progetti
+
+### 📋 Pianificato
+
+- Gestione file e note nei progetti
+- Notifiche
+- Ricerca avanzata
+
+---
+
 ## Concetti Fondamentali
 
 ### 1. Gruppi
@@ -14,325 +38,186 @@ Un **Gruppo** è l'entità principale dell'applicazione. Rappresenta un team di 
 
 #### Caratteristiche dei Gruppi:
 
-- **Nome del gruppo**: Identificativo univoco del gruppo
-- **Descrizione**: Breve descrizione dello scopo del gruppo
+- **Nome del gruppo**: Modificabile da qualsiasi membro (2-50 caratteri)
+- **Codice univoco**: 8 caratteri alfanumerici (A-Z, 0-9) generato automaticamente
 - **Data di creazione**: Timestamp di quando il gruppo è stato creato
-- **Founder (Fondatore)**: L'utente che ha creato il gruppo (viene tracciato ma NON ha poteri speciali)
-- **Membri**: Lista di tutti gli utenti che fanno parte del gruppo
+- **Founder (Fondatore)**: L'utente che ha creato il gruppo
+- **Membri**: Lista di tutti gli utenti con `uid`, `displayName`, `email`, `joinedAt`
 
 #### Regole dei Gruppi:
 
-- ✅ Tutti i membri hanno **gli stessi poteri e permessi**
-- ✅ Il founder viene identificato e memorizzato nel sistema
-- ✅ Il founder NON ha privilegi aggiuntivi rispetto agli altri membri
-- ✅ Ogni membro può invitare nuovi utenti
-- ✅ Ogni membro può rimuovere altri membri (incluso il founder)
-- ✅ Ogni membro può modificare le impostazioni del gruppo
-- ✅ Ogni membro può eliminare il gruppo
+- ✅ Tutti i membri possono modificare il nome del gruppo
+- ✅ Tutti i membri possono uscire dal gruppo
+- ✅ Il founder viene identificato con icona corona 👑
+- ✅ **Solo il founder** può eliminare il gruppo
+- ✅ I membri possono unirsi tramite codice a 8 caratteri
 
----
+#### Struttura Dati Gruppo (Firestore):
 
-### 2. Progetti
-
-Ogni gruppo può creare e gestire molteplici **Progetti**. Un progetto è uno spazio di lavoro dedicato a un'attività specifica.
-
-#### Caratteristiche dei Progetti:
-
-- **Nome del progetto**: Identificativo del progetto all'interno del gruppo
-- **Descrizione**: Descrizione dettagliata del progetto
-- **Data di creazione**: Quando il progetto è stato creato
-- **Creatore**: Chi ha creato il progetto (informativo, senza privilegi speciali)
-- **Stato**: Attivo, In pausa, Completato, Archiviato
-
-#### Funzionalità dei Progetti:
-
-##### 📁 Gestione File
-
-- **Upload di file**: Caricamento di qualsiasi tipo di file
-- **Download di file**: Scaricamento dei file caricati
-- **Anteprima file**: Visualizzazione diretta di immagini, PDF, documenti
-- **Organizzazione**: Possibilità di creare cartelle e sottocartelle
-- **Cronologia versioni**: Tracciamento delle versioni dei file modificati
-
-##### 📝 Note
-
-- **Creazione note**: Aggiunta di note testuali al progetto
-- **Modifica note**: Modifica delle note esistenti
-- **Formattazione**: Supporto per testo formattato (grassetto, corsivo, liste, ecc.)
-- **Etichette/Tag**: Categorizzazione delle note con tag
-- **Ricerca**: Ricerca full-text all'interno delle note
-
-##### 📊 Dati e Informazioni
-
-- **Campi personalizzati**: Possibilità di aggiungere campi dati personalizzati
-- **Tabelle dati**: Creazione di tabelle per organizzare informazioni
-- **Metadati**: Informazioni aggiuntive associate ai file e alle note
-- **Statistiche**: Dashboard con statistiche sul progetto
-
-##### 👁️ Visualizzazione
-
-- **Vista file**: Visualizzatore integrato per documenti e media
-- **Vista galleria**: Visualizzazione a griglia per immagini
-- **Vista lista**: Lista dettagliata di tutti gli elementi
-- **Filtri**: Filtri per tipo, data, autore, tag
-- **Ordinamento**: Ordinamento per vari criteri
-
----
-
-## Struttura Dati
-
-### Utente
-
-```
+```javascript
 {
-  id: string
-  nome: string
-  email: string
-  avatar: string (opzionale)
-  dataRegistrazione: timestamp
-}
-```
-
-### Gruppo
-
-```
-{
-  id: string
-  nome: string
-  descrizione: string
-  founderId: string (riferimento all'utente fondatore)
-  membri: [userId, userId, ...] (lista di ID utenti)
-  dataCreazione: timestamp
-  impostazioni: object
-}
-```
-
-### Progetto
-
-```
-{
-  id: string
-  gruppoId: string (riferimento al gruppo)
-  nome: string
-  descrizione: string
-  creatoreId: string
-  stato: "attivo" | "in_pausa" | "completato" | "archiviato"
-  dataCreazione: timestamp
-  dataModifica: timestamp
-}
-```
-
-### File
-
-```
-{
-  id: string
-  progettoId: string
-  nome: string
-  tipo: string (mime type)
-  dimensione: number (bytes)
-  percorso: string (path nel sistema di storage)
-  caricatoDa: userId
-  dataCaricamento: timestamp
-  versione: number
-}
-```
-
-### Nota
-
-```
-{
-  id: string
-  progettoId: string
-  titolo: string
-  contenuto: string (HTML o Markdown)
-  creatoDa: userId
-  dataCreazione: timestamp
-  dataModifica: timestamp
-  tags: [string, string, ...]
-}
-```
-
-### Dato Personalizzato
-
-```
-{
-  id: string
-  progettoId: string
-  chiave: string
-  valore: any
-  tipo: "testo" | "numero" | "data" | "booleano" | "lista"
-  creatoDa: userId
-  dataCreazione: timestamp
+  id: string,              // ID documento Firestore
+  name: string,            // Nome del gruppo (2-50 caratteri)
+  code: string,            // Codice 8 caratteri alfanumerici (univoco)
+  createdAt: Timestamp,    // Data creazione
+  founderId: string,       // UID del creatore
+  founderName: string,     // Nome del creatore
+  members: [               // Array di membri
+    {
+      uid: string,
+      displayName: string,
+      email: string,
+      joinedAt: string     // ISO date string
+    }
+  ]
 }
 ```
 
 ---
 
-## Flusso di Utilizzo
+### 2. Progetti (Futuro)
 
-### 1. Registrazione/Login
+Ogni gruppo potrà creare e gestire molteplici **Progetti**. Un progetto è uno spazio di lavoro dedicato a un'attività specifica.
 
-1. L'utente si registra o effettua il login
-2. Accede alla dashboard personale
+#### Funzionalità Pianificate:
 
-### 2. Creazione Gruppo
+- **Gestione File**: Upload, download, anteprima, cartelle
+- **Note**: Creazione, modifica, formattazione, tag
+- **Dati Personalizzati**: Campi custom, tabelle
+- **Visualizzazione**: Vista file, galleria, lista, filtri
 
-1. L'utente clicca su "Crea Nuovo Gruppo"
-2. Inserisce nome e descrizione
-3. Il sistema lo registra automaticamente come **founder** e primo membro
-4. Può invitare altri utenti tramite email o link
+---
 
-### 3. Gestione Membri
+## Flusso di Utilizzo Attuale
 
-1. Qualsiasi membro può invitare nuovi utenti
-2. Qualsiasi membro può rimuovere altri membri
-3. Il founder viene mostrato con un badge identificativo ma senza poteri extra
+### 1. Accesso
 
-### 4. Creazione Progetto
+1. L'utente apre l'app e visualizza la **WelcomePage**
+2. Può registrarsi o effettuare login con email/password
+3. Dopo l'autenticazione accede alla **Dashboard**
 
-1. Da dentro un gruppo, qualsiasi membro clicca "Nuovo Progetto"
-2. Inserisce nome e descrizione
-3. Il progetto viene creato e associato al gruppo
+### 2. Dashboard (Home)
 
-### 5. Lavoro sul Progetto
+- Header con logo "Scaletta" e tasto profilo tondo
+- Se non ha gruppi: **EmptyGroupsCard** (card tutorial con benvenuto e tasti)
+- Se ha gruppi: lista **GroupCard** + tasti crea/unisciti in basso
 
-1. I membri accedono al progetto
-2. Possono:
-   - Caricare/scaricare file
-   - Creare/modificare note
-   - Aggiungere dati personalizzati
-   - Visualizzare contenuti
-   - Organizzare materiali in cartelle
+### 3. Creazione Gruppo
+
+1. Click su "Crea gruppo" (tasto con sfondo colorato)
+2. **InputModal**: inserimento nome (2-50 caratteri)
+3. Il sistema genera automaticamente un codice 8 caratteri
+4. L'utente diventa founder e primo membro
+
+### 4. Partecipazione a Gruppo
+
+1. Click su "Unisciti" (tasto tratteggiato)
+2. **InputModal**: inserimento codice 8 caratteri (convertito in maiuscolo)
+3. Validazione codice (esistenza + non già membro)
+4. L'utente viene aggiunto ai membri
+
+### 5. Gestione Gruppo
+
+1. Click sull'icona info (i) nella **GroupCard**
+2. **GroupInfoModal** mostra:
+   - Nome (modificabile con matita)
+   - Codice (copiabile con tasto copia)
+   - Data creazione
+   - Lista membri (pillole colorate, Tu con corona se founder)
+   - Tasto "Elimina gruppo" (solo founder) o "Esci dal gruppo"
+
+### 6. Profilo Utente
+
+1. Click sul tasto tondo nell'header
+2. **ProfileModal** mostra:
+   - Email (readonly)
+   - Nome utente (modificabile)
+   - Selettore tema (chiaro/scuro + 6 colori)
+   - Tasto "Installa app" (se non installata)
+   - Tasto "Esci" (logout)
 
 ---
 
 ## Permessi e Sicurezza
 
-### Principio di Uguaglianza
+### Regole Firestore
 
-- **Ogni membro ha pieni poteri** su tutte le risorse del gruppo
-- Non esistono ruoli differenziati (admin, editor, viewer)
-- Il founder è solo un'informazione storica
+```javascript
+// Gruppi
+read: if isAuthenticated()              // Tutti possono leggere (filtro client-side)
+create: if founder == auth.uid          // Solo creatore può creare
+update: if isAuthenticated()            // Tutti i membri (verificato lato client)
+delete: if founder == auth.uid          // Solo founder può eliminare
+```
 
-### Azioni Disponibili a Tutti i Membri
+### Differenze UI Founder vs Membri
 
-| Azione                         | Disponibile |
-| ------------------------------ | ----------- |
-| Creare progetti                | ✅          |
-| Eliminare progetti             | ✅          |
-| Caricare file                  | ✅          |
-| Eliminare file (anche altrui)  | ✅          |
-| Creare note                    | ✅          |
-| Modificare note (anche altrui) | ✅          |
-| Eliminare note (anche altrui)  | ✅          |
-| Invitare membri                | ✅          |
-| Rimuovere membri               | ✅          |
-| Modificare impostazioni gruppo | ✅          |
-| Eliminare il gruppo            | ✅          |
-
-### Tracciabilità
-
-- Ogni azione viene loggata con timestamp e autore
-- È possibile vedere chi ha creato/modificato cosa
-- Cronologia delle modifiche disponibile
+| Azione                | Membri Normali | Founder     |
+| --------------------- | -------------- | ----------- |
+| Modificare nome       | ✅ Visibile     | ✅ Visibile  |
+| Copiare codice        | ✅ Visibile     | ✅ Visibile  |
+| Uscire dal gruppo     | ✅ Visibile     | ❌ Nascosto  |
+| Eliminare il gruppo   | ❌ Nascosto     | ✅ Visibile  |
 
 ---
 
-## Interfaccia Utente (UI)
+## Tecnologie Utilizzate
 
-### Pagine Principali
+### Frontend
 
-1. **Dashboard**
+- **React 19** + **Vite 7** (build tool)
+- **Tailwind CSS 4** con variabili CSS custom per temi
+- **Lucide React** per icone
+- **PWA** con Service Worker
 
-   - Lista dei gruppi a cui l'utente appartiene
-   - Attività recenti
-   - Accesso rapido ai progetti recenti
+### Backend
 
-2. **Pagina Gruppo**
+- **Firebase Authentication** (email/password)
+- **Cloud Firestore** (database NoSQL)
+- **Firebase Hosting** (deployment)
 
-   - Informazioni del gruppo
-   - Lista membri (con badge founder)
-   - Lista progetti
-   - Impostazioni gruppo
+### Configurazione
 
-3. **Pagina Progetto**
-
-   - Tabs per: File, Note, Dati
-   - Area di visualizzazione principale
-   - Sidebar con filtri e navigazione
-   - Toolbar con azioni rapide
-
-4. **Visualizzatore File**
-   - Anteprima documenti
-   - Player per audio/video
-   - Galleria immagini
-
----
-
-## Tecnologie Suggerite
-
-### Frontend (già configurato con Vite + React)
-
-- React.js per l'interfaccia
-- React Router per la navigazione
-- Context API o Zustand per lo stato globale
-- Axios per le chiamate API
-
-### Backend (da implementare)
-
-- Node.js + Express oppure
-- Firebase/Supabase per backend-as-a-service
-
-### Storage File
-
-- Firebase Storage oppure
-- AWS S3 oppure
-- Cloudinary
-
-### Database
-
-- Firestore (NoSQL) oppure
-- PostgreSQL (SQL) oppure
-- MongoDB
+- **ESLint** per linting
+- **Prettier** (implicito tramite editor)
 
 ---
 
 ## Roadmap di Sviluppo
 
-### Fase 1 - Base
+### Fase 1 - Base ✅ COMPLETATA
 
-- [ ] Sistema di autenticazione
-- [ ] CRUD Gruppi
-- [ ] Gestione membri
+- [x] Sistema di autenticazione
+- [x] CRUD Gruppi (crea, leggi, modifica nome, elimina)
+- [x] Gestione membri (join, leave)
+- [x] Codice univoco 8 caratteri per inviti
+- [x] Sistema tema chiaro/scuro + colori accent
+- [x] PWA installabile
+
+### Fase 2 - Progetti (Prossima)
+
 - [ ] CRUD Progetti base
+- [ ] Contenuto espandibile card gruppi
+- [ ] Vista progetti nel gruppo
 
-### Fase 2 - File Management
+### Fase 3 - File Management
 
 - [ ] Upload file
 - [ ] Download file
 - [ ] Anteprima file
 - [ ] Organizzazione cartelle
 
-### Fase 3 - Note e Dati
+### Fase 4 - Note e Dati
 
 - [ ] Sistema note con editor
 - [ ] Campi dati personalizzati
 - [ ] Sistema di tag
 
-### Fase 4 - Miglioramenti
+### Fase 5 - Miglioramenti
 
 - [ ] Ricerca avanzata
 - [ ] Notifiche
 - [ ] Cronologia attività
-- [ ] Versioning file
-
-### Fase 5 - Polish
-
-- [ ] Ottimizzazione performance
-- [ ] UI/UX refinements
-- [ ] Mobile responsiveness
-- [ ] PWA support
 
 ---
 

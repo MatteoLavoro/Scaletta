@@ -27,7 +27,7 @@ const WelcomePage = ({ onLogin, onRegister }) => {
         <div className="flex flex-col items-center px-5 py-8 pb-4">
           <div className="w-full max-w-sm flex flex-col items-center gap-6">
             {/* Logo */}
-            <div className="w-20 h-20 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/20 shadow-lg shadow-primary/10">
+            <div className="w-20 h-20 flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/20 shadow-lg shadow-primary/10">
               <svg width="44" height="44" viewBox="0 0 64 64" fill="none">
                 <rect
                   x="8"

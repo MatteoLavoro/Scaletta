@@ -1,16 +1,85 @@
-# React + Vite
+# Scaletta
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Scaletta** è una piattaforma collaborativa per la gestione di gruppi di lavoro con struttura orizzontale.
 
-Currently, two official plugins are available:
+## 🚀 Tecnologie
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend**: React 19 + Vite 7
+- **Styling**: Tailwind CSS 4 con variabili CSS custom
+- **Backend**: Firebase (Authentication + Firestore)
+- **Icone**: Lucide React
+- **PWA**: Service Worker per installazione
 
-## React Compiler
+## ✨ Funzionalità Implementate
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Autenticazione
+- Registrazione con email/password
+- Login
+- Logout
+- Modifica nome utente
 
-## Expanding the ESLint configuration
+### Gruppi
+- Creazione gruppo con codice univoco (8 caratteri alfanumerici)
+- Partecipazione tramite codice
+- Modifica nome gruppo
+- Uscita dal gruppo
+- Eliminazione gruppo (solo founder)
+- Lista membri con identificazione founder (corona 👑)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Personalizzazione
+- Tema chiaro/scuro
+- 6 colori accent: Teal, Blue, Purple, Red, Orange, Green
+- Preferenze salvate in localStorage
+
+### PWA
+- Installabile su dispositivi
+- Service Worker per caching
+- Manifest con icone
+
+## 🛠️ Sviluppo
+
+```bash
+# Installa dipendenze
+npm install
+
+# Avvia dev server
+npm run dev
+
+# Build produzione
+npm run build
+
+# Deploy su Firebase
+firebase deploy
+```
+
+## 📁 Struttura Progetto
+
+```
+src/
+├── components/
+│   ├── auth/        # Autenticazione
+│   ├── form/        # Componenti form
+│   ├── groups/      # Sistema gruppi
+│   ├── modal/       # Sistema modale
+│   ├── profile/     # Profilo utente
+│   ├── pwa/         # Installazione PWA
+│   └── ui/          # Componenti UI base
+├── contexts/        # React contexts
+├── hooks/           # Custom hooks
+├── pages/           # Pagine app
+├── services/        # Firebase services
+└── utils/           # Utility functions
+```
+
+## 📚 Documentazione
+
+- [PROGETTO.md](./PROGETTO.md) - Documentazione completa del progetto
+- [UI_DESIGN.md](./UI_DESIGN.md) - Specifiche UI/UX
+- [src/STRUTTURA.md](./src/STRUTTURA.md) - Struttura codice sorgente
+
+## 🔗 Link Utili
+
+- [Firebase Console](https://console.firebase.google.com/project/scaletta-1)
+- [Vite Documentation](https://vite.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Lucide Icons](https://lucide.dev/)
