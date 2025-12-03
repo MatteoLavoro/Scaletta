@@ -248,6 +248,25 @@ Quando un modale apre un altro modale (es. ProfileModal → InputModal):
 2. **Blur**: Il modale padre applica blur al contenuto
 3. **onClose callback**: Il modale figlio riceve `onClose` per tornare al padre
 
+### Sistema di Chiusura Modali
+
+Il sistema gestisce automaticamente tutti i metodi di chiusura:
+
+| Metodo di Chiusura  | Modale Normale              | Modale Annidato (con `onClose`) |
+| ------------------- | --------------------------- | ------------------------------- |
+| Tasto × / ←         | `history.back()`            | Chiama `onClose()`              |
+| Tasto ESC           | `history.back()`            | Chiama `onClose()`              |
+| Back button browser | `history.back()`            | Chiama `onClose()`              |
+| Back Android        | `history.back()`            | Chiama `onClose()`              |
+| Tasto Annulla       | Chiama `onCancel/onClose()` | Chiama `onClose()`              |
+
+**Come funziona internamente:**
+
+1. Quando un modale con `onClose` si apre, registra la callback in `ModalContext` tramite `registerNestedClose()`
+2. ESC e popstate controllano prima lo stack dei modali annidati
+3. Se ci sono modali annidati, chiamano la loro callback invece di `history.back()`
+4. Quando il modale si chiude, la callback viene automaticamente rimossa dallo stack
+
 ### Pattern Implementativo
 
 ```jsx
@@ -259,7 +278,7 @@ const ParentModal = ({ isOpen }) => {
     setIsChildOpen(true);
   };
 
-  // Chiusura modale figlio (chiamata da onClose)
+  // Chiusura modale figlio (chiamata da onClose, ESC, back button, ecc.)
   const closeChild = () => {
     setIsChildOpen(false);
   };
@@ -283,18 +302,19 @@ const ParentModal = ({ isOpen }) => {
         isOpen={isChildOpen}
         zIndex={1010}
         onConfirm={handleSave}
-        onClose={closeChild} // <-- Chiave: gestisce X e annulla
+        onClose={closeChild} // <-- IMPORTANTE: gestisce TUTTI i metodi di chiusura
       />
     </>
   );
 };
 ```
 
-### Chiusura Corretta
+### Regole Importanti
 
-- **X / Annulla**: Il modale chiama `onClose` → setta stato a false → torna al padre
-- **Conferma/Salva**: `setIsChildOpen(false)` direttamente → resta nel padre
-- **Niente pushState/popstate**: La navigazione history non è più usata per modali annidati
+1. **Passa sempre `onClose`** ai modali annidati - questo abilita la gestione automatica di ESC e back button
+2. **Non usare `history.pushState`** per modali annidati - il sistema lo gestisce automaticamente
+3. **z-Index**: Il modale figlio deve avere z-index maggiore del padre (es. padre 990, figlio 1010)
+4. **Blur**: Applica `blur-sm pointer-events-none` al contenuto del padre quando il figlio è aperto
 
 ---
 
