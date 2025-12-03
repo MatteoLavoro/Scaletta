@@ -12,12 +12,12 @@ L'interfaccia di Scaletta segue principi di **design moderno** con focus primari
 
 Nonostante tutti i membri abbiano tecnicamente gli stessi poteri a livello di sistema, la UI presenta alcune differenze per il **founder**:
 
-| Azione | Membri Regolari | Founder |
-|--------|-----------------|---------|
-| Eliminare il gruppo | ❌ Nascosto | ✅ Visibile |
-| Eliminare un progetto | ❌ Nascosto | ✅ Visibile |
-| Rimuovere un membro | ❌ Nascosto | ✅ Visibile |
-| Tutte le altre azioni | ✅ Visibile | ✅ Visibile |
+| Azione                | Membri Regolari | Founder     |
+| --------------------- | --------------- | ----------- |
+| Eliminare il gruppo   | ❌ Nascosto     | ✅ Visibile |
+| Eliminare un progetto | ❌ Nascosto     | ✅ Visibile |
+| Rimuovere un membro   | ❌ Nascosto     | ✅ Visibile |
+| Tutte le altre azioni | ✅ Visibile     | ✅ Visibile |
 
 > **Nota**: Questa è puramente una scelta di UI per semplificare l'interfaccia e prevenire azioni accidentali. A livello di backend, tutti i membri mantengono gli stessi permessi.
 
@@ -29,20 +29,14 @@ Il sistema di modali è il componente fondamentale dell'interfaccia. Tutti i mod
 
 ### Struttura del Modale
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  [←]                    TITOLO MODALE                   [×] │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│                                                             │
-│                    CONTENUTO DEL MODALE                     │
-│                                                             │
-│                                                             │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│                                          [ CONFERMA ]       │
-└─────────────────────────────────────────────────────────────┘
-```
+La struttura varia in base alla piattaforma (vedi sezioni Mobile e Desktop sotto).
+
+**Elementi comuni:**
+
+- Header con titolo centrato e tasto chiudi
+- Linea di divisione sotto l'header
+- Area contenuto scrollabile
+- Tasto conferma
 
 ---
 
@@ -71,8 +65,9 @@ Il sistema di modali è il componente fondamentale dell'interfaccia. Tutti i mod
 ```
 
 **Caratteristiche Mobile:**
+
 - Il modale occupa **tutto lo schermo** (come una nuova pagina)
-- Freccia **← indietro** posizionata in **alto a sinistra**
+- **Solo freccia ← indietro** posizionata in **alto a sinistra** (NO tasto ×)
 - **Titolo** centrato in alto
 - Linea di divisione sotto header
 - **Contenuto** scrollabile
@@ -92,19 +87,20 @@ Il sistema di modali è il componente fondamentale dell'interfaccia. Tutti i mod
         ║                                           ║
         ║                                           ║
         ╠═══════════════════════════════════════════╣
-        ║                              [ CONFERMA ] ║
+        ║ [            CONFERMA                   ] ║
         ╚═══════════════════════════════════════════╝
 ```
 
 **Caratteristiche Desktop:**
+
 - Il modale si apre **al centro della pagina**
 - Dimensioni contenute (non fullscreen)
-- **× chiudi** posizionata in **alto a destra**
+- **Solo × chiudi** posizionata in **alto a destra** (NO freccia indietro)
 - **Titolo** centrato in alto
 - Linea di divisione sotto header
 - **Contenuto** scrollabile
 - Linea di divisione sopra footer
-- **Tasto conferma** fisso nel footer in basso a destra
+- **Tasto conferma centrale** che occupa **tutta la larghezza** del modale
 - **Sfondo sfumato/oscurato** dietro il modale
 
 ---
@@ -112,6 +108,7 @@ Il sistema di modali è il componente fondamentale dell'interfaccia. Tutti i mod
 ## Comportamenti e Interazioni
 
 ### Apertura Modale
+
 1. Il modale appare (con eventuale animazione)
 2. Lo **scroll della pagina sottostante viene bloccato**
 3. Su desktop: lo sfondo si **sfuma/oscura**
@@ -121,14 +118,14 @@ Il sistema di modali è il componente fondamentale dell'interfaccia. Tutti i mod
 
 Il modale può essere chiuso tramite:
 
-| Metodo | Piattaforma | Comportamento |
-|--------|-------------|---------------|
-| Tasto ← nel modale | Mobile | ✅ Chiude il modale |
-| Tasto × nel modale | Desktop | ✅ Chiude il modale |
-| Tasto ESC tastiera | Desktop | ✅ Chiude il modale |
-| Tasto Indietro Android | Mobile | ✅ Chiude il modale |
-| Tasto Indietro Browser | Tutti | ✅ Chiude il modale |
-| Click fuori dal modale | Tutti | ❌ **NON** chiude il modale |
+| Metodo                 | Piattaforma | Comportamento               |
+| ---------------------- | ----------- | --------------------------- |
+| Tasto ← nel modale     | Mobile      | ✅ Chiude il modale         |
+| Tasto × nel modale     | Desktop     | ✅ Chiude il modale         |
+| Tasto ESC tastiera     | Desktop     | ✅ Chiude il modale         |
+| Tasto Indietro Android | Mobile      | ✅ Chiude il modale         |
+| Tasto Indietro Browser | Tutti       | ✅ Chiude il modale         |
+| Click fuori dal modale | Tutti       | ❌ **NON** chiude il modale |
 
 > **Importante**: Cliccare al di fuori del modale **NON** deve chiudere il modale. Questo previene chiusure accidentali e perdita di dati.
 
@@ -274,14 +271,14 @@ body.modal-open {
 
 ```javascript
 // Concetto di gestione keyboard
-visualViewport.addEventListener('resize', () => {
+visualViewport.addEventListener("resize", () => {
   const keyboardHeight = window.innerHeight - visualViewport.height;
   if (keyboardHeight > 0) {
     // Tastiera visibile: sposta il bottone sopra
     floatingButton.style.bottom = `${keyboardHeight + 20}px`;
   } else {
     // Tastiera nascosta: bottone in basso
-    floatingButton.style.bottom = '20px';
+    floatingButton.style.bottom = "20px";
   }
 });
 ```
@@ -291,22 +288,26 @@ visualViewport.addEventListener('resize', () => {
 ## Componenti del Modale
 
 ### Header
-- **Mobile**: Freccia ← a sinistra, titolo centrato
-- **Desktop**: Titolo centrato, × a destra
+
+- **Mobile**: Solo freccia ← a sinistra, titolo centrato (NO ×)
+- **Desktop**: Titolo centrato, solo × a destra (NO freccia)
 - Altezza fissa
 - Linea divisoria sotto
 
 ### Content
+
 - Area scrollabile
 - Padding consistente
 - Può contenere qualsiasi contenuto
 
 ### Footer (solo Desktop)
+
 - Linea divisoria sopra
-- Tasto/i azione allineati a destra
+- **Tasto conferma centrale** che occupa **tutta la larghezza**
 - Altezza fissa
 
 ### Floating Action Button (solo Mobile)
+
 - Posizione fissa in basso a destra
 - Si adatta alla tastiera
 - Icona o testo breve
@@ -326,14 +327,17 @@ visualViewport.addEventListener('resize', () => {
 ## Animazioni
 
 ### Apertura
+
 - **Mobile**: Slide da destra o dal basso
 - **Desktop**: Fade in + leggero scale up
 
 ### Chiusura
+
 - **Mobile**: Slide verso destra o verso il basso
 - **Desktop**: Fade out + leggero scale down
 
 ### Durata
+
 - Animazioni rapide: 200-300ms
 - Easing: ease-out per apertura, ease-in per chiusura
 
@@ -362,16 +366,16 @@ Tutti ereditano dal modale generico:
 
 ## Riepilogo Comportamenti
 
-| Comportamento | Mobile | Desktop |
-|---------------|--------|---------|
-| Dimensione modale | Fullscreen | Centrato, contenuto |
-| Tasto chiudi | ← alto sinistra | × alto destra |
-| Sfondo | Nessuno (fullscreen) | Sfumato/oscurato |
-| Tasto conferma | Fluttuante basso-destra | Fisso nel footer |
-| Keyboard awareness | Sì (sposta bottone) | N/A |
-| ESC chiude | N/A | Sì |
-| Back Android chiude | Sì | N/A |
-| Back Browser chiude | Sì | Sì |
-| Click fuori chiude | No | No |
-| Scroll body bloccato | Sì | Sì |
-| Modali innestati | Sì | Sì |
+| Comportamento        | Mobile                  | Desktop                         |
+| -------------------- | ----------------------- | ------------------------------- |
+| Dimensione modale    | Fullscreen              | Centrato, contenuto             |
+| Tasto chiudi         | Solo ← alto sinistra    | Solo × alto destra              |
+| Sfondo               | Nessuno (fullscreen)    | Sfumato/oscurato                |
+| Tasto conferma       | Fluttuante basso-destra | Centrale, full-width nel footer |
+| Keyboard awareness   | Sì (sposta bottone)     | N/A                             |
+| ESC chiude           | N/A                     | Sì                              |
+| Back Android chiude  | Sì                      | N/A                             |
+| Back Browser chiude  | Sì                      | Sì                              |
+| Click fuori chiude   | No                      | No                              |
+| Scroll body bloccato | Sì                      | Sì                              |
+| Modali innestati     | Sì                      | Sì                              |
