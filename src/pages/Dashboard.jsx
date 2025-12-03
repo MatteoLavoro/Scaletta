@@ -7,6 +7,7 @@ import {
   GroupCard,
   CreateGroupButton,
   JoinGroupButton,
+  EmptyGroupsCard,
 } from "../components/groups";
 import { InputModal } from "../components/modal";
 import { Spinner } from "../components/ui";
@@ -130,31 +131,31 @@ const Dashboard = () => {
                 <Spinner size="lg" />
               </div>
             ) : groups.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-text-secondary">
-                  Non fai parte di nessun gruppo.
-                </p>
-                <p className="text-text-muted text-sm mt-1">
-                  Crea un nuovo gruppo o unisciti con un codice.
-                </p>
-              </div>
+              <EmptyGroupsCard
+                onCreateGroup={() => setIsCreateModalOpen(true)}
+                onJoinGroup={() => setIsJoinModalOpen(true)}
+              />
             ) : (
-              groups.map((group) => (
-                <GroupCard
-                  key={group.id}
-                  group={group}
-                  currentUserId={user?.uid}
-                  onGroupUpdated={handleGroupUpdated}
-                  onGroupLeft={handleGroupLeft}
-                />
-              ))
-            )}
-          </div>
+              <>
+                {groups.map((group) => (
+                  <GroupCard
+                    key={group.id}
+                    group={group}
+                    currentUserId={user?.uid}
+                    onGroupUpdated={handleGroupUpdated}
+                    onGroupLeft={handleGroupLeft}
+                  />
+                ))}
 
-          {/* Sezione tasti crea/unisciti - in basso */}
-          <div className="flex gap-3 mt-4">
-            <CreateGroupButton onClick={() => setIsCreateModalOpen(true)} />
-            <JoinGroupButton onClick={() => setIsJoinModalOpen(true)} />
+                {/* Sezione tasti crea/unisciti - solo quando ci sono gruppi */}
+                <div className="flex gap-3 mt-1">
+                  <CreateGroupButton
+                    onClick={() => setIsCreateModalOpen(true)}
+                  />
+                  <JoinGroupButton onClick={() => setIsJoinModalOpen(true)} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>
