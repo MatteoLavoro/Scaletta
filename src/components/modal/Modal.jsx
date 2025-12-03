@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useKeyboardHeight } from "../../hooks/useKeyboardHeight";
 import { useModal } from "../../contexts/ModalContext";
@@ -23,19 +23,28 @@ const Modal = ({
   const keyboardHeight = useKeyboardHeight();
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
-  const { modalDepth } = useModal();
+  const { modalDepth, registerNestedClose } = useModal();
 
   // Se variant è "info", non mostrare il tasto conferma
   const showConfirm = variant === "info" ? false : showConfirmButton;
 
   // Handle close - usa onClose se fornito, altrimenti history.back()
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
     } else {
       window.history.back();
     }
-  };
+  }, [onClose]);
+
+  // Registra la callback onClose per modali annidati (quelli con onClose personalizzato)
+  useEffect(() => {
+    // Registra solo se è un modale annidato (ha onClose) ed è aperto
+    if (isOpen && onClose) {
+      const unregister = registerNestedClose(onClose);
+      return unregister;
+    }
+  }, [isOpen, onClose, registerNestedClose]);
 
   // Calcola z-index basato su profondità o valore personalizzato
   const computedZIndex = zIndex ?? 1000 + modalDepth * 10;

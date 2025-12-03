@@ -4,12 +4,15 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 
 const ModalContext = createContext(null);
 
 export const ModalProvider = ({ children }) => {
   const [modalStack, setModalStack] = useState([]);
+  // Stack di callback onClose per modali annidati (gestiti localmente, non nel modalStack)
+  const nestedCloseCallbacksRef = useRef([]);
 
   const openModal = useCallback(
     (modalId, props = {}) => {
@@ -30,12 +33,47 @@ export const ModalProvider = ({ children }) => {
 
   const closeAllModals = useCallback(() => {
     setModalStack([]);
+    nestedCloseCallbacksRef.current = [];
     document.body.classList.remove("modal-open");
   }, []);
 
+  // Registra una callback onClose per modali annidati
+  const registerNestedClose = useCallback((callback) => {
+    nestedCloseCallbacksRef.current.push(callback);
+    // Ritorna una funzione per rimuovere la callback
+    return () => {
+      const index = nestedCloseCallbacksRef.current.indexOf(callback);
+      if (index > -1) {
+        nestedCloseCallbacksRef.current.splice(index, 1);
+      }
+    };
+  }, []);
+
+  // Chiude il modale più in alto (annidato o normale)
+  const closeTopModal = useCallback(() => {
+    // Se ci sono modali annidati, chiudi quello più in alto
+    if (nestedCloseCallbacksRef.current.length > 0) {
+      const callback = nestedCloseCallbacksRef.current.pop();
+      if (callback) callback();
+      return true;
+    }
+    // Altrimenti chiudi dal modalStack normale
+    if (modalStack.length > 0) {
+      closeModal();
+      return true;
+    }
+    return false;
+  }, [modalStack.length, closeModal]);
+
   useEffect(() => {
     const handlePopState = () => {
-      if (modalStack.length > 0) closeModal();
+      // Prima prova a chiudere modali annidati, poi quelli normali
+      if (nestedCloseCallbacksRef.current.length > 0) {
+        const callback = nestedCloseCallbacksRef.current.pop();
+        if (callback) callback();
+      } else if (modalStack.length > 0) {
+        closeModal();
+      }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -43,9 +81,21 @@ export const ModalProvider = ({ children }) => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && modalStack.length > 0) {
-        e.preventDefault();
-        window.history.back();
+      if (e.key === "Escape") {
+        // Se ci sono modali annidati o normali aperti
+        if (
+          nestedCloseCallbacksRef.current.length > 0 ||
+          modalStack.length > 0
+        ) {
+          e.preventDefault();
+          // Se ci sono modali annidati, chiudili direttamente senza history.back()
+          if (nestedCloseCallbacksRef.current.length > 0) {
+            const callback = nestedCloseCallbacksRef.current.pop();
+            if (callback) callback();
+          } else {
+            window.history.back();
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -65,6 +115,8 @@ export const ModalProvider = ({ children }) => {
         openModal,
         closeModal,
         closeAllModals,
+        closeTopModal,
+        registerNestedClose,
         isModalOpen: (modalId) => modalStack.some((m) => m.id === modalId),
         getModalIndex: (modalId) =>
           modalStack.findIndex((m) => m.id === modalId),
