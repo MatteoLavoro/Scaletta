@@ -35,6 +35,16 @@
 | `FormDivider.jsx`   | Linea separatrice (interna form)     |
 | `index.js`          | Export pubblici                      |
 
+### `groups/` - Sistema Gruppi
+
+| File                    | Descrizione                               |
+| ----------------------- | ----------------------------------------- |
+| `GroupCard.jsx`         | Card espandibile per un gruppo            |
+| `GroupInfoModal.jsx`    | Modale info gruppo (stile ProfileModal)   |
+| `CreateGroupButton.jsx` | Tasto tratteggiato per creare gruppo      |
+| `JoinGroupButton.jsx`   | Tasto tratteggiato per unirsi a un gruppo |
+| `index.js`              | Export pubblici                           |
+
 ### `modal/` - Sistema Modale
 
 | File               | Descrizione                                             |
@@ -63,19 +73,22 @@
 
 ### `ui/` - Componenti UI Base
 
-| File                  | Descrizione                                     |
-| --------------------- | ----------------------------------------------- |
-| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato |
-| `Input.jsx`           | Input base (usa TextField invece)               |
-| `PasswordInput.jsx`   | Password base (usa PasswordField invece)        |
-| `Spinner.jsx`         | Indicatore caricamento                          |
-| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                |
-| `ColorPicker.jsx`     | Selettore colore accent (6 colori)              |
-| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher          |
-| `InfoBox.jsx`         | Box info con stile (riquadro colorato)          |
-| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita)             |
-| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione   |
-| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)           |
+| File                  | Descrizione                                        |
+| --------------------- | -------------------------------------------------- |
+| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato    |
+| `Input.jsx`           | Input base (usa TextField invece)                  |
+| `PasswordInput.jsx`   | Password base (usa PasswordField invece)           |
+| `Spinner.jsx`         | Indicatore caricamento                             |
+| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                   |
+| `ColorPicker.jsx`     | Selettore colore accent (6 colori)                 |
+| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher             |
+| `InfoBox.jsx`         | Box info con stile (riquadro colorato)             |
+| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita)                |
+| `CopyableInfoBox.jsx` | InfoBox con tasto copia (clipboard)                |
+| `MemberPillList.jsx`  | Lista pillole membri (colorata per utente/founder) |
+| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione      |
+| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)              |
+| `index.js`            | Export pubblici                                    |
 
 ### `icons/` - Icone (wrapper lucide-react)
 
@@ -129,14 +142,16 @@
 | ----------- | ------------------------------------------------------- |
 | `config.js` | Configurazione Firebase                                 |
 | `auth.js`   | Funzioni auth (login, register, logout, updateUsername) |
+| `groups.js` | Funzioni CRUD gruppi (crea, unisciti, esci, elimina)    |
 
 ---
 
 ## `utils/`
 
-| File                | Descrizione                         |
-| ------------------- | ----------------------------------- |
-| `authValidation.js` | Validazione email/password/username |
+| File                 | Descrizione                         |
+| -------------------- | ----------------------------------- |
+| `authValidation.js`  | Validazione email/password/username |
+| `groupValidation.js` | Validazione nome/codice gruppo      |
 
 ---
 

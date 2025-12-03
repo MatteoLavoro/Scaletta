@@ -16,6 +16,9 @@ import { TextField } from "../form";
  * @param {function} validate - Funzione di validazione (ritorna errore o null)
  * @param {boolean} loading - Se sta caricando
  * @param {number} zIndex - z-index personalizzato per modali annidati
+ * @param {number} minLength - Lunghezza minima del valore
+ * @param {number} maxLength - Lunghezza massima del valore
+ * @param {number} exactLength - Lunghezza esatta richiesta (ha priorità su min/max)
  */
 const InputModal = ({
   isOpen,
@@ -29,6 +32,9 @@ const InputModal = ({
   validate,
   loading = false,
   zIndex,
+  minLength,
+  maxLength,
+  exactLength,
 }) => {
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState("");
@@ -57,11 +63,25 @@ const InputModal = ({
   };
 
   const handleChange = (e) => {
-    setValue(e.target.value);
+    let newValue = e.target.value;
+
+    // Applica maxLength se definito
+    const effectiveMaxLength = exactLength || maxLength;
+    if (effectiveMaxLength && newValue.length > effectiveMaxLength) {
+      newValue = newValue.slice(0, effectiveMaxLength);
+    }
+
+    setValue(newValue);
     if (error) setError("");
   };
 
-  const isDisabled = loading || !value.trim() || value === initialValue;
+  // Calcola se il bottone deve essere disabilitato
+  const effectiveMinLength = exactLength || minLength;
+  const isLengthValid = effectiveMinLength
+    ? value.trim().length >= effectiveMinLength
+    : value.trim().length > 0;
+
+  const isDisabled = loading || !isLengthValid || value === initialValue;
 
   return (
     <Modal
@@ -82,7 +102,13 @@ const InputModal = ({
           placeholder={placeholder}
           error={error}
           autoFocus
+          maxLength={exactLength || maxLength}
         />
+        {exactLength && (
+          <div className="text-xs text-text-muted text-right mt-1">
+            {value.length}/{exactLength}
+          </div>
+        )}
       </div>
     </Modal>
   );

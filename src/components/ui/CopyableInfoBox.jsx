@@ -1,13 +1,13 @@
-import { Pencil } from "lucide-react";
+import { useState } from "react";
+import { Copy, Check } from "lucide-react";
 
 /**
- * EditableInfoBox - Contenitore informativo modificabile
- * Come InfoBox ma con tasto matita a destra per aprire modifica
+ * CopyableInfoBox - Contenitore informativo copiabile
+ * Come InfoBox ma con tasto copia a destra
  *
  * @param {string} title - Titolo della box (centrato in alto)
- * @param {string} value - Valore da mostrare
+ * @param {string} value - Valore da mostrare e copiare
  * @param {string} color - Colore di sfondo
- * @param {function} onEdit - Callback quando si clicca sulla matita
  */
 
 const COLOR_MAP = {
@@ -55,14 +55,21 @@ const COLOR_MAP = {
   },
 };
 
-const EditableInfoBox = ({
-  title,
-  value,
-  color = "gray",
-  onEdit,
-  className = "",
-}) => {
+const CopyableInfoBox = ({ title, value, color = "gray", className = "" }) => {
+  const [copied, setCopied] = useState(false);
   const colors = COLOR_MAP[color] || COLOR_MAP.gray;
+
+  const handleCopy = async () => {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Errore copia:", error);
+    }
+  };
 
   return (
     <div
@@ -81,24 +88,26 @@ const EditableInfoBox = ({
             {title}
           </h3>
         )}
-        <div className="text-text-primary text-sm">
-          {value || <span className="text-text-muted">Non impostato</span>}
+        <div className="text-text-primary text-sm font-mono tracking-wider">
+          {value || <span className="text-text-muted">Non disponibile</span>}
         </div>
       </div>
-      {/* Tasto modifica - posizionato a destra, centrato verticalmente */}
+      {/* Tasto copia - posizionato a destra, centrato verticalmente */}
       <button
-        onClick={onEdit}
+        onClick={handleCopy}
         className={`
           absolute right-3 top-1/2 -translate-y-1/2
           p-2.5 rounded-lg transition-colors shrink-0
-          ${colors.btn} ${colors.text}
+          ${colors.btn} ${
+          copied ? "text-green-600 dark:text-green-400" : colors.text
+        }
         `}
-        aria-label={`Modifica ${title}`}
+        aria-label={`Copia ${title}`}
       >
-        <Pencil className="w-4 h-4" />
+        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       </button>
     </div>
   );
 };
 
-export default EditableInfoBox;
+export default CopyableInfoBox;

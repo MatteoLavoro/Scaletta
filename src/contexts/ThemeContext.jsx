@@ -89,14 +89,14 @@ const THEME_COLORS = {
 
 const THEME_BG = {
   light: {
-    bgPrimary: "#ffffff",
-    bgSecondary: "#f5f5f5",
-    bgTertiary: "#eeeeee",
-    textPrimary: "#212121",
-    textSecondary: "#757575",
-    textMuted: "#9e9e9e",
-    border: "#e0e0e0",
-    divider: "#bdbdbd",
+    bgPrimary: "#fafafa",
+    bgSecondary: "#ffffff",
+    bgTertiary: "#f0f0f0",
+    textPrimary: "#1a1a1a",
+    textSecondary: "#525252",
+    textMuted: "#737373",
+    border: "#d4d4d4",
+    divider: "#a3a3a3",
   },
   dark: {
     bgPrimary: "#121212",

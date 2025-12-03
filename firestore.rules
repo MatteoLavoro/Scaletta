@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funzione helper: verifica se l'utente è autenticato
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Funzione helper: verifica se l'utente è il proprietario
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ==========================================
+    // GRUPPI
+    // ==========================================
+    match /groups/{groupId} {
+      // Lettura: utente autenticato (filtriamo lato client)
+      // Firestore non supporta query su array di oggetti complessi nelle rules
+      allow read: if isAuthenticated();
+      
+      // Creazione: utente autenticato, deve essere il founder e primo membro
+      allow create: if isAuthenticated() && 
+        request.resource.data.founderId == request.auth.uid &&
+        request.resource.data.members.size() == 1 &&
+        request.resource.data.members[0].uid == request.auth.uid;
+      
+      // Aggiornamento: utente autenticato (verificato lato client che sia membro)
+      allow update: if isAuthenticated();
+      
+      // Eliminazione: solo il founder può eliminare
+      allow delete: if isAuthenticated() && 
+        resource.data.founderId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // PROGETTI (per sviluppi futuri)
+    // ==========================================
+    match /projects/{projectId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // UTENTI (per sviluppi futuri)
+    // ==========================================
+    match /users/{userId} {
+      // Lettura: tutti gli utenti autenticati (per cercare membri)
+      allow read: if isAuthenticated();
+      
+      // Scrittura: solo il proprietario del documento
+      allow write: if isOwner(userId);
+    }
+  }
+}
