@@ -142,50 +142,6 @@ body.modal-open {
   animation: slide-in-bottom 250ms ease-out forwards;
 }
 
-/* Slide Out to Bottom - Mobile modal close */
-@keyframes slide-out-bottom {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(100%);
-  }
-}
-
-.animate-slide-out-bottom {
-  animation: slide-out-bottom 200ms ease-in forwards;
-}
-
-/* Modal Scale Out - Desktop modal close */
-@keyframes modal-scale-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
-.animate-modal-scale-out {
-  animation: modal-scale-out 200ms ease-in forwards;
-}
-
-/* Fade Out - Desktop overlay close */
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.animate-fade-out {
-  animation: fade-out 200ms ease-in forwards;
-}
-
 /* FAB Pulse - Subtle attention animation */
 @keyframes fab-pulse {
   0%,

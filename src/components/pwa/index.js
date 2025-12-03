@@ -1,1 +1,1 @@
-export { default as InstallModal } from "./InstallModal";
+export { default as InstallPopup } from "./InstallModal";

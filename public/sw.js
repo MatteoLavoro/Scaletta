@@ -39,21 +39,34 @@ self.addEventListener("activate", (event) => {
 
 // Fetch event - network first, fallback to cache
 self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-http(s) requests (chrome-extension, etc.)
+  if (!url.protocol.startsWith("http")) {
+    return;
+  }
+
+  // Skip POST and other non-GET requests (can't be cached)
+  if (request.method !== "GET") {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        // Clone the response for caching
-        if (response.status === 200) {
+        // Clone the response for caching (only successful same-origin responses)
+        if (response.status === 200 && response.type === "basic") {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
+            cache.put(request, responseClone);
           });
         }
         return response;
       })
       .catch(() => {
         // Fallback to cache
-        return caches.match(event.request);
+        return caches.match(request);
       })
   );
 });

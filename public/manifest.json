@@ -1,7 +1,7 @@
 {
   "name": "Scaletta",
   "short_name": "Scaletta",
-  "description": "Organizza i tuoi progetti in team con struttura orizzontale",
+  "description": "Organizza i tuoi progetti in team",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",
