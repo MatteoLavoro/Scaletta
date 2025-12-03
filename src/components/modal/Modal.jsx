@@ -23,26 +23,34 @@ const Modal = ({
   const keyboardHeight = useKeyboardHeight();
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const hasAddedHistoryRef = useRef(false);
   const { modalDepth, registerNestedClose } = useModal();
 
   // Se variant è "info", non mostrare il tasto conferma
   const showConfirm = variant === "info" ? false : showConfirmButton;
 
-  // Handle close - usa onClose se fornito, altrimenti history.back()
+  // Handle close - chiude sempre con history.back() per mantenere la history sincronizzata
   const handleClose = useCallback(() => {
-    if (onClose) {
-      onClose();
-    } else {
-      window.history.back();
-    }
-  }, [onClose]);
+    window.history.back();
+  }, []);
 
-  // Registra la callback onClose per modali annidati (quelli con onClose personalizzato)
+  // Gestione history per modali annidati
   useEffect(() => {
-    // Registra solo se è un modale annidato (ha onClose) ed è aperto
     if (isOpen && onClose) {
+      // Modale annidato: aggiungi entry nella history
+      if (!hasAddedHistoryRef.current) {
+        window.history.pushState({ nestedModal: true }, "");
+        hasAddedHistoryRef.current = true;
+      }
+
+      // Registra callback per quando popstate viene triggerato
       const unregister = registerNestedClose(onClose);
       return unregister;
+    }
+
+    // Reset quando il modale si chiude
+    if (!isOpen) {
+      hasAddedHistoryRef.current = false;
     }
   }, [isOpen, onClose, registerNestedClose]);
 

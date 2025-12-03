@@ -89,13 +89,8 @@ export const ModalProvider = ({ children }) => {
           modalStack.length > 0
         ) {
           e.preventDefault();
-          // Se ci sono modali annidati, chiudili direttamente senza history.back()
-          if (nestedCloseCallbacksRef.current.length > 0) {
-            const callback = nestedCloseCallbacksRef.current.pop();
-            if (callback) callback();
-          } else {
-            window.history.back();
-          }
+          // Usa sempre history.back() per mantenere la history sincronizzata
+          window.history.back();
         }
       }
     };

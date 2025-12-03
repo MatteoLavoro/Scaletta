@@ -312,18 +312,31 @@ closeTopModal()    → stack = []               // modal1 chiuso, torna a home
 
 ## Integrazione con Browser History
 
-Per supportare il tasto indietro del browser:
+Per supportare il tasto indietro del browser (Chrome, Android, ecc.):
 
-1. **Apertura modale**: Viene pushato uno stato nella history del browser
-2. **Chiusura modale**: Viene gestito l'evento `popstate`
-3. **Navigazione**: Il browser history riflette lo stato dei modali
+1. **Apertura modale normale**: `openModal()` esegue `pushState` nella history
+2. **Apertura modale annidato**: Il componente `Modal` esegue automaticamente `pushState` quando ha prop `onClose`
+3. **Chiusura modale**: Tutti i metodi (X, ESC, back button) usano `history.back()` che triggera `popstate`
+4. **Gestione `popstate`**: Il `ModalContext` intercetta l'evento e chiama la callback `onClose` appropriata
 
 ```
 URL: /dashboard
-  └─▶ Apri Modale → URL: /dashboard (history +1)
-        └─▶ Apri Modale → URL: /dashboard (history +2)
-              └─▶ Browser Back → Chiude ultimo modale (history -1)
+  └─▶ Apri ProfileModal → URL: /dashboard (history +1)
+        └─▶ Apri InputModal (annidato) → URL: /dashboard (history +2)
+              └─▶ Browser Back → popstate → onClose() → Chiude InputModal (history -1)
+                    └─▶ Browser Back → popstate → closeModal() → Chiude ProfileModal (history -1)
 ```
+
+### Principio Fondamentale
+
+**Tutti i metodi di chiusura usano sempre `history.back()`**, mai chiamate dirette a `onClose()`. Questo garantisce che la browser history sia sempre sincronizzata con lo stato dei modali.
+
+| Metodo di Chiusura  | Azione                                   |
+| ------------------- | ---------------------------------------- |
+| Tasto × / ←         | `history.back()` → `popstate` → callback |
+| Tasto ESC           | `history.back()` → `popstate` → callback |
+| Back button browser | `popstate` → callback                    |
+| Back Android        | `popstate` → callback                    |
 
 ---
 

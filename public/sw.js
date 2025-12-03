@@ -1,4 +1,4 @@
-const CACHE_NAME = "scaletta-v1";
+const CACHE_NAME = "scaletta-v3";
 const urlsToCache = [
   "/",
   "/index.html",
