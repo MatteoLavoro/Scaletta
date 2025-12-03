@@ -6,6 +6,120 @@ L'interfaccia di Scaletta segue principi di **design moderno** con focus primari
 
 ---
 
+## Sistema di Temi e Colori
+
+### Supporto Tema Chiaro/Scuro
+
+L'applicazione offre **supporto completo** per entrambi i temi:
+
+| Tema               | Descrizione                                 |
+| ------------------ | ------------------------------------------- |
+| 🌙 **Tema Scuro**  | Sfondo scuro con testi chiari - **DEFAULT** |
+| ☀️ **Tema Chiaro** | Sfondo chiaro con testi scuri               |
+
+**Comportamento:**
+
+- Il tema di default è **Scuro**
+- L'utente può cambiare tema dalle impostazioni
+- La preferenza viene salvata e mantenuta tra le sessioni
+- Transizione fluida tra i temi (animazione fade)
+
+### Colore Principale Personalizzabile
+
+L'utente può scegliere il **colore principale** (accent color) dell'interfaccia.
+
+**Colore di Default:** 🟢 **Verde Acqua (Teal/Cyan)**
+
+```css
+/* Colore principale di default */
+--color-primary: #00bcd4; /* Cyan/Teal */
+--color-primary-light: #4dd0e1;
+--color-primary-dark: #0097a7;
+```
+
+**Colori Disponibili (esempi):**
+
+| Colore | Nome                  | Codice HEX |
+| ------ | --------------------- | ---------- |
+| 🟢     | Verde Acqua (Default) | `#00BCD4`  |
+| 🔵     | Blu                   | `#2196F3`  |
+| 🟣     | Viola                 | `#9C27B0`  |
+| 🔴     | Rosso                 | `#F44336`  |
+| 🟠     | Arancione             | `#FF9800`  |
+| 🟡     | Giallo                | `#FFEB3B`  |
+| 🟢     | Verde                 | `#4CAF50`  |
+| 🩷      | Rosa                  | `#E91E63`  |
+
+**Utilizzo del Colore Principale:**
+
+- Tasti primari (conferma, salva, ecc.)
+- Link e elementi interattivi
+- Indicatori di selezione/focus
+- Badge e notifiche
+- FAB (Floating Action Button)
+- Barra di caricamento/progresso
+- Elementi di navigazione attivi
+
+### Palette Tema Scuro (Default)
+
+```css
+:root[data-theme="dark"] {
+  /* Background */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2d2d2d;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #666666;
+
+  /* Accent - Verde Acqua */
+  --color-primary: #00bcd4;
+  --color-primary-light: #4dd0e1;
+  --color-primary-dark: #0097a7;
+
+  /* Borders & Dividers */
+  --border-color: #333333;
+  --divider-color: #404040;
+}
+```
+
+### Palette Tema Chiaro
+
+```css
+:root[data-theme="light"] {
+  /* Background */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #eeeeee;
+
+  /* Text */
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --text-muted: #9e9e9e;
+
+  /* Accent - Verde Acqua */
+  --color-primary: #00bcd4;
+  --color-primary-light: #4dd0e1;
+  --color-primary-dark: #0097a7;
+
+  /* Borders & Dividers */
+  --border-color: #e0e0e0;
+  --divider-color: #bdbdbd;
+}
+```
+
+### Impostazioni Tema
+
+Nelle impostazioni utente sarà disponibile:
+
+1. **Selettore Tema**: Toggle tra Chiaro/Scuro (o Auto basato su sistema)
+2. **Selettore Colore**: Griglia di colori per scegliere l'accent color
+3. **Anteprima**: Preview in tempo reale delle modifiche
+
+---
+
 ## Differenze UI basate sul Ruolo
 
 ### Founder vs Membri Regolari
