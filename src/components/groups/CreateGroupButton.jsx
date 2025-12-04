@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { PlusIcon } from "../icons";
 
 /**
  * CreateGroupButton - Tasto rettangolare tratteggiato per creare un gruppo
@@ -17,7 +17,7 @@ const CreateGroupButton = ({ onClick }) => {
         active:scale-[0.98]
       "
     >
-      <Plus className="w-5 h-5" />
+      <PlusIcon className="w-5 h-5" />
       <span className="text-sm font-medium">Crea gruppo</span>
     </button>
   );

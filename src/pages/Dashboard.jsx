@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { User } from "lucide-react";
+import { UserIcon } from "../components/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { useModal } from "../contexts/ModalContext";
 import { MODAL_PROFILE } from "../App";
@@ -126,7 +126,7 @@ const Dashboard = ({ onProjectClick }) => {
           className="flex items-center justify-center w-10 h-10 text-text-secondary bg-bg-tertiary rounded-full hover:bg-divider hover:text-text-primary transition-colors"
           aria-label="Apri profilo"
         >
-          <User className="w-5 h-5" />
+          <UserIcon className="w-5 h-5" />
         </button>
       </header>
 

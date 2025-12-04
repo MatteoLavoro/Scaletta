@@ -1,4 +1,4 @@
-import { Download, X } from "lucide-react";
+import { DownloadIcon, CloseIcon } from "../icons";
 
 /**
  * InstallPopup - Popup semplice per installare l'app come PWA
@@ -30,7 +30,7 @@ const InstallPopup = ({ isOpen, onClose, onInstall }) => {
           <div className="flex items-center justify-between p-4 pb-2">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                <Download className="w-5 h-5 text-primary" />
+                <DownloadIcon className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold text-text-primary">Scaletta</h3>
@@ -42,7 +42,7 @@ const InstallPopup = ({ isOpen, onClose, onInstall }) => {
               className="p-2 text-text-muted hover:text-text-primary hover:bg-bg-tertiary rounded-lg transition-colors"
               aria-label="Chiudi"
             >
-              <X className="w-5 h-5" />
+              <CloseIcon className="w-5 h-5" />
             </button>
           </div>
 

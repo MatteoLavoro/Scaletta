@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "../modal";
 import { TextField } from "../form";
 
@@ -38,23 +38,36 @@ const InputModal = ({
 }) => {
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState("");
-  const [lastInitialValue, setLastInitialValue] = useState(initialValue);
+  const [wasOpen, setWasOpen] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
-  // Aggiorna valore quando cambia initialValue o si riapre
-  if (isOpen && initialValue !== lastInitialValue) {
-    setValue(initialValue);
-    setError("");
-    setLastInitialValue(initialValue);
-  }
+  // Reset value quando il modale si apre (da chiuso ad aperto)
+  useEffect(() => {
+    if (isOpen && !wasOpen) {
+      // Il modale si sta aprendo
+      setValue(initialValue);
+      setError("");
+    }
+    setWasOpen(isOpen);
+  }, [isOpen, wasOpen, initialValue]);
 
   const handleConfirm = async () => {
-    // Validazione
+    // Validazione (supporta sia sync che async)
     if (validate) {
-      const validationError = validate(value);
-      if (validationError) {
-        setError(validationError);
+      setIsValidating(true);
+      try {
+        const validationError = await Promise.resolve(validate(value));
+        if (validationError) {
+          setError(validationError);
+          setIsValidating(false);
+          return;
+        }
+      } catch (e) {
+        setError("Errore di validazione");
+        setIsValidating(false);
         return;
       }
+      setIsValidating(false);
     }
 
     if (onConfirm) {
@@ -81,7 +94,8 @@ const InputModal = ({
     ? value.trim().length >= effectiveMinLength
     : value.trim().length > 0;
 
-  const isDisabled = loading || !isLengthValid || value === initialValue;
+  const isDisabled =
+    loading || isValidating || !isLengthValid || value === initialValue;
 
   return (
     <Modal
@@ -91,7 +105,7 @@ const InputModal = ({
       onConfirm={handleConfirm}
       onClose={onClose}
       confirmDisabled={isDisabled}
-      isLoading={loading}
+      isLoading={loading || isValidating}
       zIndex={zIndex}
     >
       <div className="py-2">

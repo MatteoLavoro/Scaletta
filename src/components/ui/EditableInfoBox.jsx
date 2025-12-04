@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { PencilIcon } from "../icons";
 
 /**
  * EditableInfoBox - Contenitore informativo modificabile
@@ -95,7 +95,7 @@ const EditableInfoBox = ({
         `}
         aria-label={`Modifica ${title}`}
       >
-        <Pencil className="w-4 h-4" />
+        <PencilIcon className="w-4 h-4" />
       </button>
     </div>
   );

@@ -12,5 +12,6 @@ export { default as MemberPillList } from "./MemberPillList";
 export { default as PasswordInput } from "./PasswordInput";
 export { default as ProjectColorPicker } from "./ProjectColorPicker";
 export { default as Spinner } from "./Spinner";
+export { default as StatusSlider } from "./StatusSlider";
 export { default as ThemeSelector } from "./ThemeSelector";
 export { default as ThemeSwitcher } from "./ThemeSwitcher";

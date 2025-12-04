@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { PlusIcon } from "../icons";
 
 /**
  * CreateProjectButton - Tasto quadrato tratteggiato per creare un nuovo progetto
@@ -18,7 +18,7 @@ const CreateProjectButton = ({ onClick }) => {
         transition-all duration-200 active:scale-95
       "
     >
-      <Plus className="w-6 h-6" />
+      <PlusIcon className="w-6 h-6" />
       <span className="text-xs font-medium text-center leading-tight">
         Nuovo progetto
       </span>

@@ -1,4 +1,4 @@
-import { Crown, User } from "lucide-react";
+import { CrownIcon, UserIcon } from "../icons";
 
 /**
  * MemberPillList - Lista di pillole con i nomi dei membri
@@ -119,8 +119,8 @@ const MemberPillList = ({
               ${isCurrentUser && !isFounder ? "ring-2 ring-primary/30" : ""}
             `}
           >
-            <Crown className={`w-3 h-3 ${isFounder ? "" : "hidden"}`} />
-            {isCurrentUser && !isFounder && <User className="w-3 h-3" />}
+            <CrownIcon className={`w-3 h-3 ${isFounder ? "" : "hidden"}`} />
+            {isCurrentUser && !isFounder && <UserIcon className="w-3 h-3" />}
             <span>{getDisplayText()}</span>
           </div>
         );

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeftIcon, InfoIcon, SettingsIcon } from "../components/icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useModal } from "../contexts/ModalContext";
-import { ProjectInfoModal } from "../components/projects";
+import { ProjectInfoModal, StatusModal } from "../components/projects";
 import { DropdownMenu } from "../components/ui";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
+import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -15,6 +16,7 @@ import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
  * @param {function} onBack - Callback per tornare indietro
  * @param {function} onUpdateName - Callback per aggiornare il nome del progetto
  * @param {function} onUpdateColor - Callback per aggiornare il colore del progetto
+ * @param {function} onUpdateStatus - Callback per aggiornare lo stato del progetto
  * @param {function} onDelete - Callback per eliminare il progetto
  */
 const ProjectPage = ({
@@ -23,10 +25,12 @@ const ProjectPage = ({
   onBack,
   onUpdateName,
   onUpdateColor,
+  onUpdateStatus,
   onDelete,
 }) => {
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
 
@@ -73,7 +77,7 @@ const ProjectPage = ({
   // Gestione tasto ESC (solo se non c'è un modale aperto)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && !isInfoModalOpen) {
+      if (e.key === "Escape" && !isInfoModalOpen && !isStatusModalOpen) {
         e.preventDefault();
         handleClose();
       }
@@ -81,22 +85,36 @@ const ProjectPage = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, isInfoModalOpen]);
+  }, [handleClose, isInfoModalOpen, isStatusModalOpen]);
 
-  // Gestione eliminazione progetto
-  const handleProjectDeleted = async () => {
-    setIsInfoModalOpen(false);
+  // Gestione cambio stato
+  const handleStatusChange = async (newStatus) => {
+    if (onUpdateStatus) {
+      await onUpdateStatus(newStatus);
+    }
+  };
+
+  // Gestione eliminazione definitiva
+  const handleDelete = async () => {
     if (onDelete) {
       await onDelete();
     }
   };
 
-  // Opzioni menu kebab
+  // Costruisci il menu kebab - solo info e gestisci stato
   const menuItems = [
+    // Info progetto
     {
       label: "Info progetto",
-      icon: <Info className="w-5 h-5" />,
+      icon: <InfoIcon className="w-5 h-5" />,
       onClick: () => setIsInfoModalOpen(true),
+    },
+    { separator: true },
+    // Gestisci stato
+    {
+      label: "Gestisci stato",
+      icon: <SettingsIcon className="w-5 h-5" />,
+      onClick: () => setIsStatusModalOpen(true),
     },
   ];
 
@@ -122,7 +140,7 @@ const ProjectPage = ({
             style={{ color: projectColor.text }}
             aria-label="Torna alla home"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeftIcon className="w-6 h-6" />
           </button>
 
           {/* Nome progetto - Centro */}
@@ -168,7 +186,16 @@ const ProjectPage = ({
         onClose={() => setIsInfoModalOpen(false)}
         onUpdateName={onUpdateName}
         onUpdateColor={onUpdateColor}
-        onDelete={handleProjectDeleted}
+      />
+
+      {/* Modale gestione stato */}
+      <StatusModal
+        isOpen={isStatusModalOpen}
+        project={project}
+        isFounder={isFounder}
+        onClose={() => setIsStatusModalOpen(false)}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDelete}
       />
     </>
   );

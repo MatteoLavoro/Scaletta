@@ -1,4 +1,4 @@
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangleIcon, InfoIcon } from "../icons";
 import { Modal } from "../modal";
 import Button from "../ui/Button";
 
@@ -29,11 +29,16 @@ const ConfirmModal = ({
   loading = false,
   zIndex,
 }) => {
+  // Handler per chiusura - sempre via history.back per mantenere sincronizzazione
+  // Il ModalContext intercetterà il popstate e chiamerà onCancel
   const handleClose = () => {
+    window.history.back();
+  };
+
+  // Callback interna chiamata dal Modal quando il popstate è gestito
+  const handleModalClose = () => {
     if (onCancel) {
       onCancel();
-    } else {
-      window.history.back();
     }
   };
 
@@ -43,7 +48,7 @@ const ConfirmModal = ({
     }
   };
 
-  const IconComponent = isDanger ? AlertTriangle : Info;
+  const IconComponent = isDanger ? AlertTriangleIcon : InfoIcon;
 
   return (
     <Modal
@@ -51,7 +56,7 @@ const ConfirmModal = ({
       title={title}
       variant="info"
       zIndex={zIndex}
-      onClose={handleClose}
+      onClose={handleModalClose}
     >
       <div className="flex flex-col gap-5 py-2">
         {/* Box con icona e messaggio */}

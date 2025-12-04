@@ -1,5 +1,5 @@
 import { forwardRef, useState, useId } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "../icons";
 import FormLabel from "./FormLabel";
 import FormHint from "./FormHint";
 import FormError from "./FormError";
@@ -74,9 +74,9 @@ const PasswordField = forwardRef(
             tabIndex={-1}
           >
             {showPassword ? (
-              <EyeOff className="w-5 h-5" />
+              <EyeOffIcon className="w-5 h-5" />
             ) : (
-              <Eye className="w-5 h-5" />
+              <EyeIcon className="w-5 h-5" />
             )}
           </button>
         </div>

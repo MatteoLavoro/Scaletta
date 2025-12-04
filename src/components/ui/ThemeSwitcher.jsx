@@ -1,4 +1,4 @@
-import { Sun, Moon } from "lucide-react";
+import { SunIcon, MoonIcon } from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
@@ -23,7 +23,11 @@ const ThemeSwitcher = ({ className = "" }) => {
       `}
       aria-label={isDark ? "Passa al tema chiaro" : "Passa al tema scuro"}
     >
-      {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      {isDark ? (
+        <SunIcon className="w-5 h-5" />
+      ) : (
+        <MoonIcon className="w-5 h-5" />
+      )}
     </button>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon } from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
@@ -67,7 +67,7 @@ const ColorPicker = ({ className = "" }) => {
             aria-pressed={isSelected}
           >
             {isSelected && (
-              <Check
+              <CheckIcon
                 className="absolute inset-0 m-auto w-4 h-4 sm:w-5 sm:h-5"
                 style={{
                   color: color.id === "gold" ? "#000" : "#fff",

@@ -16,6 +16,7 @@ import {
   DEFAULT_PROJECT_COLOR,
   PROJECT_COLOR_ORDER,
 } from "../utils/projectColors";
+import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
 
 const db = getFirestore(app);
 const PROJECTS_COLLECTION = "projects";
@@ -73,6 +74,7 @@ export const createProject = async (name, groupId, creator, color = null) => {
     name: name.trim(),
     groupId,
     color: projectColor,
+    status: DEFAULT_PROJECT_STATUS, // Stato di default: "in-corso"
     createdAt: serverTimestamp(),
     createdBy: creator.uid,
     createdByName: creator.displayName || creator.email,
@@ -147,6 +149,17 @@ export const updateProjectColor = async (projectId, color) => {
 };
 
 /**
+ * Aggiorna lo stato del progetto
+ * @param {string} projectId - ID del progetto
+ * @param {string} status - Nuovo stato
+ */
+export const updateProjectStatus = async (projectId, status) => {
+  await updateDoc(doc(db, PROJECTS_COLLECTION, projectId), {
+    status,
+  });
+};
+
+/**
  * Elimina un progetto
  * @param {string} projectId - ID del progetto
  */
@@ -166,4 +179,24 @@ export const countProjectsByGroup = async (groupId) => {
   );
   const snapshot = await getDocs(q);
   return snapshot.size;
+};
+
+/**
+ * Verifica se esiste già un progetto con lo stesso nome nel gruppo
+ * @param {string} groupId - ID del gruppo
+ * @param {string} name - Nome del progetto da verificare
+ * @param {string} excludeProjectId - ID del progetto da escludere (per modifica nome)
+ * @returns {boolean} - true se esiste già un progetto con quel nome
+ */
+export const projectNameExists = async (
+  groupId,
+  name,
+  excludeProjectId = null
+) => {
+  const projects = await getProjectsByGroup(groupId);
+  const normalizedName = name.trim().toLowerCase();
+
+  return projects.some(
+    (p) => p.name.toLowerCase() === normalizedName && p.id !== excludeProjectId
+  );
 };

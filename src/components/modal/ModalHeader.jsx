@@ -1,4 +1,4 @@
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeftIcon, CloseIcon } from "../icons";
 
 const ModalHeader = ({ title, isMobile, onClose }) => {
   return (
@@ -15,7 +15,7 @@ const ModalHeader = ({ title, isMobile, onClose }) => {
           "
           aria-label="Torna indietro"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeftIcon className="w-6 h-6" />
         </button>
       ) : (
         <div className="w-10" aria-hidden="true" />
@@ -41,7 +41,7 @@ const ModalHeader = ({ title, isMobile, onClose }) => {
           "
           aria-label="Chiudi"
         >
-          <X className="w-6 h-6" />
+          <CloseIcon className="w-6 h-6" />
         </button>
       ) : (
         <div className="w-10" aria-hidden="true" />

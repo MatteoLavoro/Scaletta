@@ -3,10 +3,14 @@ import {
   getProjectColor,
   DEFAULT_PROJECT_COLOR,
 } from "../../utils/projectColors";
+import {
+  getProjectStatus,
+  DEFAULT_PROJECT_STATUS,
+} from "../../utils/projectStatuses";
 
 /**
  * ProjectCard - Quadrato cliccabile per un progetto
- * Sfondo colorato in base al colore del progetto, nome centrato, data in basso
+ * Icona stato centrata (solo icona senza sfondo), nome sopra, data sotto
  *
  * @param {object} project - Dati del progetto
  * @param {function} onClick - Callback quando viene cliccato
@@ -19,6 +23,13 @@ const ProjectCard = ({ project, onClick }) => {
     project?.color || DEFAULT_PROJECT_COLOR,
     isDark
   );
+
+  // Ottieni lo stato del progetto
+  const status = getProjectStatus(
+    project?.status || DEFAULT_PROJECT_STATUS,
+    isDark
+  );
+  const StatusIcon = status.icon;
 
   // Formatta la data di creazione in formato gg/mm/aa
   const formatDate = (timestamp) => {
@@ -34,7 +45,7 @@ const ProjectCard = ({ project, onClick }) => {
     <button
       onClick={onClick}
       className="
-        aspect-square min-w-0 flex flex-col items-center justify-center p-3
+        aspect-square min-w-0 w-full flex flex-col p-2.5
         rounded-xl
         transition-all duration-200 active:scale-95
       "
@@ -53,13 +64,18 @@ const ProjectCard = ({ project, onClick }) => {
         e.currentTarget.style.borderColor = `${projectColor.bg}50`;
       }}
     >
-      {/* Nome progetto - centrato */}
-      <span className="flex-1 flex items-center justify-center text-sm text-text-primary font-semibold text-center line-clamp-3 leading-tight px-1">
+      {/* Nome progetto - in alto */}
+      <span className="text-[11px] text-text-primary font-semibold text-center line-clamp-2 leading-tight">
         {project.name}
       </span>
 
+      {/* Icona stato - centrata nella card */}
+      <div className="flex-1 flex items-center justify-center">
+        <StatusIcon className="w-7 h-7" style={{ color: status.bg }} />
+      </div>
+
       {/* Data creazione - in basso */}
-      <span className="text-[10px] text-text-secondary mt-1">
+      <span className="text-[10px] text-text-secondary text-center">
         {formatDate(project.createdAt)}
       </span>
     </button>

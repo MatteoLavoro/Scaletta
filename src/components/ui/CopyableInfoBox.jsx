@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { CopyIcon, CheckIcon } from "../icons";
 
 /**
  * CopyableInfoBox - Contenitore informativo copiabile
@@ -104,7 +104,11 @@ const CopyableInfoBox = ({ title, value, color = "gray", className = "" }) => {
         `}
         aria-label={`Copia ${title}`}
       >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        {copied ? (
+          <CheckIcon className="w-4 h-4" />
+        ) : (
+          <CopyIcon className="w-4 h-4" />
+        )}
       </button>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { CheckIcon } from "../icons";
 
 const ModalFab = ({ onConfirm, disabled, loading, keyboardHeight }) => {
   const bottomPosition = keyboardHeight > 0 ? keyboardHeight + 20 : 20;
@@ -24,7 +24,7 @@ const ModalFab = ({ onConfirm, disabled, loading, keyboardHeight }) => {
       {loading ? (
         <div className="w-6 h-6 border-2 border-transparent border-t-current rounded-full animate-spin" />
       ) : (
-        <Check className="w-6 h-6" strokeWidth={2.5} />
+        <CheckIcon className="w-6 h-6" strokeWidth={2.5} />
       )}
     </button>
   );

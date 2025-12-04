@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Info, ChevronDown, Users } from "lucide-react";
+import { InfoIcon, ChevronDownIcon, UsersIcon } from "../icons";
 import GroupInfoModal from "./GroupInfoModal";
 import { ProjectGrid } from "../projects";
 import { Badge } from "../ui";
@@ -111,7 +111,7 @@ const GroupCard = ({
               {group.name}
             </h3>
             <div className="flex items-center gap-1 text-sm text-text-secondary mt-0.5">
-              <Users className="w-3.5 h-3.5" />
+              <UsersIcon className="w-3.5 h-3.5" />
               <span>
                 {memberCount} {memberCount === 1 ? "membro" : "membri"}
               </span>
@@ -124,7 +124,7 @@ const GroupCard = ({
               isExpanded ? "rotate-180" : "rotate-0"
             }`}
           >
-            <ChevronDown className="w-5 h-5" />
+            <ChevronDownIcon className="w-5 h-5" />
           </div>
 
           {/* Badge contatore progetti + Tasto info - a destra */}
@@ -140,7 +140,7 @@ const GroupCard = ({
               className="p-2 rounded-lg bg-bg-tertiary hover:bg-divider text-text-secondary hover:text-text-primary transition-colors"
               aria-label="Informazioni gruppo"
             >
-              <Info className="w-5 h-5" />
+              <InfoIcon className="w-5 h-5" />
             </button>
           </div>
         </div>

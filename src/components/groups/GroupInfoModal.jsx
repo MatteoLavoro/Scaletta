@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogOut, Trash2 } from "lucide-react";
+import { LogOutIcon, TrashIcon } from "../icons";
 import { Modal, InputModal } from "../modal";
 import InfoBox from "../ui/InfoBox";
 import EditableInfoBox from "../ui/EditableInfoBox";
@@ -146,7 +146,7 @@ const GroupInfoModal = ({
                 onConfirm={handleDeleteGroup}
                 zIndex={1010}
               >
-                <Trash2 className="w-5 h-5" />
+                <TrashIcon className="w-5 h-5" />
                 Elimina gruppo
               </DangerButton>
             ) : (
@@ -157,7 +157,7 @@ const GroupInfoModal = ({
                 onConfirm={handleLeaveGroup}
                 zIndex={1010}
               >
-                <LogOut className="w-5 h-5" />
+                <LogOutIcon className="w-5 h-5" />
                 Esci dal gruppo
               </DangerButton>
             )}

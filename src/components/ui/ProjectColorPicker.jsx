@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Check } from "lucide-react";
+import { CheckIcon } from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 import { PROJECT_COLORS, PROJECT_COLOR_ORDER } from "../../utils/projectColors";
 
@@ -72,7 +72,7 @@ const ProjectColorPicker = ({ value, onChange }) => {
                 aria-pressed={isSelected}
               >
                 {isSelected && (
-                  <Check
+                  <CheckIcon
                     className="absolute inset-0 m-auto w-4 h-4 sm:w-5 sm:h-5"
                     style={{ color: displayColor.text }}
                     strokeWidth={3}

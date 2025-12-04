@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVerticalIcon } from "../icons";
 
 /**
  * DropdownMenu - Menu dropdown con icona kebab
@@ -71,7 +71,7 @@ const DropdownMenu = ({
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <MoreVertical className="w-6 h-6" />
+        <MoreVerticalIcon className="w-6 h-6" />
       </button>
 
       {/* Menu dropdown */}
@@ -80,7 +80,7 @@ const DropdownMenu = ({
           ref={menuRef}
           className="
             absolute right-0 top-full mt-1
-            min-w-[180px] py-1
+            min-w-[200px] py-1
             bg-bg-secondary border border-border rounded-xl
             shadow-lg
             animate-fade-in
@@ -88,23 +88,49 @@ const DropdownMenu = ({
           "
           role="menu"
         >
-          {items.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => handleItemClick(item)}
-              className={`
-                w-full flex items-center gap-3 px-4 py-2.5
-                text-sm text-left
-                ${item.danger ? "text-red-500" : "text-text-primary"}
-                hover:bg-bg-tertiary
-                transition-colors duration-150
-              `}
-              role="menuitem"
-            >
-              {item.icon && <span className="w-5 h-5">{item.icon}</span>}
-              {item.label}
-            </button>
-          ))}
+          {items.map((item, index) => {
+            // Separatore
+            if (item.separator) {
+              return (
+                <div
+                  key={`sep-${index}`}
+                  className="my-1 border-t border-border"
+                />
+              );
+            }
+
+            // Determina lo stile in base alla variante
+            const getItemStyle = () => {
+              if (item.isDangerous || item.danger) {
+                return "text-red-500";
+              }
+              if (item.variant === "success") {
+                return "text-green-500";
+              }
+              if (item.variant === "muted") {
+                return "text-text-secondary";
+              }
+              return "text-text-primary";
+            };
+
+            return (
+              <button
+                key={index}
+                onClick={() => handleItemClick(item)}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-2.5
+                  text-sm text-left
+                  ${getItemStyle()}
+                  hover:bg-bg-tertiary
+                  transition-colors duration-150
+                `}
+                role="menuitem"
+              >
+                {item.icon && <span className="w-5 h-5">{item.icon}</span>}
+                {item.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

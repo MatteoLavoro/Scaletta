@@ -12,11 +12,13 @@ import {
   arrayUnion,
   arrayRemove,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import app from "./config";
 
 const db = getFirestore(app);
 const GROUPS_COLLECTION = "groups";
+const PROJECTS_COLLECTION = "projects";
 
 /**
  * Genera un codice casuale di 8 caratteri alfanumerici (maiuscole e numeri)
@@ -204,6 +206,7 @@ export const leaveGroup = async (groupId, user) => {
 
 /**
  * Elimina un gruppo (solo il founder può farlo)
+ * Elimina anche tutti i progetti associati al gruppo
  * @param {string} groupId - ID del gruppo
  * @param {string} userId - ID dell'utente che richiede l'eliminazione
  */
@@ -221,7 +224,25 @@ export const deleteGroup = async (groupId, userId) => {
     throw new Error("Solo il creatore può eliminare il gruppo");
   }
 
-  await deleteDoc(groupRef);
+  // Elimina tutti i progetti del gruppo usando batch
+  const projectsQuery = query(
+    collection(db, PROJECTS_COLLECTION),
+    where("groupId", "==", groupId)
+  );
+  const projectsSnapshot = await getDocs(projectsQuery);
+
+  const batch = writeBatch(db);
+
+  // Aggiungi tutti i progetti al batch di eliminazione
+  projectsSnapshot.forEach((projectDoc) => {
+    batch.delete(projectDoc.ref);
+  });
+
+  // Aggiungi il gruppo al batch di eliminazione
+  batch.delete(groupRef);
+
+  // Esegui il batch
+  await batch.commit();
 };
 
 /**

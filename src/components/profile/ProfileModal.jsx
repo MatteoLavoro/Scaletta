@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogOut } from "lucide-react";
+import { LogOutIcon } from "../icons";
 import { Modal, InputModal } from "../modal";
 import InfoBox from "../ui/InfoBox";
 import EditableInfoBox from "../ui/EditableInfoBox";
@@ -91,7 +91,7 @@ const ProfileModal = ({ isOpen }) => {
               confirmText="Esci"
               onConfirm={handleLogout}
             >
-              <LogOut className="w-5 h-5" />
+              <LogOutIcon className="w-5 h-5" />
               Esci
             </DangerButton>
           </div>

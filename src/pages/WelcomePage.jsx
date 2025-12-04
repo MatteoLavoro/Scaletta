@@ -1,19 +1,19 @@
-import { ListChecks, Users, Zap } from "lucide-react";
+import { ListChecksIcon, UsersIcon, ZapIcon } from "../components/icons";
 import Button from "../components/ui/Button";
 
 const features = [
   {
-    icon: Users,
+    icon: UsersIcon,
     title: "Collaborazione",
     description: "Lavora in team con poteri uguali",
   },
   {
-    icon: ListChecks,
+    icon: ListChecksIcon,
     title: "Organizzazione",
     description: "Gestisci progetti e task facilmente",
   },
   {
-    icon: Zap,
+    icon: ZapIcon,
     title: "Velocità",
     description: "Interfaccia moderna e reattiva",
   },

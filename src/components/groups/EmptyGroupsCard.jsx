@@ -1,4 +1,4 @@
-import { Users, Plus, UserPlus } from "lucide-react";
+import { UsersIcon, PlusIcon, UserPlusIcon } from "../icons";
 
 /**
  * EmptyGroupsCard - Card tutorial che appare quando l'utente non ha gruppi
@@ -10,7 +10,7 @@ const EmptyGroupsCard = ({ onCreateGroup, onJoinGroup }) => {
       {/* Header con icona */}
       <div className="p-6 text-center border-b border-border">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-          <Users className="w-8 h-8 text-primary" />
+          <UsersIcon className="w-8 h-8 text-primary" />
         </div>
         <h2 className="text-lg font-semibold text-text-primary mb-2">
           Benvenuto in Scaletta!
@@ -38,7 +38,7 @@ const EmptyGroupsCard = ({ onCreateGroup, onJoinGroup }) => {
             active:scale-[0.98]
           "
         >
-          <Plus className="w-5 h-5" />
+          <PlusIcon className="w-5 h-5" />
           <span className="text-sm">Crea gruppo</span>
         </button>
 
@@ -54,7 +54,7 @@ const EmptyGroupsCard = ({ onCreateGroup, onJoinGroup }) => {
             active:scale-[0.98]
           "
         >
-          <UserPlus className="w-5 h-5" />
+          <UserPlusIcon className="w-5 h-5" />
           <span className="text-sm font-medium">Unisciti</span>
         </button>
       </div>

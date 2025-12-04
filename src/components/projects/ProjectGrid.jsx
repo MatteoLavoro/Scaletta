@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProjectCard from "./ProjectCard";
 import CreateProjectButton from "./CreateProjectButton";
 import { InputModal } from "../modal";
 import { Spinner } from "../ui";
-import { createProject, getProjectsByGroup } from "../../services/projects";
+import {
+  createProject,
+  getProjectsByGroup,
+  projectNameExists,
+} from "../../services/projects";
 import { validateProjectName } from "../../utils/projectValidation";
 
 /**
@@ -44,6 +48,24 @@ const ProjectGrid = ({
 
     loadProjects();
   }, [groupId]);
+
+  // Validazione nome progetto con controllo duplicati
+  const validateProjectNameWithDuplicate = useCallback(
+    async (name) => {
+      // Prima valida il formato del nome
+      const formatError = validateProjectName(name);
+      if (formatError) return formatError;
+
+      // Poi controlla se esiste già un progetto con lo stesso nome
+      const exists = await projectNameExists(groupId, name);
+      if (exists) {
+        return "Esiste già un progetto con questo nome nel gruppo";
+      }
+
+      return null;
+    },
+    [groupId]
+  );
 
   // Crea un nuovo progetto
   const handleCreateProject = async (name) => {
@@ -95,7 +117,7 @@ const ProjectGrid = ({
         confirmText="Crea"
         onConfirm={handleCreateProject}
         onClose={() => setIsCreateModalOpen(false)}
-        validate={validateProjectName}
+        validate={validateProjectNameWithDuplicate}
         loading={isCreating}
         zIndex={1020}
       />

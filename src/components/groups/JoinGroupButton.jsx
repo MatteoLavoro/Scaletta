@@ -1,4 +1,4 @@
-import { UserPlus } from "lucide-react";
+import { UserPlusIcon } from "../icons";
 
 /**
  * JoinGroupButton - Tasto rettangolare tratteggiato per unirsi a un gruppo
@@ -17,7 +17,7 @@ const JoinGroupButton = ({ onClick }) => {
         active:scale-[0.98]
       "
     >
-      <UserPlus className="w-5 h-5" />
+      <UserPlusIcon className="w-5 h-5" />
       <span className="text-sm font-medium">Unisciti</span>
     </button>
   );

@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircleIcon } from "../icons";
 
 /**
  * FormError - Messaggio di errore per campi form o errori globali
@@ -14,7 +14,7 @@ const FormError = ({ message, className = "", variant = "inline" }) => {
         className={`flex items-center gap-2 text-sm text-error mt-1.5 ${className}`}
         role="alert"
       >
-        <AlertCircle className="w-4 h-4 shrink-0" />
+        <AlertCircleIcon className="w-4 h-4 shrink-0" />
         <span>{message}</span>
       </div>
     );
@@ -26,7 +26,7 @@ const FormError = ({ message, className = "", variant = "inline" }) => {
       className={`flex items-center gap-3 px-4 py-3 bg-error/10 border border-error/30 rounded-xl text-error text-sm ${className}`}
       role="alert"
     >
-      <AlertCircle className="w-5 h-5 shrink-0" />
+      <AlertCircleIcon className="w-5 h-5 shrink-0" />
       <span>{message}</span>
     </div>
   );
