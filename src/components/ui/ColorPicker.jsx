@@ -32,11 +32,11 @@ const ColorPicker = ({ className = "" }) => {
 
   const handleColorClick = (colorId) => {
     if (colorId === optimisticColor) return;
-    
+
     // Aggiorna subito l'UI (ottimistico)
     setOptimisticColor(colorId);
     pendingChangeRef.current = true;
-    
+
     // Applica il cambio (sincrono per il tema, ma l'animazione è già visibile)
     setAccentColor(colorId);
     pendingChangeRef.current = false;

@@ -26,11 +26,11 @@ const ProjectColorPicker = ({ value, onChange }) => {
 
   const handleColorClick = async (colorId) => {
     if (colorId === optimisticValue) return;
-    
+
     // Aggiorna subito l'UI (ottimistico)
     setOptimisticValue(colorId);
     pendingChangeRef.current = true;
-    
+
     // Applica il cambio in background
     try {
       await onChange(colorId);
