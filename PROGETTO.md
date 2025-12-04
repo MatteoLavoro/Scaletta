@@ -12,6 +12,7 @@
 
 - **Autenticazione Firebase** (login, registrazione, logout, modifica username)
 - **Sistema Gruppi** completo (creazione, partecipazione, uscita, eliminazione)
+- **Sistema Progetti** completo (creazione, modifica, stati, colori, eliminazione)
 - **Sistema Tema** (chiaro/scuro + 6 colori accent)
 - **PWA** (installabile su dispositivi)
 - **UI/UX responsive** (mobile fullscreen, desktop centrato)
@@ -19,8 +20,7 @@
 
 ### 🚧 In Sviluppo
 
-- Contenuto espandibile delle card gruppo (placeholder attuale)
-- Sistema Progetti
+- Contenuto dettagliato dei progetti (task, note, file)
 
 ### 📋 Pianificato
 
@@ -49,7 +49,7 @@ Un **Gruppo** è l'entità principale dell'applicazione. Rappresenta un team di 
 - ✅ Tutti i membri possono modificare il nome del gruppo
 - ✅ Tutti i membri possono uscire dal gruppo
 - ✅ Il founder viene identificato con icona corona 👑
-- ✅ **Solo il founder** può eliminare il gruppo
+- ✅ **Solo il founder** può eliminare il gruppo (elimina anche tutti i progetti)
 - ✅ I membri possono unirsi tramite codice a 8 caratteri
 
 #### Struttura Dati Gruppo (Firestore):
@@ -75,16 +75,64 @@ Un **Gruppo** è l'entità principale dell'applicazione. Rappresenta un team di 
 
 ---
 
-### 2. Progetti (Futuro)
+### 2. Progetti
 
-Ogni gruppo potrà creare e gestire molteplici **Progetti**. Un progetto è uno spazio di lavoro dedicato a un'attività specifica.
+Ogni gruppo può creare e gestire molteplici **Progetti**. Un progetto è uno spazio di lavoro dedicato a un'attività specifica.
 
-#### Funzionalità Pianificate:
+#### Caratteristiche dei Progetti:
 
-- **Gestione File**: Upload, download, anteprima, cartelle
-- **Note**: Creazione, modifica, formattazione, tag
-- **Dati Personalizzati**: Campi custom, tabelle
-- **Visualizzazione**: Vista file, galleria, lista, filtri
+- **Nome progetto**: Modificabile (2-50 caratteri), univoco nel gruppo
+- **Colore**: 12 colori disponibili, assegnato automaticamente (evita duplicati)
+- **Stato**: 4 stati disponibili con icone e colori dedicati
+- **Creatore**: Tracciato chi ha creato il progetto
+- **Data creazione**: Timestamp
+
+#### Stati dei Progetti:
+
+| Stato      | Icona | Colore Light | Colore Dark | Descrizione             |
+| ---------- | ----- | ------------ | ----------- | ----------------------- |
+| In corso   | ▶️    | Verde        | Verde       | Progetto attivo         |
+| Completato | ✓     | Blu          | Blu         | Progetto terminato      |
+| Archiviato | 📦    | Viola        | Viola       | Progetto non più attivo |
+| Cestinato  | 🗑️    | Rosso        | Rosso       | Pronto per eliminazione |
+
+#### Ordinamento Automatico Progetti:
+
+I progetti vengono ordinati automaticamente:
+
+1. **Per stato** (priorità): In corso → Completato → Archiviato → Cestinato
+2. **Per data** (a parità di stato): più recenti prima
+
+#### Colori Disponibili (12):
+
+Organizzati in 3 righe da 4:
+
+- Riga 1: Blue, Purple, Teal, Green
+- Riga 2: Orange, Red, Pink, Indigo
+- Riga 3: Yellow, Cyan, Emerald, Rose
+
+#### Regole dei Progetti:
+
+- ✅ Tutti i membri possono creare progetti
+- ✅ Tutti i membri possono modificare nome, colore e stato
+- ✅ **Founder del gruppo O creatore del progetto** possono eliminare
+- ✅ L'eliminazione è possibile solo se il progetto è nello stato "Cestinato"
+- ✅ Non possono esistere due progetti con lo stesso nome nello stesso gruppo
+
+#### Struttura Dati Progetto (Firestore):
+
+```javascript
+{
+  id: string,              // ID documento Firestore
+  name: string,            // Nome del progetto (2-50 caratteri)
+  groupId: string,         // ID del gruppo di appartenenza
+  color: string,           // ID colore (blue, purple, teal, ecc.)
+  status: string,          // Stato (in-corso, completato, archiviato, cestinato)
+  createdAt: Timestamp,    // Data creazione
+  createdBy: string,       // UID del creatore
+  createdByName: string    // Nome del creatore
+}
+```
 
 ---
 
@@ -100,7 +148,7 @@ Ogni gruppo potrà creare e gestire molteplici **Progetti**. Un progetto è uno 
 
 - Header con logo "Scaletta" e tasto profilo tondo
 - Se non ha gruppi: **EmptyGroupsCard** (card tutorial con benvenuto e tasti)
-- Se ha gruppi: lista **GroupCard** + tasti crea/unisciti in basso
+- Se ha gruppi: lista **GroupCard** espandibili + tasti crea/unisciti in basso
 
 ### 3. Creazione Gruppo
 
@@ -126,7 +174,38 @@ Ogni gruppo potrà creare e gestire molteplici **Progetti**. Un progetto è uno 
    - Lista membri (pillole colorate, Tu con corona se founder)
    - Tasto "Elimina gruppo" (solo founder) o "Esci dal gruppo"
 
-### 6. Profilo Utente
+### 6. Visualizzazione Progetti
+
+1. Click sulla **GroupCard** per espandere
+2. Viene mostrata la **ProjectGrid** con:
+   - Griglia di **ProjectCard** (3 colonne mobile, 4 tablet, 5 desktop)
+   - Tasto "+" per creare nuovo progetto
+3. I progetti sono ordinati: in corso → completati → archiviati → cestinati
+
+### 7. Creazione Progetto
+
+1. Click sul tasto "+" nella griglia progetti
+2. **InputModal**: inserimento nome (2-50 caratteri, unico nel gruppo)
+3. Colore assegnato automaticamente (evita duplicati)
+4. Stato iniziale: "In corso"
+
+### 8. Gestione Progetto
+
+1. Click sulla **ProjectCard** per aprire **ProjectPage**
+2. Header con:
+   - Freccia indietro
+   - Nome progetto centrato
+   - Menu kebab (⋮) con opzioni Info e Stato
+3. **ProjectInfoModal**:
+   - Nome (modificabile)
+   - Creato da (nome creatore)
+   - Data creazione
+   - Selettore colore
+4. **StatusModal**:
+   - Slider visuale degli stati con barra gradient
+   - Tasto elimina (attivo solo se cestinato)
+
+### 9. Profilo Utente
 
 1. Click sul tasto tondo nell'header
 2. **ProfileModal** mostra:
@@ -148,6 +227,12 @@ read: if isAuthenticated()              // Tutti possono leggere (filtro client-
 create: if founder == auth.uid          // Solo creatore può creare
 update: if isAuthenticated()            // Tutti i membri (verificato lato client)
 delete: if founder == auth.uid          // Solo founder può eliminare
+
+// Progetti
+read: if isAuthenticated()              // Tutti possono leggere
+create: if isAuthenticated()            // Tutti i membri del gruppo
+update: if isAuthenticated()            // Tutti i membri del gruppo
+delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 ```
 
 ### Differenze UI Founder vs Membri
@@ -158,6 +243,16 @@ delete: if founder == auth.uid          // Solo founder può eliminare
 | Copiare codice      | ✅ Visibile    | ✅ Visibile |
 | Uscire dal gruppo   | ✅ Visibile    | ❌ Nascosto |
 | Eliminare il gruppo | ❌ Nascosto    | ✅ Visibile |
+
+### Differenze Eliminazione Progetti
+
+| Utente                | Può eliminare progetto |
+| --------------------- | ---------------------- |
+| Founder del gruppo    | ✅ Sempre              |
+| Creatore del progetto | ✅ Solo i propri       |
+| Altri membri          | ❌ Mai                 |
+
+> L'eliminazione richiede che il progetto sia nello stato "Cestinato"
 
 ---
 
@@ -194,13 +289,19 @@ delete: if founder == auth.uid          // Solo founder può eliminare
 - [x] Sistema tema chiaro/scuro + colori accent
 - [x] PWA installabile
 
-### Fase 2 - Progetti (Prossima)
+### Fase 2 - Progetti ✅ COMPLETATA
 
-- [ ] CRUD Progetti base
-- [ ] Contenuto espandibile card gruppi
-- [ ] Vista progetti nel gruppo
+- [x] CRUD Progetti (crea, leggi, modifica, elimina)
+- [x] Sistema stati (in-corso, completato, archiviato, cestinato)
+- [x] Sistema colori (12 colori, assegnazione automatica)
+- [x] Ordinamento automatico (per stato + data)
+- [x] Contenuto espandibile card gruppi (ProjectGrid)
+- [x] ProjectPage con header colorato
+- [x] StatusSlider con barra gradient
+- [x] Permessi eliminazione (founder gruppo O creatore progetto)
+- [x] Validazione nomi duplicati
 
-### Fase 3 - File Management
+### Fase 3 - File Management (Prossima)
 
 - [ ] Upload file
 - [ ] Download file

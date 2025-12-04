@@ -123,18 +123,50 @@ Card tutorial che appare quando l'utente non ha gruppi:
 ```
 ┌─────────────────────────────────────────┐
 │  Nome Gruppo           ˅       [i]      │
-│  👥 3 membri                            │
+│  👥 3 membri · 📁 5 progetti            │
 ├─────────────────────────────────────────┤
-│  (Contenuto espandibile)                │
+│  ┌─────┐ ┌─────┐ ┌─────┐               │
+│  │ 🔵  │ │ 🟢  │ │ 🟣  │  ...          │  ← Griglia progetti
+│  │Prog1│ │Prog2│ │Prog3│               │
+│  └─────┘ └─────┘ └─────┘               │
+│  ┌ ─ ─ ┐                               │
+│  │  +  │  ← Crea progetto              │
+│  └ ─ ─ ┘                               │
 └─────────────────────────────────────────┘
 ```
 
 - **Header cliccabile** per espandere/contrarre
 - **Nome gruppo** a sinistra (truncate se lungo)
-- **Contatore membri** sotto il nome
+- **Contatore membri e progetti** sotto il nome
 - **Chevron** centrato orizzontalmente (absolute)
 - **Tasto info** (i) a destra
-- **Contenuto espandibile** con animazione `grid-rows-[1fr]`
+- **Contenuto espandibile** con griglia progetti
+
+### ProjectGrid (Griglia Progetti)
+
+- Griglia responsive: 3 colonne mobile, 4 tablet, 5 desktop
+- Gap 12px tra le card
+- **ProjectCard** per ogni progetto
+- **CreateProjectButton** (+) sempre alla fine
+- Ordinamento automatico: in-corso → completati → archiviati → cestinati
+
+### ProjectCard (Card Progetto)
+
+```
+┌─────────────────┐
+│    [ICONA]      │  ← Icona stato centrata
+│                 │
+│   Nome Prog     │  ← Nome progetto (truncate)
+└─────────────────┘
+    ↑ Sfondo colorato
+```
+
+- Aspect ratio quadrato
+- Sfondo con colore del progetto (opacità 15%)
+- Bordo con colore del progetto (opacità 30%)
+- Icona stato centrata (▶️ In corso, ✓ Completato, 📦 Archiviato, 🗑️ Cestinato)
+- Nome progetto in basso (truncate se lungo)
+- Click apre ProjectPage
 
 ### CreateGroupButton / JoinGroupButton
 
@@ -148,6 +180,121 @@ Card tutorial che appare quando l'utente non ha gruppi:
 - Bordo tratteggiato (`border-dashed`)
 - Hover: `border-primary`, `text-primary`, `bg-primary/5`
 - Appaiono sotto la lista gruppi (solo quando ci sono gruppi)
+
+---
+
+## Componenti Progetti
+
+### ProjectPage (Pagina Progetto)
+
+```
+┌─────────────────────────────────────────┐
+│  ←        Nome Progetto           [⋮]   │  ← Header colorato
+├─────────────────────────────────────────┤
+│                                         │
+│         [Contenuto progetto]            │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+- Header con sfondo colorato (colore del progetto)
+- Freccia indietro a sinistra
+- Nome progetto centrato
+- Menu kebab (⋮) a destra con:
+  - "Info progetto" → apre ProjectInfoModal
+  - "Stato progetto" → apre StatusModal
+
+### ProjectInfoModal
+
+```
+┌─────────────────────────────────────────┐
+│  Info Progetto                        × │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─ NOME PROGETTO ───────────────[✎]┐  │
+│  │         Mio Progetto              │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌─ CREATO DA ───────────────────────┐  │
+│  │         Mario Rossi               │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌─ DATA CREAZIONE ──────────────────┐  │
+│  │       3 dicembre 2025             │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌─ COLORE PROGETTO ─────────────────┐  │
+│  │   [🔵][🟣][🟢][🟡] (griglia 4x3)  │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### StatusModal
+
+```
+┌─────────────────────────────────────────┐
+│  Stato progetto                       × │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │                                   │  │
+│  │  [▶️]───[✓]───[📦]───[🗑️]         │  │  ← StatusSlider
+│  │  In    Comp   Arch   Cest         │  │
+│  │  corso letato iviato inato        │  │
+│  │                                   │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ─────────────────────────────────────  │
+│                                         │
+│  Sposta nel cestino per eliminare       │
+│                                         │
+│  [ 🗑️ Elimina definitivamente ]         │  ← Attivo solo se cestinato
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### StatusSlider
+
+Slider visuale per selezione stato progetto:
+
+```
+     ▶️          ✓          📦          🗑️
+    [  ]────────[  ]────────[  ]────────[  ]
+  In corso   Completato  Archiviato  Cestinato
+```
+
+**Caratteristiche:**
+
+- Cerchi da 40px con icona stato
+- Barra di connessione alta 14px (1/3 del cerchio)
+- Barra grigia di sfondo per tutti gli stati
+- Barra colorata con gradient fino allo stato attivo
+- Colori stati:
+  - In corso: Verde (`#22c55e` / `#4ade80`)
+  - Completato: Blu (`#3b82f6` / `#60a5fa`)
+  - Archiviato: Viola (`#a855f7` / `#c084fc`)
+  - Cestinato: Rosso (`#ef4444` / `#f87171`)
+- Stati non attivi: cerchi grigi
+- Stato corrente: ring colorato + shadow
+- Click su qualsiasi stato per selezionarlo
+
+### ProjectColorPicker
+
+Griglia 4x3 di colori selezionabili:
+
+```
+┌────────────────────────────────┐
+│  [🔵] [🟣] [🟢] [🟢]           │  ← Row 1
+│  [🟠] [🔴] [🩷] [🔵]           │  ← Row 2
+│  [🟡] [🩵] [💚] [🌸]           │  ← Row 3
+└────────────────────────────────┘
+```
+
+- 12 colori disponibili
+- Cerchi da 32px
+- Checkmark bianco sul colore selezionato
+- Bordo colorato sul colore selezionato
 
 ---
 
@@ -230,6 +377,16 @@ Lista pillole membri con stili differenziati:
 | Azione gruppo  | "Esci dal gruppo" | "Elimina gruppo"      |
 | Icona azione   | LogOut            | Trash2                |
 | Colore azione  | Rosso (danger)    | Rosso (danger)        |
+
+### Permessi Eliminazione Progetti
+
+| Utente                | Può eliminare       |
+| --------------------- | ------------------- |
+| Founder del gruppo    | ✅ Tutti i progetti |
+| Creatore del progetto | ✅ Solo i propri    |
+| Altri membri          | ❌ Nessuno          |
+
+> Il tasto "Elimina definitivamente" è attivo solo se lo stato è "Cestinato"
 
 ---
 
@@ -570,20 +727,33 @@ visualViewport.addEventListener("resize", () => {
 
 Tutti ereditano dal modale generico:
 
-1. **Modale Creazione Gruppo**
-2. **Modale Modifica Gruppo**
-3. **Modale Eliminazione Gruppo** (solo founder)
-4. **Modale Creazione Progetto**
-5. **Modale Modifica Progetto**
-6. **Modale Eliminazione Progetto** (solo founder)
-7. **Modale Invito Membro**
-8. **Modale Rimozione Membro** (solo founder)
-9. **Modale Upload File**
-10. **Modale Creazione Nota**
-11. **Modale Modifica Nota**
-12. **Modale Conferma Azioni Distruttive**
-13. **Modale Impostazioni**
-14. **Modale Profilo Utente**
+### Gruppi
+
+1. **InputModal - Creazione Gruppo** (nome 2-50 char)
+2. **InputModal - Modifica Nome Gruppo**
+3. **GroupInfoModal** - Info gruppo con membri
+4. **ConfirmModal - Eliminazione Gruppo** (solo founder)
+5. **ConfirmModal - Esci dal Gruppo**
+6. **InputModal - Unisciti a Gruppo** (codice 8 char)
+
+### Progetti
+
+7. **InputModal - Creazione Progetto** (nome univoco nel gruppo)
+8. **ProjectInfoModal** - Info progetto (nome, creatore, data, colore)
+9. **InputModal - Modifica Nome Progetto**
+10. **StatusModal** - Gestione stato con slider
+11. **ConfirmModal - Eliminazione Progetto** (solo founder/creatore)
+
+### Utente
+
+12. **ProfileModal** - Profilo utente (email, nome, tema)
+13. **InputModal - Modifica Username**
+14. **AuthModal** - Login/Registrazione
+
+### Sistema
+
+15. **InstallModal** - Installazione PWA
+16. **ConfirmModal** - Conferme azioni distruttive generiche
 
 ---
 

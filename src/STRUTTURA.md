@@ -39,12 +39,23 @@
 
 | File                    | Descrizione                                       |
 | ----------------------- | ------------------------------------------------- |
-| `GroupCard.jsx`         | Card espandibile con chevron centrato             |
+| `GroupCard.jsx`         | Card espandibile con griglia progetti             |
 | `GroupInfoModal.jsx`    | Modale info gruppo (nome, codice, membri, azioni) |
 | `CreateGroupButton.jsx` | Tasto con sfondo colorato per creare gruppo       |
 | `JoinGroupButton.jsx`   | Tasto tratteggiato per unirsi a un gruppo         |
 | `EmptyGroupsCard.jsx`   | Card tutorial per stato vuoto (no gruppi)         |
 | `index.js`              | Export pubblici                                   |
+
+### `projects/` - Sistema Progetti
+
+| File                      | Descrizione                                         |
+| ------------------------- | --------------------------------------------------- |
+| `ProjectCard.jsx`         | Card progetto quadrata con icona stato e colore     |
+| `ProjectGrid.jsx`         | Griglia progetti (3 col mobile, 4 tablet, 5 desk)   |
+| `CreateProjectButton.jsx` | Tasto + per creare progetto                         |
+| `ProjectInfoModal.jsx`    | Modale info progetto (nome, creatore, data, colore) |
+| `StatusModal.jsx`         | Modale gestione stato con slider e elimina          |
+| `index.js`                | Export pubblici                                     |
 
 ### `modal/` - Sistema Modale
 
@@ -74,35 +85,59 @@
 
 ### `ui/` - Componenti UI Base
 
-| File                  | Descrizione                                           |
-| --------------------- | ----------------------------------------------------- |
-| `Button.jsx`          | Bottone con varianti/sizes e stato disabilitato       |
-| `Input.jsx`           | Input base                                            |
-| `PasswordInput.jsx`   | Password base con toggle                              |
-| `Spinner.jsx`         | Indicatore caricamento                                |
-| `ThemeSwitcher.jsx`   | Toggle tema chiaro/scuro (tondo)                      |
-| `ColorPicker.jsx`     | Selettore colore accent (6 colori)                    |
-| `ThemeSelector.jsx`   | Combinato: ColorPicker + ThemeSwitcher                |
-| `InfoBox.jsx`         | Box info con stile (supporta titleExtra)              |
-| `EditableInfoBox.jsx` | InfoBox con tasto modifica (matita) centrato          |
-| `CopyableInfoBox.jsx` | InfoBox con tasto copia (clipboard) centrato          |
-| `MemberPillList.jsx`  | Lista pillole membri (Tu/founder/altri differenziati) |
-| `DangerButton.jsx`    | Tasto pericoloso con conferma prima di azione         |
-| `Divider.jsx`         | Linea divisoria (non arriva ai bordi)                 |
-| `index.js`            | Export pubblici                                       |
+| File                     | Descrizione                                           |
+| ------------------------ | ----------------------------------------------------- |
+| `Button.jsx`             | Bottone con varianti/sizes e stato disabilitato       |
+| `Input.jsx`              | Input base                                            |
+| `PasswordInput.jsx`      | Password base con toggle                              |
+| `Spinner.jsx`            | Indicatore caricamento                                |
+| `ThemeSwitcher.jsx`      | Toggle tema chiaro/scuro (tondo)                      |
+| `ColorPicker.jsx`        | Selettore colore accent (6 colori)                    |
+| `ThemeSelector.jsx`      | Combinato: ColorPicker + ThemeSwitcher                |
+| `InfoBox.jsx`            | Box info con stile (supporta titleExtra)              |
+| `EditableInfoBox.jsx`    | InfoBox con tasto modifica (matita) centrato          |
+| `CopyableInfoBox.jsx`    | InfoBox con tasto copia (clipboard) centrato          |
+| `MemberPillList.jsx`     | Lista pillole membri (Tu/founder/altri differenziati) |
+| `DangerButton.jsx`       | Tasto pericoloso con conferma prima di azione         |
+| `Divider.jsx`            | Linea divisoria (non arriva ai bordi)                 |
+| `StatusSlider.jsx`       | Slider stati progetto con barra gradient              |
+| `ProjectColorPicker.jsx` | Griglia 4x3 colori progetto (12 colori)               |
+| `DropdownMenu.jsx`       | Menu dropdown posizionabile (per kebab menu)          |
+| `index.js`               | Export pubblici                                       |
 
 ### `icons/` - Icone (wrapper lucide-react)
 
-> **Nota:** Questi wrapper non sono più necessari, usa direttamente lucide-react
+Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 
-| File                  | Descrizione               |
-| --------------------- | ------------------------- |
-| `AlertCircleIcon.jsx` | Icona alert               |
-| `ArrowLeftIcon.jsx`   | Freccia indietro          |
-| `CheckIcon.jsx`       | Spunta                    |
-| `CloseIcon.jsx`       | X chiudi                  |
-| `EyeIcon.jsx`         | Occhio (mostra)           |
-| `EyeOffIcon.jsx`      | Occhio barrato (nascondi) |
+| File                    | Descrizione                    |
+| ----------------------- | ------------------------------ |
+| `AlertCircleIcon.jsx`   | Icona alert cerchio            |
+| `AlertTriangleIcon.jsx` | Icona alert triangolo          |
+| `ArrowLeftIcon.jsx`     | Freccia indietro               |
+| `CheckIcon.jsx`         | Spunta                         |
+| `CheckCircleIcon.jsx`   | Spunta in cerchio (completato) |
+| `CloseIcon.jsx`         | X chiudi                       |
+| `CopyIcon.jsx`          | Copia clipboard                |
+| `CrownIcon.jsx`         | Corona (founder)               |
+| `DownloadIcon.jsx`      | Download                       |
+| `EyeIcon.jsx`           | Occhio (mostra)                |
+| `EyeOffIcon.jsx`        | Occhio barrato (nascondi)      |
+| `InfoIcon.jsx`          | Info cerchio                   |
+| `LogOutIcon.jsx`        | Logout                         |
+| `MoreVerticalIcon.jsx`  | Tre puntini verticali (kebab)  |
+| `PencilIcon.jsx`        | Matita (modifica)              |
+| `PlusIcon.jsx`          | Più                            |
+| `PlayIcon.jsx`          | Play (in corso)                |
+| `ArchiveIcon.jsx`       | Archivio                       |
+| `TrashIcon.jsx`         | Cestino                        |
+| `SettingsIcon.jsx`      | Ingranaggio                    |
+| `UsersIcon.jsx`         | Utenti                         |
+| `UserIcon.jsx`          | Utente singolo                 |
+| `UserPlusIcon.jsx`      | Aggiungi utente                |
+| `ChevronDownIcon.jsx`   | Freccia giù                    |
+| `SunIcon.jsx`           | Sole (tema chiaro)             |
+| `MoonIcon.jsx`          | Luna (tema scuro)              |
+| `index.js`              | Export pubblici                |
 
 ---
 
@@ -128,31 +163,36 @@
 
 ## `pages/`
 
-| File              | Descrizione                       |
-| ----------------- | --------------------------------- |
-| `WelcomePage.jsx` | Pagina iniziale (non autenticato) |
-| `Dashboard.jsx`   | Pagina principale (autenticato)   |
-| `LoadingPage.jsx` | Schermata caricamento             |
-| `index.js`        | Export pubblici                   |
+| File              | Descrizione                        |
+| ----------------- | ---------------------------------- |
+| `WelcomePage.jsx` | Pagina iniziale (non autenticato)  |
+| `Dashboard.jsx`   | Pagina principale (autenticato)    |
+| `ProjectPage.jsx` | Pagina singolo progetto con header |
+| `LoadingPage.jsx` | Schermata caricamento              |
+| `index.js`        | Export pubblici                    |
 
 ---
 
 ## `services/`
 
-| File        | Descrizione                                                         |
-| ----------- | ------------------------------------------------------------------- |
-| `config.js` | Configurazione Firebase                                             |
-| `auth.js`   | Funzioni auth (login, register, logout, updateUsername)             |
-| `groups.js` | Funzioni CRUD gruppi (crea, unisciti, esci, elimina, aggiorna nome) |
+| File          | Descrizione                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| `config.js`   | Configurazione Firebase                                             |
+| `auth.js`     | Funzioni auth (login, register, logout, updateUsername)             |
+| `groups.js`   | Funzioni CRUD gruppi (crea, unisciti, esci, elimina, aggiorna nome) |
+| `projects.js` | Funzioni CRUD progetti (crea, modifica nome/colore/stato, elimina)  |
 
 ---
 
 ## `utils/`
 
-| File                 | Descrizione                                                   |
-| -------------------- | ------------------------------------------------------------- |
-| `authValidation.js`  | Validazione email/password/username                           |
-| `groupValidation.js` | Validazione nome gruppo (2-50 char) e codice (8 char alfanum) |
+| File                   | Descrizione                                                   |
+| ---------------------- | ------------------------------------------------------------- |
+| `authValidation.js`    | Validazione email/password/username                           |
+| `groupValidation.js`   | Validazione nome gruppo (2-50 char) e codice (8 char alfanum) |
+| `projectValidation.js` | Validazione nome progetto (2-50 char)                         |
+| `projectColors.js`     | Definizione 12 colori progetto (light/dark)                   |
+| `projectStatuses.js`   | Definizione 4 stati progetto con icone e colori               |
 
 ---
 
