@@ -1,9 +1,11 @@
+import { useState, useEffect, useRef } from "react";
 import { Check } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
  * ColorPicker - Selettore colore principale
  * Mostra 6 colori tra cui scegliere
+ * Animazione ottimistica: mostra subito il cambio visivo
  */
 
 const COLOR_OPTIONS = [
@@ -17,19 +19,41 @@ const COLOR_OPTIONS = [
 
 const ColorPicker = ({ className = "" }) => {
   const { accentColor, setAccentColor, theme } = useTheme();
+  // Stato locale ottimistico per animazione immediata
+  const [optimisticColor, setOptimisticColor] = useState(accentColor);
+  const pendingChangeRef = useRef(false);
+
+  // Sincronizza con il valore reale dal context
+  useEffect(() => {
+    if (!pendingChangeRef.current) {
+      setOptimisticColor(accentColor);
+    }
+  }, [accentColor]);
+
+  const handleColorClick = (colorId) => {
+    if (colorId === optimisticColor) return;
+    
+    // Aggiorna subito l'UI (ottimistico)
+    setOptimisticColor(colorId);
+    pendingChangeRef.current = true;
+    
+    // Applica il cambio (sincrono per il tema, ma l'animazione è già visibile)
+    setAccentColor(colorId);
+    pendingChangeRef.current = false;
+  };
 
   return (
     <div
       className={`flex items-center justify-between gap-1.5 sm:gap-2 ${className}`}
     >
       {COLOR_OPTIONS.map((color) => {
-        const isSelected = accentColor === color.id;
+        const isSelected = optimisticColor === color.id;
         const displayColor = theme === "dark" ? color.dark : color.light;
 
         return (
           <button
             key={color.id}
-            onClick={() => setAccentColor(color.id)}
+            onClick={() => handleColorClick(color.id)}
             className={`
               relative w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-200 shrink-0
               ${

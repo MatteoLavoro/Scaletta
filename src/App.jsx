@@ -27,6 +27,8 @@ const AppContent = () => {
   const [showInstallPopup, setShowInstallPopup] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
   const [currentGroup, setCurrentGroup] = useState(null);
+  // Key per forzare refresh della Dashboard
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
 
   useEffect(() => {
     if (isAuthenticated) closeAllModals();
@@ -83,6 +85,8 @@ const AppContent = () => {
     if (!currentProject) return;
     await updateProjectColor(currentProject.id, newColor);
     setCurrentProject((prev) => ({ ...prev, color: newColor }));
+    // Forza refresh Dashboard in background per aggiornare la card
+    setDashboardRefreshKey((k) => k + 1);
   };
 
   const handleDeleteProject = async () => {
@@ -98,9 +102,12 @@ const AppContent = () => {
 
     return (
       <>
-        {/* Dashboard - nascosta quando c'è un progetto selezionato */}
+        {/* Dashboard - nascosta quando c’è un progetto selezionato */}
         <div className={currentProject ? "hidden" : ""}>
-          <Dashboard onProjectClick={handleProjectClick} />
+          <Dashboard
+            key={dashboardRefreshKey}
+            onProjectClick={handleProjectClick}
+          />
         </div>
 
         {/* ProjectPage - mostrata quando c'è un progetto selezionato */}
