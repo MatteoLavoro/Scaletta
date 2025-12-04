@@ -141,7 +141,7 @@ const GroupInfoModal = ({
             {isFounder ? (
               <DangerButton
                 confirmTitle="Elimina gruppo"
-                confirmMessage={`Sei sicuro di voler eliminare "${group.name}"? Questa azione non può essere annullata e tutti i membri perderanno l'accesso.`}
+                confirmMessage={`Sei sicuro di voler eliminare "${group.name}"? Verranno eliminati anche tutti i progetti del gruppo. Questa azione non può essere annullata.`}
                 confirmText="Elimina"
                 onConfirm={handleDeleteGroup}
                 zIndex={1010}

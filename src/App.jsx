@@ -128,6 +128,7 @@ const AppContent = () => {
           <ProjectPage
             project={currentProject}
             isFounder={isFounder}
+            currentUserId={user?.uid}
             onBack={handleBackFromProject}
             onUpdateName={handleUpdateProjectName}
             onUpdateColor={handleUpdateProjectColor}

@@ -12,6 +12,7 @@ import { DEFAULT_PROJECT_STATUS } from "../../utils/projectStatuses";
  * @param {boolean} isOpen - Se il modale è aperto
  * @param {object} project - Dati del progetto
  * @param {boolean} isFounder - Se l'utente è il founder del gruppo
+ * @param {string} currentUserId - ID dell'utente corrente
  * @param {function} onClose - Callback chiusura
  * @param {function} onStatusChange - Callback per aggiornare lo stato (eseguito in background)
  * @param {function} onDelete - Callback per eliminare il progetto
@@ -20,6 +21,7 @@ const StatusModal = ({
   isOpen,
   project,
   isFounder,
+  currentUserId,
   onClose,
   onStatusChange,
   onDelete,
@@ -77,6 +79,11 @@ const StatusModal = ({
   // Il tasto elimina è attivo solo se lo stato è "cestinato"
   const canDelete = localStatus === "cestinato";
 
+  // Può eliminare: founder del gruppo O creatore del progetto
+  const isProjectCreator =
+    currentUserId && project?.createdBy === currentUserId;
+  const canShowDeleteSection = isFounder || isProjectCreator;
+
   if (!project) return null;
 
   return (
@@ -106,7 +113,7 @@ const StatusModal = ({
 
           {/* Sezione eliminazione */}
           <div className="space-y-3">
-            {isFounder ? (
+            {canShowDeleteSection ? (
               <>
                 <p className="text-xs text-text-muted text-center">
                   {canDelete
@@ -134,7 +141,8 @@ const StatusModal = ({
               </>
             ) : (
               <p className="text-xs text-text-muted text-center py-2">
-                Solo il creatore del gruppo può eliminare i progetti.
+                Solo il creatore del gruppo o del progetto può eliminare i
+                progetti.
               </p>
             )}
           </div>

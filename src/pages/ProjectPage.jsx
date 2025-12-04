@@ -13,6 +13,7 @@ import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
  *
  * @param {object} project - Dati del progetto
  * @param {boolean} isFounder - Se l'utente è il founder del gruppo
+ * @param {string} currentUserId - ID dell'utente corrente
  * @param {function} onBack - Callback per tornare indietro
  * @param {function} onUpdateName - Callback per aggiornare il nome del progetto
  * @param {function} onUpdateColor - Callback per aggiornare il colore del progetto
@@ -22,6 +23,7 @@ import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
 const ProjectPage = ({
   project,
   isFounder,
+  currentUserId,
   onBack,
   onUpdateName,
   onUpdateColor,
@@ -193,6 +195,7 @@ const ProjectPage = ({
         isOpen={isStatusModalOpen}
         project={project}
         isFounder={isFounder}
+        currentUserId={currentUserId}
         onClose={() => setIsStatusModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}

@@ -87,6 +87,8 @@ export const createProject = async (name, groupId, creator, color = null) => {
 
 /**
  * Ottiene tutti i progetti di un gruppo
+ * Ordinati per stato (in-corso > completato > archiviato > cestinato)
+ * e poi per data di creazione (più recenti prima)
  * @param {string} groupId - ID del gruppo
  * @returns {array} - Lista di progetti
  */
@@ -102,8 +104,25 @@ export const getProjectsByGroup = async (groupId) => {
     projects.push({ id: doc.id, ...doc.data() });
   });
 
-  // Ordina per data di creazione (più recenti prima)
+  // Priorità stati: in-corso (0), completato (1), archiviato (2), cestinato (3)
+  const STATUS_PRIORITY = {
+    "in-corso": 0,
+    completato: 1,
+    archiviato: 2,
+    cestinato: 3,
+  };
+
+  // Ordina prima per stato, poi per data di creazione (più recenti prima)
   projects.sort((a, b) => {
+    const statusA = STATUS_PRIORITY[a.status] ?? 99;
+    const statusB = STATUS_PRIORITY[b.status] ?? 99;
+
+    // Prima ordina per stato
+    if (statusA !== statusB) {
+      return statusA - statusB;
+    }
+
+    // A parità di stato, ordina per data (più recenti prima)
     const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
     const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
     return dateB - dateA;
