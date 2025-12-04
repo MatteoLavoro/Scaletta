@@ -1,12 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 /**
  * Sistema colori per tema chiaro/scuro
@@ -134,45 +127,6 @@ export const ThemeProvider = ({ children }) => {
     return "teal";
   });
 
-  // Colore override per la status bar (es. dalla pagina progetto)
-  const statusBarOverrideRef = useRef(null);
-  const [, forceUpdate] = useState({});
-
-  // Funzione per aggiornare il meta tag theme-color
-  const updateThemeColorMeta = useCallback((color) => {
-    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (!metaThemeColor) {
-      metaThemeColor = document.createElement("meta");
-      metaThemeColor.name = "theme-color";
-      document.head.appendChild(metaThemeColor);
-    }
-    metaThemeColor.content = color;
-  }, []);
-
-  // Funzione per impostare un colore override per la status bar
-  const setStatusBarColor = useCallback(
-    (color) => {
-      statusBarOverrideRef.current = color;
-      if (color) {
-        updateThemeColorMeta(color);
-      } else {
-        // Ripristina il colore del tema
-        const bg = THEME_BG[theme];
-        updateThemeColorMeta(bg.bgPrimary);
-      }
-      forceUpdate({});
-    },
-    [theme, updateThemeColorMeta]
-  );
-
-  // Funzione per resettare il colore della status bar al default del tema
-  const resetStatusBarColor = useCallback(() => {
-    statusBarOverrideRef.current = null;
-    const bg = THEME_BG[theme];
-    updateThemeColorMeta(bg.bgPrimary);
-    forceUpdate({});
-  }, [theme, updateThemeColorMeta]);
-
   // Applica i colori al CSS
   useEffect(() => {
     const root = document.documentElement;
@@ -198,18 +152,13 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty("--theme-border", bg.border);
     root.style.setProperty("--theme-divider", bg.divider);
 
-    // Aggiorna theme-color meta tag (solo se non c'è un override attivo)
-    if (!statusBarOverrideRef.current) {
-      updateThemeColorMeta(bg.bgPrimary);
-    }
-
     // Salva preferenze
     localStorage.setItem("theme", theme);
     localStorage.setItem("accentColor", accentColor);
 
     // Aggiorna classe body per eventuali stili aggiuntivi
     document.body.classList.toggle("light-theme", theme === "light");
-  }, [theme, accentColor, updateThemeColorMeta]);
+  }, [theme, accentColor]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
@@ -223,8 +172,6 @@ export const ThemeProvider = ({ children }) => {
     setAccentColor,
     isDark: theme === "dark",
     colors: THEME_COLORS,
-    setStatusBarColor,
-    resetStatusBarColor,
   };
 
   return (

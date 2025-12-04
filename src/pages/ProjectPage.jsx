@@ -27,7 +27,7 @@ const ProjectPage = ({
 }) => {
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const { isDark, setStatusBarColor, resetStatusBarColor } = useTheme();
+  const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
 
   // Ottieni il colore del progetto
@@ -35,17 +35,6 @@ const ProjectPage = ({
     project?.color || DEFAULT_PROJECT_COLOR,
     isDark
   );
-
-  // Aggiorna il colore della status bar con il colore del progetto
-  useEffect(() => {
-    if (project) {
-      setStatusBarColor(projectColor.bg);
-    }
-    // Ripristina il colore quando si esce dalla pagina
-    return () => {
-      resetStatusBarColor();
-    };
-  }, [project, projectColor.bg, setStatusBarColor, resetStatusBarColor]);
 
   // Chiusura tramite history.back() per mantenere sincronizzazione
   const handleClose = useCallback(() => {
