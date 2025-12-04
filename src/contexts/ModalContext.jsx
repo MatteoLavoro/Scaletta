@@ -14,6 +14,8 @@ export const ModalProvider = ({ children }) => {
   const [modalStack, setModalStack] = useState([]);
   // Stack di callback onClose per modali annidati (gestiti localmente, non nel modalStack)
   const nestedCloseCallbacksRef = useRef([]);
+  // Flag per indicare che un popstate è stato gestito da un modale
+  const popstateHandledRef = useRef(false);
 
   const openModal = useCallback(
     (modalId, props = {}) => {
@@ -71,8 +73,20 @@ export const ModalProvider = ({ children }) => {
       // Prima prova a chiudere modali annidati, poi quelli normali
       if (nestedCloseCallbacksRef.current.length > 0) {
         const callback = nestedCloseCallbacksRef.current.pop();
-        if (callback) callback();
+        if (callback) {
+          // Segnala che questo popstate è stato gestito
+          popstateHandledRef.current = true;
+          // Reset il flag dopo un tick per permettere ad altri listener di controllarlo
+          setTimeout(() => {
+            popstateHandledRef.current = false;
+          }, 0);
+          callback();
+        }
       } else if (modalStack.length > 0) {
+        popstateHandledRef.current = true;
+        setTimeout(() => {
+          popstateHandledRef.current = false;
+        }, 0);
         closeModal();
       }
     };
@@ -102,6 +116,16 @@ export const ModalProvider = ({ children }) => {
   // Numero di modali aperti (per gestire z-index e blur)
   const modalDepth = modalStack.length;
 
+  // Controlla se ci sono modali annidati aperti
+  const hasNestedModals = useCallback(() => {
+    return nestedCloseCallbacksRef.current.length > 0;
+  }, []);
+
+  // Controlla se un popstate è stato appena gestito da un modale
+  const wasPopstateHandled = useCallback(() => {
+    return popstateHandledRef.current;
+  }, []);
+
   return (
     <ModalContext.Provider
       value={{
@@ -113,6 +137,8 @@ export const ModalProvider = ({ children }) => {
         closeAllModals,
         closeTopModal,
         registerNestedClose,
+        hasNestedModals,
+        wasPopstateHandled,
         isModalOpen: (modalId) => modalStack.some((m) => m.id === modalId),
         getModalIndex: (modalId) =>
           modalStack.findIndex((m) => m.id === modalId),

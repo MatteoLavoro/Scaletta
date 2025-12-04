@@ -1,4 +1,4 @@
-import { forwardRef, useId } from "react";
+import { forwardRef, useId, useRef, useEffect } from "react";
 import FormLabel from "./FormLabel";
 import FormHint from "./FormHint";
 import FormError from "./FormError";
@@ -12,6 +12,7 @@ import FormError from "./FormError";
  * @param {string} error - Messaggio di errore
  * @param {boolean} required - Mostra asterisco required
  * @param {string} size - Dimensione: "sm" | "md" | "lg"
+ * @param {boolean} autoFocus - Focus automatico sul campo
  */
 const TextField = forwardRef(
   (
@@ -23,12 +24,25 @@ const TextField = forwardRef(
       size = "md",
       className = "",
       inputClassName = "",
+      autoFocus = false,
       ...props
     },
     ref
   ) => {
     const id = useId();
     const inputId = props.id || id;
+    const internalRef = useRef(null);
+    const inputRef = ref || internalRef;
+
+    // Gestione autoFocus con delay per assicurarsi che il modale sia montato
+    useEffect(() => {
+      if (autoFocus && inputRef.current) {
+        const timer = setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [autoFocus, inputRef]);
 
     const sizes = {
       sm: "px-3 py-2.5 text-sm",
@@ -44,7 +58,7 @@ const TextField = forwardRef(
           </FormLabel>
         )}
         <input
-          ref={ref}
+          ref={inputRef}
           id={inputId}
           className={`
             w-full ${sizes[size]}

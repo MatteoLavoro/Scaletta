@@ -2,11 +2,16 @@ import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ModalProvider, useModal } from "./contexts/ModalContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { WelcomePage, Dashboard, LoadingPage } from "./pages";
+import { WelcomePage, Dashboard, LoadingPage, ProjectPage } from "./pages";
 import { AuthModal } from "./components/auth";
 import { ProfileModal } from "./components/profile";
 import InstallPopup from "./components/pwa/InstallModal";
 import { usePWAInstall } from "./hooks/usePWAInstall";
+import {
+  updateProjectName,
+  updateProjectColor,
+  deleteProject,
+} from "./services/projects";
 
 const MODAL_AUTH = "auth";
 export const MODAL_PROFILE = "profile";
@@ -15,11 +20,13 @@ export const MODAL_PROFILE = "profile";
 const INSTALL_POPUP_SHOWN_KEY = "scaletta_install_popup_shown";
 
 const AppContent = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const { openModal, currentModal, closeAllModals } = useModal();
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [authMode, setAuthMode] = useState("login");
   const [showInstallPopup, setShowInstallPopup] = useState(false);
+  const [currentProject, setCurrentProject] = useState(null);
+  const [currentGroup, setCurrentGroup] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) closeAllModals();
@@ -45,11 +52,69 @@ const AppContent = () => {
     }
   }, [isInstallable, isInstalled]);
 
+  // Gestione navigazione progetto
+  const handleProjectClick = ({ project, group }) => {
+    setCurrentProject(project);
+    setCurrentGroup(group);
+  };
+
+  const handleBackFromProject = () => {
+    setCurrentProject(null);
+    setCurrentGroup(null);
+  };
+
+  // Gestori per aggiornamento/eliminazione progetto
+  const handleProjectUpdated = (updatedProject) => {
+    setCurrentProject(updatedProject);
+  };
+
+  const handleProjectDeleted = async () => {
+    setCurrentProject(null);
+    setCurrentGroup(null);
+  };
+
+  const handleUpdateProjectName = async (newName) => {
+    if (!currentProject) return;
+    await updateProjectName(currentProject.id, newName);
+    setCurrentProject((prev) => ({ ...prev, name: newName }));
+  };
+
+  const handleUpdateProjectColor = async (newColor) => {
+    if (!currentProject) return;
+    await updateProjectColor(currentProject.id, newColor);
+    setCurrentProject((prev) => ({ ...prev, color: newColor }));
+  };
+
+  const handleDeleteProject = async () => {
+    if (!currentProject) return;
+    await deleteProject(currentProject.id);
+    setCurrentProject(null);
+    setCurrentGroup(null);
+  };
+
   if (loading) return <LoadingPage />;
   if (isAuthenticated) {
+    const isFounder = currentGroup?.founderId === user?.uid;
+
     return (
       <>
-        <Dashboard />
+        {/* Dashboard - nascosta quando c'è un progetto selezionato */}
+        <div className={currentProject ? "hidden" : ""}>
+          <Dashboard onProjectClick={handleProjectClick} />
+        </div>
+
+        {/* ProjectPage - mostrata quando c'è un progetto selezionato */}
+        {currentProject && (
+          <ProjectPage
+            project={currentProject}
+            isFounder={isFounder}
+            onBack={handleBackFromProject}
+            onUpdateName={handleUpdateProjectName}
+            onUpdateColor={handleUpdateProjectColor}
+            onDelete={handleDeleteProject}
+          />
+        )}
+
         <ProfileModal isOpen={currentModal?.id === MODAL_PROFILE} />
         <InstallPopup
           isOpen={showInstallPopup}

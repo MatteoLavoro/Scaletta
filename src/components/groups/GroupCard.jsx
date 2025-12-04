@@ -1,18 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Info, ChevronDown, Users } from "lucide-react";
 import GroupInfoModal from "./GroupInfoModal";
+import { ProjectGrid } from "../projects";
+import { Badge } from "../ui";
+import { countProjectsByGroup } from "../../services/projects";
+
+// Chiave localStorage per lo stato di espansione dei gruppi
+const EXPANDED_GROUPS_KEY = "scaletta_expanded_groups";
+
+// Funzioni helper per localStorage
+const getExpandedGroups = () => {
+  try {
+    const stored = localStorage.getItem(EXPANDED_GROUPS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveExpandedGroups = (groupIds) => {
+  try {
+    localStorage.setItem(EXPANDED_GROUPS_KEY, JSON.stringify(groupIds));
+  } catch {
+    // Ignora errori localStorage
+  }
+};
 
 /**
  * GroupCard - Card espandibile per un gruppo
  *
  * @param {object} group - Dati del gruppo
  * @param {string} currentUserId - ID dell'utente corrente
+ * @param {object} currentUser - Oggetto utente corrente { uid, displayName, email }
  * @param {function} onGroupUpdated - Callback quando il gruppo viene aggiornato
  * @param {function} onGroupLeft - Callback quando l'utente esce dal gruppo
+ * @param {function} onProjectClick - Callback quando un progetto viene cliccato
  */
-const GroupCard = ({ group, currentUserId, onGroupUpdated, onGroupLeft }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const GroupCard = ({
+  group,
+  currentUserId,
+  currentUser,
+  onGroupUpdated,
+  onGroupLeft,
+  onProjectClick,
+}) => {
+  // Inizializza lo stato di espansione da localStorage
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const expandedGroups = getExpandedGroups();
+    return expandedGroups.includes(group.id);
+  });
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [projectCount, setProjectCount] = useState(null);
+
+  // Carica il conteggio dei progetti
+  useEffect(() => {
+    const loadProjectCount = async () => {
+      try {
+        const count = await countProjectsByGroup(group.id);
+        setProjectCount(count);
+      } catch (error) {
+        console.error("Errore conteggio progetti:", error);
+        setProjectCount(0);
+      }
+    };
+    loadProjectCount();
+  }, [group.id]);
+
+  // Aggiorna il conteggio quando un progetto viene aggiunto/rimosso
+  const handleProjectCountChange = (delta) => {
+    setProjectCount((prev) => (prev !== null ? prev + delta : delta));
+  };
+
+  // Salva lo stato di espansione in localStorage quando cambia
+  useEffect(() => {
+    const expandedGroups = getExpandedGroups();
+    const isCurrentlyStored = expandedGroups.includes(group.id);
+
+    if (isExpanded && !isCurrentlyStored) {
+      // Aggiungi all'array
+      saveExpandedGroups([...expandedGroups, group.id]);
+    } else if (!isExpanded && isCurrentlyStored) {
+      // Rimuovi dall'array
+      saveExpandedGroups(expandedGroups.filter((id) => id !== group.id));
+    }
+  }, [isExpanded, group.id]);
 
   const memberCount = group.members?.length || 0;
   const isFounder = group.founderId === currentUserId;
@@ -56,14 +127,22 @@ const GroupCard = ({ group, currentUserId, onGroupUpdated, onGroupLeft }) => {
             <ChevronDown className="w-5 h-5" />
           </div>
 
-          {/* Tasto info - a destra */}
-          <button
-            onClick={handleInfoClick}
-            className="p-2 rounded-lg bg-bg-tertiary hover:bg-divider text-text-secondary hover:text-text-primary transition-colors"
-            aria-label="Informazioni gruppo"
-          >
-            <Info className="w-5 h-5" />
-          </button>
+          {/* Badge contatore progetti + Tasto info - a destra */}
+          <div className="flex items-center gap-2">
+            {projectCount !== null && (
+              <Badge
+                count={projectCount}
+                label={projectCount === 1 ? "Progetto" : "Progetti"}
+              />
+            )}
+            <button
+              onClick={handleInfoClick}
+              className="p-2 rounded-lg bg-bg-tertiary hover:bg-divider text-text-secondary hover:text-text-primary transition-colors"
+              aria-label="Informazioni gruppo"
+            >
+              <Info className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Contenuto espandibile con animazione */}
@@ -76,11 +155,14 @@ const GroupCard = ({ group, currentUserId, onGroupUpdated, onGroupLeft }) => {
         >
           <div className="overflow-hidden">
             <div className="px-4 pb-4 pt-0 border-t border-border">
-              <div className="pt-4 text-text-secondary text-sm">
-                <p>Contenuto del gruppo in costruzione...</p>
-                <p className="mt-2 text-text-muted">
-                  Qui verranno mostrati i progetti del gruppo.
-                </p>
+              <div className="pt-4">
+                <ProjectGrid
+                  groupId={group.id}
+                  group={group}
+                  currentUser={currentUser}
+                  onProjectClick={onProjectClick}
+                  onProjectCountChange={handleProjectCountChange}
+                />
               </div>
             </div>
           </div>

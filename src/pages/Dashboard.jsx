@@ -14,10 +14,19 @@ import { Spinner } from "../components/ui";
 import { getUserGroups, createGroup, joinGroup } from "../services/groups";
 import { validateGroupName, validateGroupCode } from "../utils/groupValidation";
 
-const Dashboard = () => {
+const Dashboard = ({ onProjectClick }) => {
   const { user } = useAuth();
   const { openModal } = useModal();
   const displayName = user?.displayName || "Utente";
+
+  // Oggetto utente corrente per passarlo ai componenti
+  const currentUser = user
+    ? {
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+      }
+    : null;
 
   // Stati per i gruppi
   const [groups, setGroups] = useState([]);
@@ -142,8 +151,10 @@ const Dashboard = () => {
                     key={group.id}
                     group={group}
                     currentUserId={user?.uid}
+                    currentUser={currentUser}
                     onGroupUpdated={handleGroupUpdated}
                     onGroupLeft={handleGroupLeft}
+                    onProjectClick={onProjectClick}
                   />
                 ))}
 
