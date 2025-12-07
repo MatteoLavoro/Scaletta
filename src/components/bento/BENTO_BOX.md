@@ -4,39 +4,48 @@
 
 Il sistema **Bento Box** è un layout dinamico a griglia che organizza i contenuti in riquadri (box) di varie altezze distribuiti su colonne. L'obiettivo è creare un layout visivamente bilanciato dove le colonne abbiano altezze il più simili possibile.
 
+**Caratteristiche principali:**
+
+- 📱 Layout responsive (1-3 colonne)
+- 🔄 Sincronizzazione in tempo reale tra dispositivi (Firestore `onSnapshot`)
+- ✨ Animazioni FLIP per transizioni fluide
+- 📏 Algoritmo "shortest column first" per distribuzione ottimale
+
 ---
 
 ## Principi di Design
 
 ### 1. Griglia a Colonne Fisse
 
-- **Larghezza colonne**: Tutte le colonne hanno la stessa larghezza (distribuzione equa dello spazio)
-- **Altezza box**: Fissa e standard per ogni box - non si modifica in base allo schermo
+- **Larghezza colonne**: `BOX_WIDTH = 320px` (desktop), `100%` (mobile)
+- **Gap tra box**: `GAP = 16px`
+- **Altezza box**: Auto-dimensionante in base al contenuto
 - **Numero colonne responsive**:
-  - 📱 **Mobile** (< 640px): 1 colonna
+  - 📱 **Mobile** (< 640px): 1 colonna (100% larghezza)
   - 📱 **Tablet** (640px - 1023px): 2 colonne
-  - 💻 **Desktop** (≥ 1024px): 3 colonne
+  - 💻 **Desktop** (1024px - 1343px): 3 colonne
+  - 🖥️ **Large** (≥ 1344px): 4 colonne
 
-### 2. Distribuzione Bilanciata
+### 2. Distribuzione "Shortest Column First"
 
-L'algoritmo distribuisce i box nelle colonne in modo che l'altezza totale di ogni colonna sia il più simile possibile. Questo crea un layout esteticamente piacevole senza grandi spazi vuoti.
+L'algoritmo distribuisce i box nelle colonne in modo che l'altezza totale di ogni colonna sia il più simile possibile.
 
 **Algoritmo di distribuzione**:
 
-1. Ordina i box per altezza (decrescente) - i box più alti vengono posizionati prima
-2. Per ogni box, trova la colonna con l'altezza totale minore
-3. Aggiungi il box a quella colonna
-4. Ripeti fino a posizionare tutti i box
+1. Per ogni box (in ordine di creazione):
+   - Trova la colonna con l'altezza totale minore
+   - Aggiungi il box a quella colonna
+   - Aggiorna l'altezza totale della colonna
+2. Quando un box cambia altezza, ricalcola la distribuzione
+3. Anima le transizioni con tecnica FLIP
 
-### 3. Altezze Standard
+### 3. Sincronizzazione Real-Time
 
-Ogni box ha un'altezza fissa che può essere:
+I box sono sincronizzati in tempo reale tra tutti i dispositivi usando Firebase Firestore:
 
-- **Piccolo (sm)**: 100px
-- **Medio (md)**: 200px - default
-- **Grande (lg)**: 300px
-- **Extra-large (xl)**: 400px
-- **Personalizzata**: Altezza specifica in pixel
+- **`onSnapshot`**: Listener per aggiornamenti istantanei
+- **Nessun refresh necessario**: Le modifiche da PC appaiono subito su mobile e viceversa
+- **Struttura dati**: `projects/{projectId}/bentoBoxes/{boxId}`
 
 ---
 
@@ -58,20 +67,22 @@ Ogni Bento Box ha una struttura standard:
 
 ### Header
 
-- **Titolo**: Centrato, testo semibold
-- **Kebab Menu**: A destra, con opzioni del box
-  - "Cambia titolo" (sempre presente)
-  - Altre opzioni specifiche per tipo di box
+- **Titolo**: Centrato, testo semibold (max 50 caratteri)
+- **Kebab Menu**: A destra, in cerchietto grigio
+  - Items specifici del tipo di box (in cima)
+  - Separatore (se ci sono items specifici)
+  - "Cambia titolo" (universale)
+  - "Elimina box" (universale, in rosso)
 
 ### Contenuto
 
-- Area centrale scrollabile
-- Contenuto specifico per ogni tipo di box (note, file, immagini, etc.)
+- Area centrale con padding
+- Contenuto specifico per ogni tipo di box
 
 ### Azioni Rapide (opzionali)
 
 - Tasti in fondo al box per azioni comuni
-- Varianti: default, primary, danger
+- Varianti: `default`, `primary`, `danger`
 
 ---
 
@@ -79,38 +90,49 @@ Ogni Bento Box ha una struttura standard:
 
 ```
 src/components/bento/
-├── BENTO_BOX.md          # Questa documentazione
-├── BaseBentoBox.jsx      # Componente base (ereditato da tutti i box)
-├── BentoGrid.jsx         # Container griglia principale
-├── BentoBox.jsx          # Box semplice (senza struttura)
-├── bentoConstants.js     # Costanti (altezze, etc.)
-├── useBentoLayout.js     # Hook per calcolo layout
-└── index.js              # Esportazioni pubbliche
+├── BENTO_BOX.md           # Questa documentazione
+├── BaseBentoBox.jsx       # Componente base per tutti i box
+├── NoteBox.jsx            # Box per note testuali
+├── TutorialBox.jsx        # Box tutorial (primo avvio)
+├── AddBentoBoxButton.jsx  # Griglia 2x2 per aggiungere box (desktop)
+│   └── MobileAddFab       # Barra flottante (mobile)
+├── BentoGrid.jsx          # Container griglia principale
+├── BentoBox.jsx           # Box semplice generico
+├── bentoConstants.js      # Costanti (altezze preset)
+├── useBentoLayout.js      # Hook legacy (non usato)
+└── index.js               # Esportazioni pubbliche
+
+src/hooks/
+└── useBentoAnimation.js   # Hook per layout + animazioni FLIP
 ```
 
-### BaseBentoBox (Componente Base)
+---
 
-Il componente che tutti i Bento Box specifici erediteranno.
+## Componenti
+
+### BaseBentoBox
+
+Il componente base che tutti i Bento Box specifici estendono.
 
 ```jsx
 <BaseBentoBox
   title="Note"
-  height={200}
   onTitleChange={(newTitle) => handleTitleChange(newTitle)}
+  onDelete={() => handleDelete()}
+  minHeight={120}
   menuItems={[
     {
-      label: "Elimina",
-      icon: <TrashIcon />,
-      danger: true,
-      onClick: handleDelete,
+      label: "Modifica nota",
+      icon: <PencilIcon />,
+      onClick: handleEdit,
     },
   ]}
   actions={[
     {
-      label: "Aggiungi",
-      icon: <PlusIcon />,
+      label: "Salva",
+      icon: <CheckIcon />,
       variant: "primary",
-      onClick: handleAdd,
+      onClick: handleSave,
     },
   ]}
 >
@@ -121,115 +143,172 @@ Il componente che tutti i Bento Box specifici erediteranno.
 **Props:**
 | Prop | Tipo | Default | Descrizione |
 |------|------|---------|-------------|
-| `title` | `string` | `"Box"` | Titolo del box |
-| `onTitleChange` | `function` | - | Callback cambio titolo (abilita modifica) |
-| `height` | `number\|string` | `"md"` | Altezza in pixel o preset |
+| `title` | `string` | `"Box"` | Titolo del box (max 50 char) |
+| `onTitleChange` | `function` | - | Callback cambio titolo |
+| `onDelete` | `function` | - | Callback eliminazione |
+| `minHeight` | `number` | - | Altezza minima in pixel |
 | `children` | `node` | - | Contenuto del box |
-| `menuItems` | `array` | `[]` | Voci aggiuntive kebab menu |
-| `actions` | `array` | `[]` | Azioni rapide in fondo al box |
+| `menuItems` | `array` | `[]` | Voci specifiche kebab menu |
+| `actions` | `array` | `[]` | Azioni rapide in fondo |
 | `className` | `string` | `""` | Classi CSS aggiuntive |
 
-### BentoAction (Tasto Azione)
+### NoteBox
 
-Componente per le azioni rapide in fondo al box.
+Box specializzato per note testuali.
 
 ```jsx
-<BentoAction
-  label="Aggiungi nota"
-  icon={<PlusIcon />}
-  variant="primary"
-  onClick={handleAdd}
+<NoteBox
+  title="Appunti riunione"
+  content="Testo della nota..."
+  onTitleChange={handleTitleChange}
+  onContentChange={handleContentChange}
+  onDelete={handleDelete}
 />
 ```
 
-**Props:**
-| Prop | Tipo | Default | Descrizione |
-|------|------|---------|-------------|
-| `label` | `string` | - | Testo del tasto |
-| `icon` | `node` | - | Icona (opzionale) |
-| `onClick` | `function` | - | Handler click |
-| `variant` | `string` | `"default"` | Variante: "default" \| "primary" \| "danger" |
+**Caratteristiche:**
 
-### BentoGrid
+- Auto-dimensionamento in base al contenuto
+- Mostra pulsante "Aggiungi nota" se vuoto
+- Menu con "Modifica nota"
+- Max 2000 caratteri
 
-Il componente container che gestisce la griglia responsive.
+### TutorialBox
 
-```jsx
-<BentoGrid items={boxes} gap={16}>
-  {(box) => (
-    <BaseBentoBox key={box.id} title={box.title} height={box.height}>
-      {box.content}
-    </BaseBentoBox>
-  )}
-</BentoGrid>
-```
-
-**Props:**
-| Prop | Tipo | Default | Descrizione |
-|------|------|---------|-------------|
-| `items` | `array` | `[]` | Array di oggetti box con `id` e `height` |
-| `children` | `function` | - | Render function che riceve ogni box |
-| `gap` | `number` | `16` | Spazio tra i box in pixel |
-| `className` | `string` | `""` | Classi CSS aggiuntive |
-
-### useBentoLayout (Hook)
-
-Hook per calcolare la distribuzione ottimale dei box.
+Box informativo che appare quando il progetto è vuoto.
 
 ```jsx
-const { columns, columnCount } = useBentoLayout(items, gap);
+<TutorialBox isMobile={false} />
 ```
+
+**Caratteristiche:**
+
+- Spiega come aggiungere il primo box
+- Scompare automaticamente dopo il primo box
+- Adatta il messaggio per mobile/desktop
+
+### AddBentoBoxButton (Desktop)
+
+Griglia 2x2 per selezionare il tipo di box da aggiungere.
+
+```jsx
+<AddBentoBoxButton onAddNote={handleAddNote} />
+```
+
+**Caratteristiche:**
+
+- Aspect ratio quadrato (come un box)
+- 4 slot per tipi di box (solo "Nota" attivo)
+- Slot futuri disabilitati (grayed out)
+
+### MobileAddFab
+
+Barra flottante per mobile, posizionata in basso.
+
+```jsx
+<MobileAddFab onAddNote={handleAddNote} />
+```
+
+**Caratteristiche:**
+
+- Fisso in basso, centrato
+- Usa il colore del tema profilo (accent color)
+- Testo auto-contrast (chiaro/scuro in base allo sfondo)
+- Icona + testo "Aggiungi nota"
 
 ---
 
-## Tipi di Bento Box (Futuro)
+## Hook useBentoAnimation
 
-Il sistema è progettato per supportare vari tipi di contenuto:
+Hook che gestisce layout e animazioni FLIP.
 
-| Tipo                   | Descrizione            | Altezza Tipica |
-| ---------------------- | ---------------------- | -------------- |
-| 📝 **NoteBentoBox**    | Testo libero, markdown | md/lg          |
-| 🖼️ **ImageBentoBox**   | Foto, screenshot       | md/lg          |
-| 📄 **FileBentoBox**    | Documenti con preview  | lg             |
-| 👤 **ContactBentoBox** | Anagrafiche persone    | md             |
-| 🔗 **LinkBentoBox**    | Link esterni           | sm             |
-| 📊 **DataBentoBox**    | Dati strutturati       | variabile      |
+```jsx
+const { containerRef, columns } = useBentoAnimation(items, columnCount, gap);
+```
+
+**Parametri:**
+| Param | Tipo | Default | Descrizione |
+|-------|------|---------|-------------|
+| `items` | `array` | - | Array di elementi con `id` univoco |
+| `columnCount` | `number` | - | Numero di colonne |
+| `gap` | `number` | `16` | Gap tra i box |
+
+**Return:**
+| Prop | Tipo | Descrizione |
+|------|------|-------------|
+| `containerRef` | `ref` | Ref da applicare al container |
+| `columns` | `array[]` | Array di array, ogni sub-array è una colonna |
+
+**Funzionamento:**
+
+1. **ResizeObserver**: Monitora le altezze di ogni box
+2. **Distribuzione**: Ricalcola quando cambiano le altezze
+3. **FLIP Animation**: Anima le transizioni di posizione
 
 ---
 
-## Esempio di Implementazione Box Specifico
+## Costanti
 
-```jsx
-// NoteBentoBox.jsx - Box per note testuali
-import { BaseBentoBox, BentoAction } from "../bento";
-import { PlusIcon, TrashIcon } from "../icons";
+```javascript
+// hooks/useColumnCount.js
+export const BOX_WIDTH = 320; // Larghezza box desktop
+export const GAP = 16; // Gap tra i box
 
-const NoteBentoBox = ({ id, title, content, onTitleChange, onDelete }) => {
-  return (
-    <BaseBentoBox
-      title={title}
-      height="md"
-      onTitleChange={onTitleChange}
-      menuItems={[
-        { separator: true },
-        {
-          label: "Elimina",
-          icon: <TrashIcon />,
-          danger: true,
-          onClick: onDelete,
-        },
-      ]}
-      actions={[{ label: "Modifica", variant: "primary", onClick: () => {} }]}
-    >
-      <p className="text-sm text-text-secondary">
-        {content || "Nessuna nota..."}
-      </p>
-    </BaseBentoBox>
-  );
+// components/bento/bentoConstants.js
+export const HEIGHT_PRESETS = {
+  sm: 100, // Piccolo
+  md: 200, // Medio (default)
+  lg: 300, // Grande
+  xl: 400, // Extra-large
 };
-
-export default NoteBentoBox;
 ```
+
+---
+
+## Sincronizzazione Firebase
+
+### Struttura Dati
+
+```
+projects/
+  └── {projectId}/
+      └── bentoBoxes/
+          └── {boxId}/
+              ├── id: string
+              ├── title: string
+              ├── boxType: "note" | "generic"
+              ├── content: string
+              ├── height: number
+              └── createdAt: timestamp
+```
+
+### Funzioni Service
+
+```javascript
+// services/projects.js
+
+// Sottoscrizione real-time
+subscribeToBentoBoxes(projectId, onUpdate) → unsubscribe
+
+// CRUD operations
+createBentoBox(projectId, boxData) → box
+updateBentoBoxTitle(projectId, boxId, newTitle)
+updateBentoBoxContent(projectId, boxId, newContent)
+deleteBentoBox(projectId, boxId)
+```
+
+---
+
+## Tipi di Box (Roadmap)
+
+| Tipo                | Stato     | Descrizione           |
+| ------------------- | --------- | --------------------- |
+| 📝 **NoteBox**      | ✅ Attivo | Note testuali         |
+| 🖼️ **ImageBox**     | 🔜 Futuro | Foto, screenshot      |
+| 📄 **FileBox**      | 🔜 Futuro | Documenti con preview |
+| 👤 **ContactBox**   | 🔜 Futuro | Anagrafiche persone   |
+| 🔗 **LinkBox**      | 🔜 Futuro | Link esterni          |
+| ✅ **ChecklistBox** | 🔜 Futuro | Liste di task         |
 
 ---
 
@@ -237,23 +316,36 @@ export default NoteBentoBox;
 
 ### Ottimizzazioni Implementate
 
-1. **Ricalcolo solo quando necessario**: Il layout viene ricalcolato solo quando cambiano gli items o il numero di colonne
-2. **useMemo per distribuzione**: L'algoritmo di distribuzione è memoizzato
-3. **Debounce resize**: Il cambio colonne su resize è debounced per evitare troppi ricalcoli
+1. **useMemo**: Distribuzione colonne memoizzata
+2. **ResizeObserver**: Solo su cambio altezza effettivo (threshold 2px)
+3. **FLIP animations**: Transizioni GPU-accelerate
+4. **Real-time sync**: Solo dati modificati via `onSnapshot`
 
 ---
 
 ## Changelog
 
+### v1.3.0 (Dicembre 2025)
+
+- ⚡ Sincronizzazione real-time con `onSnapshot`
+- 🔧 Rimosso caching Firebase dal Service Worker
+- 📱 Colonne mobile a 100% larghezza
+
+### v1.2.0 (Dicembre 2025)
+
+- 🎨 MobileAddFab con colore tema profilo
+- 🔤 Auto-contrast testo (chiaro/scuro)
+- 📐 Bottom padding aumentato per visibilità
+- 🍔 Kebab menu riorganizzato (specifici → universali)
+
 ### v1.1.0 (Dicembre 2025)
 
-- Aggiunto `BaseBentoBox` come componente base
-- Struttura standard con header, divider, contenuto, azioni
-- Kebab menu con opzione "Cambia titolo"
-- Rimossa struttura di test
+- ✨ Algoritmo "shortest column first"
+- 🎬 Animazioni FLIP
+- 📏 ResizeObserver per altezze dinamiche
 
 ### v1.0.0 (Dicembre 2025)
 
-- Implementazione iniziale
-- Griglia responsive 1/2/3 colonne
-- Algoritmo distribuzione bilanciata
+- 🎉 Implementazione iniziale
+- 📱 Griglia responsive 1-4 colonne
+- 📝 NoteBox come primo tipo di box
