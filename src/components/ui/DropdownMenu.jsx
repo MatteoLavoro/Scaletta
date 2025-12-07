@@ -6,16 +6,17 @@ import { MoreVerticalIcon } from "../icons";
  *
  * @param {Array} items - Array di oggetti { label, onClick, icon?, danger? }
  * @param {string} buttonColor - Colore del testo del bottone (default: currentColor)
- * @param {string} buttonBgHover - Colore di sfondo hover del bottone
  * @param {string} ariaLabel - Label accessibilità per il bottone
+ * @param {boolean} compact - Modalità compatta (w-full h-full per riempire container)
  */
 const DropdownMenu = ({
   items = [],
   buttonColor,
-  buttonBgHover = "bg-black/10",
   ariaLabel = "Menu",
+  compact = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -30,13 +31,13 @@ const DropdownMenu = ({
         buttonRef.current &&
         !buttonRef.current.contains(e.target)
       ) {
-        setIsOpen(false);
+        closeMenu();
       }
     };
 
     const handleEscape = (e) => {
       if (e.key === "Escape") {
-        setIsOpen(false);
+        closeMenu();
         buttonRef.current?.focus();
       }
     };
@@ -49,21 +50,35 @@ const DropdownMenu = ({
     };
   }, [isOpen]);
 
+  // Chiude il menu con animazione
+  const closeMenu = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 150); // Durata animazione di chiusura
+  };
+
   const handleItemClick = (item) => {
-    setIsOpen(false);
+    closeMenu();
     item.onClick?.();
   };
 
   return (
-    <div className="relative">
+    <div
+      className={`relative ${
+        compact ? "w-full h-full" : "inline-flex items-center justify-center"
+      }`}
+    >
       {/* Bottone kebab */}
       <button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
         className={`
-          flex items-center justify-center w-10 h-10 -mr-1
+          flex items-center justify-center
+          ${compact ? "w-full h-full" : "w-10 h-10 -mr-1"}
           rounded-full
-          hover:${buttonBgHover} active:bg-black/20
+          hover:bg-black/10 active:bg-black/20
           transition-colors duration-150
         `}
         style={{ color: buttonColor }}
@@ -71,21 +86,27 @@ const DropdownMenu = ({
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <MoreVerticalIcon className="w-6 h-6" />
+        <MoreVerticalIcon className={compact ? "w-5 h-5" : "w-6 h-6"} />
       </button>
 
       {/* Menu dropdown */}
       {isOpen && (
         <div
           ref={menuRef}
-          className="
+          className={`
             absolute right-0 top-full mt-1
             min-w-[200px] py-1
             bg-bg-secondary border border-border rounded-xl
             shadow-lg
-            animate-fade-in
             z-50
-          "
+            transition-all duration-150 ease-out
+            origin-top-right
+            ${
+              isClosing
+                ? "opacity-0 scale-95"
+                : "opacity-100 scale-100 animate-dropdown-in"
+            }
+          `}
           role="menu"
         >
           {items.map((item, index) => {

@@ -219,3 +219,96 @@ export const projectNameExists = async (
     (p) => p.name.toLowerCase() === normalizedName && p.id !== excludeProjectId
   );
 };
+
+// ===== BENTO BOX FUNCTIONS =====
+
+/**
+ * Ottiene tutti i bento box di un progetto
+ * @param {string} projectId - ID del progetto
+ * @returns {array} - Lista di bento box ordinati per createdAt
+ */
+export const getBentoBoxes = async (projectId) => {
+  const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
+  const snapshot = await getDocs(boxesRef);
+  const boxes = [];
+
+  snapshot.forEach((doc) => {
+    boxes.push({ id: doc.id, ...doc.data() });
+  });
+
+  // Ordina per data di creazione (più vecchi prima)
+  boxes.sort((a, b) => {
+    const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+    const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+    return dateA - dateB;
+  });
+
+  return boxes;
+};
+
+/**
+ * Crea un nuovo bento box
+ * @param {string} projectId - ID del progetto
+ * @param {object} boxData - Dati del box { title, height, boxType, content }
+ * @returns {object} - Box creato
+ */
+export const createBentoBox = async (projectId, boxData) => {
+  const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
+  const boxId = doc(boxesRef).id;
+
+  const newBox = {
+    id: boxId,
+    title: boxData.title || "Box",
+    height: boxData.height || 200,
+    boxType: boxData.boxType || "generic", // "generic", "note", etc.
+    content: boxData.content || "", // Contenuto per le note
+    createdAt: serverTimestamp(),
+  };
+
+  await setDoc(doc(boxesRef, boxId), newBox);
+
+  return { ...newBox, createdAt: new Date() };
+};
+
+/**
+ * Aggiorna il titolo di un bento box
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {string} newTitle - Nuovo titolo
+ */
+export const updateBentoBoxTitle = async (projectId, boxId, newTitle) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { title: newTitle.trim() });
+};
+
+/**
+ * Aggiorna il contenuto di un bento box (es. nota)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {string} newContent - Nuovo contenuto
+ */
+export const updateBentoBoxContent = async (projectId, boxId, newContent) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { content: newContent });
+};
+
+/**
+ * Elimina un bento box
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ */
+export const deleteBentoBox = async (projectId, boxId) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await deleteDoc(boxRef);
+};
+
+/**
+ * Conta i bento box di un progetto
+ * @param {string} projectId - ID del progetto
+ * @returns {number} - Numero di box
+ */
+export const countBentoBoxes = async (projectId) => {
+  const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
+  const snapshot = await getDocs(boxesRef);
+  return snapshot.size;
+};

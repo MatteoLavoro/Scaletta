@@ -19,6 +19,9 @@ export const MODAL_PROFILE = "profile";
 
 // Chiave sessionStorage per tracciare se il popup è già stato mostrato
 const INSTALL_POPUP_SHOWN_KEY = "scaletta_install_popup_shown";
+// Chiavi sessionStorage per persistenza progetto corrente
+const CURRENT_PROJECT_KEY = "scaletta_current_project";
+const CURRENT_GROUP_KEY = "scaletta_current_group";
 
 const AppContent = () => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -26,14 +29,50 @@ const AppContent = () => {
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [authMode, setAuthMode] = useState("login");
   const [showInstallPopup, setShowInstallPopup] = useState(false);
-  const [currentProject, setCurrentProject] = useState(null);
-  const [currentGroup, setCurrentGroup] = useState(null);
+
+  // Inizializza stato progetto da sessionStorage per persistenza al reload
+  const [currentProject, setCurrentProject] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(CURRENT_PROJECT_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [currentGroup, setCurrentGroup] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(CURRENT_GROUP_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   // Key per forzare refresh della Dashboard
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
 
   useEffect(() => {
     if (isAuthenticated) closeAllModals();
   }, [isAuthenticated, closeAllModals]);
+
+  // Salva progetto/gruppo corrente in sessionStorage per persistenza al reload
+  useEffect(() => {
+    if (currentProject) {
+      sessionStorage.setItem(
+        CURRENT_PROJECT_KEY,
+        JSON.stringify(currentProject)
+      );
+    } else {
+      sessionStorage.removeItem(CURRENT_PROJECT_KEY);
+    }
+  }, [currentProject]);
+
+  useEffect(() => {
+    if (currentGroup) {
+      sessionStorage.setItem(CURRENT_GROUP_KEY, JSON.stringify(currentGroup));
+    } else {
+      sessionStorage.removeItem(CURRENT_GROUP_KEY);
+    }
+  }, [currentGroup]);
 
   // Mostra il popup di installazione automaticamente
   useEffect(() => {

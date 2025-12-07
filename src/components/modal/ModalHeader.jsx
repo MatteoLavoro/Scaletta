@@ -3,20 +3,22 @@ import { ArrowLeftIcon, CloseIcon } from "../icons";
 const ModalHeader = ({ title, isMobile, onClose }) => {
   return (
     <header className="flex items-center justify-between px-4 py-3 min-h-14 shrink-0">
-      {/* Mobile: Back arrow left | Desktop: Spacer */}
+      {/* Mobile: Back arrow left con cerchietto | Desktop: Spacer */}
       {isMobile ? (
-        <button
-          onClick={onClose}
-          className="
-            flex items-center justify-center w-10 h-10 -ml-1
-            rounded-full text-text-primary
-            hover:bg-bg-tertiary active:bg-divider
-            transition-colors duration-150
-          "
-          aria-label="Torna indietro"
-        >
-          <ArrowLeftIcon className="w-6 h-6" />
-        </button>
+        <div className="w-10 h-10 -ml-1 rounded-full bg-bg-tertiary flex items-center justify-center">
+          <button
+            onClick={onClose}
+            className="
+              flex items-center justify-center w-full h-full
+              rounded-full text-text-primary
+              hover:bg-divider active:bg-border
+              transition-colors duration-150
+            "
+            aria-label="Torna indietro"
+          >
+            <ArrowLeftIcon className="w-6 h-6" />
+          </button>
+        </div>
       ) : (
         <div className="w-10" aria-hidden="true" />
       )}
@@ -29,20 +31,22 @@ const ModalHeader = ({ title, isMobile, onClose }) => {
         {title}
       </h2>
 
-      {/* Desktop: Close X right | Mobile: Spacer */}
+      {/* Desktop: Close X right con cerchietto | Mobile: Spacer */}
       {!isMobile ? (
-        <button
-          onClick={onClose}
-          className="
-            flex items-center justify-center w-10 h-10 -mr-1
-            rounded-full text-text-primary
-            hover:bg-bg-tertiary active:bg-divider
-            transition-colors duration-150
-          "
-          aria-label="Chiudi"
-        >
-          <CloseIcon className="w-6 h-6" />
-        </button>
+        <div className="w-10 h-10 -mr-1 rounded-full bg-bg-tertiary flex items-center justify-center">
+          <button
+            onClick={onClose}
+            className="
+              flex items-center justify-center w-full h-full
+              rounded-full text-text-primary
+              hover:bg-divider active:bg-border
+              transition-colors duration-150
+            "
+            aria-label="Chiudi"
+          >
+            <CloseIcon className="w-6 h-6" />
+          </button>
+        </div>
       ) : (
         <div className="w-10" aria-hidden="true" />
       )}

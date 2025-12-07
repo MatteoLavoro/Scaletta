@@ -98,6 +98,22 @@ body.modal-open {
   animation: scale-in 250ms ease-out forwards;
 }
 
+/* Dropdown In - Menu dropdown */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 150ms ease-out forwards;
+}
+
 /* Modal Scale - Desktop modal centered with inset-0 m-auto */
 @keyframes modal-scale {
   from {
@@ -155,4 +171,28 @@ body.modal-open {
 
 .animate-fab-pulse {
   animation: fab-pulse 2s ease-in-out infinite;
+}
+
+/* ===== Bento Box Animations ===== */
+
+/* Bento Box In - Animazione entrata con fade e scale */
+@keyframes bento-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-bento-in {
+  animation: bento-in 300ms ease-out forwards;
+  animation-fill-mode: both;
+}
+
+/* Bento Box Shuffle - Transizione fluida per riposizionamento */
+.bento-transition {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }

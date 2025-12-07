@@ -40,6 +40,11 @@ service cloud.firestore {
     // ==========================================
     match /projects/{projectId} {
       allow read, write: if isAuthenticated();
+      
+      // Subcollection: Bento Boxes
+      match /bentoBoxes/{boxId} {
+        allow read, write: if isAuthenticated();
+      }
     }
     
     // ==========================================

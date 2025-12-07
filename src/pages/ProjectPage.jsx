@@ -1,11 +1,30 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ArrowLeftIcon, InfoIcon, SettingsIcon } from "../components/icons";
+import useColumnCount, { BOX_WIDTH, GAP } from "../hooks/useColumnCount";
+import useBentoAnimation from "../hooks/useBentoAnimation";
 import { useTheme } from "../contexts/ThemeContext";
 import { useModal } from "../contexts/ModalContext";
 import { ProjectInfoModal, StatusModal } from "../components/projects";
 import { DropdownMenu } from "../components/ui";
+import {
+  AddBentoBoxButton,
+  MobileAddFab,
+  NoteBox,
+  BaseBentoBox,
+} from "../components/bento";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
+import {
+  getBentoBoxes,
+  createBentoBox,
+  updateBentoBoxTitle,
+  updateBentoBoxContent,
+  deleteBentoBox,
+  countBentoBoxes,
+} from "../services/projects";
+
+// Altezza standard per i nuovi box
+const DEFAULT_BOX_HEIGHT = 200;
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -33,8 +52,160 @@ const ProjectPage = ({
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
+
+  // Stato per i bento box del progetto
+  const [bentoBoxes, setBentoBoxes] = useState([]);
+  // Contatore per generare nomi univoci (box1, box2, etc.)
+  const boxCounterRef = useRef(1);
+
+  // Carica i box dal database all'avvio
+  useEffect(() => {
+    if (!project?.id) return;
+
+    const loadBoxes = async () => {
+      try {
+        setIsLoading(true);
+        const boxes = await getBentoBoxes(project.id);
+        setBentoBoxes(boxes);
+        // Imposta il contatore al numero successivo
+        const count = await countBentoBoxes(project.id);
+        boxCounterRef.current = count + 1;
+      } catch (error) {
+        console.error("Errore caricamento bento boxes:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBoxes();
+  }, [project?.id]);
+
+  // Funzione per aggiungere una nota (salva nel database)
+  const handleAddNote = async () => {
+    if (!project?.id) return;
+
+    try {
+      const noteCount =
+        bentoBoxes.filter((b) => b.boxType === "note").length + 1;
+      const newBox = await createBentoBox(project.id, {
+        title: `Nota ${noteCount}`,
+        height: DEFAULT_BOX_HEIGHT,
+        boxType: "note",
+        content: "",
+      });
+      boxCounterRef.current++;
+      setBentoBoxes((prev) => [...prev, newBox]);
+    } catch (error) {
+      console.error("Errore creazione nota:", error);
+    }
+  };
+
+  // Funzione per aggiornare il titolo di un box (salva nel database)
+  const handleBoxTitleChange = async (boxId, newTitle) => {
+    if (!project?.id) return;
+
+    try {
+      await updateBentoBoxTitle(project.id, boxId, newTitle);
+      setBentoBoxes((prev) =>
+        prev.map((box) =>
+          box.id === boxId ? { ...box, title: newTitle } : box
+        )
+      );
+    } catch (error) {
+      console.error("Errore aggiornamento titolo box:", error);
+    }
+  };
+
+  // Funzione per eliminare un box (elimina dal database)
+  const handleDeleteBox = async (boxId) => {
+    if (!project?.id) return;
+
+    try {
+      await deleteBentoBox(project.id, boxId);
+      setBentoBoxes((prev) => prev.filter((box) => box.id !== boxId));
+    } catch (error) {
+      console.error("Errore eliminazione bento box:", error);
+    }
+  };
+
+  // Funzione per aggiornare il contenuto di un box (es. nota)
+  const handleBoxContentChange = async (boxId, newContent) => {
+    if (!project?.id) return;
+
+    try {
+      await updateBentoBoxContent(project.id, boxId, newContent);
+      setBentoBoxes((prev) =>
+        prev.map((box) =>
+          box.id === boxId ? { ...box, content: newContent } : box
+        )
+      );
+    } catch (error) {
+      console.error("Errore aggiornamento contenuto box:", error);
+    }
+  };
+
+  // I box ordinati per data di creazione (più vecchi prima)
+  const sortedBoxes = [...bentoBoxes].sort((a, b) => {
+    const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+    const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+    return dateA - dateB;
+  });
+
+  // Numero di colonne dinamico (si aggiorna al resize)
+  const columnCount = useColumnCount();
+
+  // Distribuzione box nelle colonne (memoizzata)
+  const columns = useMemo(() => {
+    // Solo i box (il bottone add quadrato compare solo con più colonne)
+    const boxItems = sortedBoxes.map((box) => ({ ...box, type: "box" }));
+
+    // Se più di una colonna, aggiungi il bottone add alla fine
+    const allItems =
+      columnCount > 1
+        ? [
+            ...boxItems,
+            { id: "add-button", type: "add", height: DEFAULT_BOX_HEIGHT },
+          ]
+        : boxItems;
+
+    // Crea struttura colonne
+    const cols = Array(columnCount)
+      .fill(null)
+      .map(() => ({
+        items: [],
+        totalHeight: 0,
+      }));
+
+    // Ordina per altezza decrescente per migliore distribuzione
+    const itemsByHeight = [...allItems].sort((a, b) => {
+      const heightA = typeof a.height === "number" ? a.height : 200;
+      const heightB = typeof b.height === "number" ? b.height : 200;
+      return heightB - heightA;
+    });
+
+    // Distribuisci nelle colonne (algoritmo greedy)
+    for (const item of itemsByHeight) {
+      let shortestIdx = 0;
+      let minHeight = cols[0].totalHeight;
+      for (let i = 1; i < cols.length; i++) {
+        if (cols[i].totalHeight < minHeight) {
+          minHeight = cols[i].totalHeight;
+          shortestIdx = i;
+        }
+      }
+      const itemHeight = typeof item.height === "number" ? item.height : 200;
+      cols[shortestIdx].items.push(item);
+      cols[shortestIdx].totalHeight += itemHeight + 16;
+    }
+
+    return cols.map((col) => col.items);
+  }, [sortedBoxes, columnCount]);
+
+  // Hook per animazioni FLIP
+  const { containerRef } = useBentoAnimation(sortedBoxes, columnCount);
 
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
@@ -130,20 +301,22 @@ const ProjectPage = ({
           className="flex items-center justify-between px-4 py-3 min-h-14 border-b border-border sticky top-0 z-50"
           style={{ backgroundColor: projectColor.bg }}
         >
-          {/* Freccia indietro - Sinistra (stesso stile dei modali) */}
-          <button
-            onClick={handleClose}
-            className="
-              flex items-center justify-center w-10 h-10 -ml-1
-              rounded-full
-              hover:bg-black/10 active:bg-black/20
-              transition-colors duration-150
-            "
-            style={{ color: projectColor.text }}
-            aria-label="Torna alla home"
-          >
-            <ArrowLeftIcon className="w-6 h-6" />
-          </button>
+          {/* Freccia indietro - Sinistra con cerchietto */}
+          <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+            <button
+              onClick={handleClose}
+              className="
+                flex items-center justify-center w-full h-full
+                rounded-full
+                hover:bg-black/10 active:bg-black/20
+                transition-colors duration-150
+              "
+              style={{ color: projectColor.text }}
+              aria-label="Torna alla home"
+            >
+              <ArrowLeftIcon className="w-6 h-6" />
+            </button>
+          </div>
 
           {/* Nome progetto - Centro */}
           <h1
@@ -153,31 +326,101 @@ const ProjectPage = ({
             {project.name}
           </h1>
 
-          {/* Kebab menu dropdown - Destra */}
-          <DropdownMenu
-            items={menuItems}
-            buttonColor={projectColor.text}
-            ariaLabel="Menu progetto"
-          />
+          {/* Kebab menu dropdown - Destra con cerchietto */}
+          <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+            <DropdownMenu
+              items={menuItems}
+              buttonColor={projectColor.text}
+              ariaLabel="Menu progetto"
+              compact
+            />
+          </div>
         </header>
 
-        {/* Contenuto principale - vuoto per ora */}
-        <main className="flex-1 p-5">
-          <div className="max-w-2xl mx-auto">
-            {/* Placeholder contenuto futuro */}
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 flex items-center justify-center bg-primary/10 rounded-2xl mb-4">
-                <span className="text-2xl">🚧</span>
+        {/* Contenuto principale - Bento Grid */}
+        <main className="flex-1 p-4">
+          <div className="flex justify-center">
+            {/* Loading */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
-              <h2 className="text-lg font-semibold text-text-primary mb-2">
-                Pagina in costruzione
-              </h2>
-              <p className="text-text-secondary text-sm">
-                Qui verranno mostrati i contenuti del progetto.
-              </p>
-            </div>
+            ) : (
+              /* Griglia con box - animata */
+              <div
+                ref={containerRef}
+                className="flex justify-center"
+                style={{ gap: `${GAP}px` }}
+              >
+                {columns.map((colItems, colIdx) => (
+                  <div
+                    key={`col-${colIdx}`}
+                    className="flex flex-col"
+                    style={{
+                      width: `${BOX_WIDTH}px`,
+                      gap: `${GAP}px`,
+                    }}
+                  >
+                    {colItems.map((item) => {
+                      // Tasto aggiunta box
+                      if (item.type === "add") {
+                        return (
+                          <div key={item.id} data-bento-id={item.id}>
+                            <AddBentoBoxButton onAddNote={handleAddNote} />
+                          </div>
+                        );
+                      }
+                      // Render NoteBox per box di tipo "note"
+                      if (item.boxType === "note") {
+                        return (
+                          <div key={item.id} data-bento-id={item.id}>
+                            <NoteBox
+                              title={item.title}
+                              content={item.content || ""}
+                              height={item.height}
+                              onTitleChange={(newTitle) =>
+                                handleBoxTitleChange(item.id, newTitle)
+                              }
+                              onContentChange={(newContent) =>
+                                handleBoxContentChange(item.id, newContent)
+                              }
+                              onDelete={() => handleDeleteBox(item.id)}
+                            />
+                          </div>
+                        );
+                      }
+                      // Render BaseBentoBox per box generici (fallback)
+                      return (
+                        <div key={item.id} data-bento-id={item.id}>
+                          <BaseBentoBox
+                            title={item.title}
+                            height={item.height}
+                            onTitleChange={(newTitle) =>
+                              handleBoxTitleChange(item.id, newTitle)
+                            }
+                            onDelete={() => handleDeleteBox(item.id)}
+                          >
+                            <div className="flex flex-col items-center justify-center h-full text-center text-text-muted">
+                              <span className="text-2xl mb-2 opacity-50">
+                                📦
+                              </span>
+                              <span className="text-xs">Box generico</span>
+                            </div>
+                          </BaseBentoBox>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </main>
+
+        {/* FAB aggiunta box - solo mobile */}
+        {columnCount === 1 && !isLoading && (
+          <MobileAddFab onAddNote={handleAddNote} />
+        )}
       </div>
 
       {/* Modale info progetto */}

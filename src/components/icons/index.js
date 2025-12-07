@@ -11,6 +11,7 @@ export { default as CrownIcon } from "./CrownIcon";
 export { default as DownloadIcon } from "./DownloadIcon";
 export { default as EyeIcon } from "./EyeIcon";
 export { default as EyeOffIcon } from "./EyeOffIcon";
+export { default as FileTextIcon } from "./FileTextIcon";
 export { default as InfoIcon } from "./InfoIcon";
 export { default as ListChecksIcon } from "./ListChecksIcon";
 export { default as LogOutIcon } from "./LogOutIcon";
