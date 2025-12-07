@@ -9,6 +9,8 @@ import {
   deleteDoc,
   query,
   where,
+  orderBy,
+  onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
 import app from "./config";
@@ -311,4 +313,54 @@ export const countBentoBoxes = async (projectId) => {
   const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
   const snapshot = await getDocs(boxesRef);
   return snapshot.size;
+};
+
+/**
+ * Sottoscrive ai cambiamenti dei bento box in tempo reale
+ * @param {string} projectId - ID del progetto
+ * @param {function} onUpdate - Callback chiamata quando i box cambiano
+ * @returns {function} - Funzione per annullare la sottoscrizione
+ */
+export const subscribeToBentoBoxes = (projectId, onUpdate) => {
+  const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
+
+  return onSnapshot(
+    boxesRef,
+    (snapshot) => {
+      const boxes = [];
+      snapshot.forEach((doc) => {
+        boxes.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Ordina per data di creazione (più vecchi prima)
+      boxes.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+        return dateA - dateB;
+      });
+
+      onUpdate(boxes);
+    },
+    (error) => {
+      console.error("Errore sincronizzazione bento boxes:", error);
+    }
+  );
+};
+
+/**
+ * Sottoscrive ai cambiamenti di un progetto in tempo reale
+ * @param {string} projectId - ID del progetto
+ * @param {function} onUpdate - Callback chiamata quando il progetto cambia
+ * @returns {function} - Funzione per annullare la sottoscrizione
+ */
+export const subscribeToProject = (projectId, onUpdate) => {
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+
+  return onSnapshot(projectRef, (docSnap) => {
+    if (docSnap.exists()) {
+      onUpdate({ id: docSnap.id, ...docSnap.data() });
+    } else {
+      onUpdate(null);
+    }
+  });
 };

@@ -1,4 +1,4 @@
-const CACHE_NAME = "scaletta-v3";
+const CACHE_NAME = "scaletta-v4";
 const urlsToCache = [
   "/",
   "/index.html",
@@ -49,6 +49,16 @@ self.addEventListener("fetch", (event) => {
 
   // Skip POST and other non-GET requests (can't be cached)
   if (request.method !== "GET") {
+    return;
+  }
+
+  // Skip Firebase requests - non devono essere cachate per la sincronizzazione real-time
+  if (
+    url.hostname.includes("firestore.googleapis.com") ||
+    url.hostname.includes("firebase") ||
+    url.hostname.includes("firebaseio.com") ||
+    url.hostname.includes("googleapis.com")
+  ) {
     return;
   }
 

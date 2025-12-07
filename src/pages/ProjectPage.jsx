@@ -16,12 +16,11 @@ import {
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
 import {
-  getBentoBoxes,
   createBentoBox,
   updateBentoBoxTitle,
   updateBentoBoxContent,
   deleteBentoBox,
-  countBentoBoxes,
+  subscribeToBentoBoxes,
 } from "../services/projects";
 
 /**
@@ -56,89 +55,76 @@ const ProjectPage = ({
 
   // Stato per i bento box del progetto
   const [bentoBoxes, setBentoBoxes] = useState([]);
-  // Contatore per generare nomi univoci (box1, box2, etc.)
-  const boxCounterRef = useRef(1);
 
-  // Carica i box dal database all'avvio
+  // Sottoscrizione in tempo reale ai bento boxes
   useEffect(() => {
     if (!project?.id) return;
 
-    const loadBoxes = async () => {
-      try {
-        setIsLoading(true);
-        const boxes = await getBentoBoxes(project.id);
-        setBentoBoxes(boxes);
-        // Imposta il contatore al numero successivo
-        const count = await countBentoBoxes(project.id);
-        boxCounterRef.current = count + 1;
-      } catch (error) {
-        console.error("Errore caricamento bento boxes:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
 
-    loadBoxes();
+    // Usa onSnapshot per sincronizzazione in tempo reale
+    const unsubscribe = subscribeToBentoBoxes(project.id, (boxes) => {
+      setBentoBoxes(boxes);
+      setIsLoading(false);
+    });
+
+    // Cleanup: annulla la sottoscrizione quando il componente si smonta
+    return () => unsubscribe();
   }, [project?.id]);
 
   // Funzione per aggiungere una nota (salva nel database)
+  // Il listener onSnapshot aggiornerà automaticamente lo stato
   const handleAddNote = async () => {
     if (!project?.id) return;
 
     try {
       const noteCount =
         bentoBoxes.filter((b) => b.boxType === "note").length + 1;
-      const newBox = await createBentoBox(project.id, {
+      await createBentoBox(project.id, {
         title: `Nota ${noteCount}`,
         boxType: "note",
         content: "",
       });
-      boxCounterRef.current++;
-      setBentoBoxes((prev) => [...prev, newBox]);
+      // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore creazione nota:", error);
     }
   };
 
   // Funzione per aggiornare il titolo di un box (salva nel database)
+  // Il listener onSnapshot aggiornerà automaticamente lo stato
   const handleBoxTitleChange = async (boxId, newTitle) => {
     if (!project?.id) return;
 
     try {
       await updateBentoBoxTitle(project.id, boxId, newTitle);
-      setBentoBoxes((prev) =>
-        prev.map((box) =>
-          box.id === boxId ? { ...box, title: newTitle } : box
-        )
-      );
+      // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore aggiornamento titolo box:", error);
     }
   };
 
   // Funzione per eliminare un box (elimina dal database)
+  // Il listener onSnapshot aggiornerà automaticamente lo stato
   const handleDeleteBox = async (boxId) => {
     if (!project?.id) return;
 
     try {
       await deleteBentoBox(project.id, boxId);
-      setBentoBoxes((prev) => prev.filter((box) => box.id !== boxId));
+      // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore eliminazione bento box:", error);
     }
   };
 
   // Funzione per aggiornare il contenuto di un box (es. nota)
+  // Il listener onSnapshot aggiornerà automaticamente lo stato
   const handleBoxContentChange = async (boxId, newContent) => {
     if (!project?.id) return;
 
     try {
       await updateBentoBoxContent(project.id, boxId, newContent);
-      setBentoBoxes((prev) =>
-        prev.map((box) =>
-          box.id === boxId ? { ...box, content: newContent } : box
-        )
-      );
+      // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore aggiornamento contenuto box:", error);
     }
