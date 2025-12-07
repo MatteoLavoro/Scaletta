@@ -7,12 +7,11 @@ import { InputModal } from "../modal";
  * NoteBox - Bento Box per le note
  *
  * Box specializzato per contenere una nota di testo.
+ * Si auto-dimensiona in base al contenuto.
  * Ha un kebab menu con l'opzione per modificare la nota.
  *
- * @param {string} id - ID univoco del box
  * @param {string} title - Titolo del box
  * @param {string} content - Contenuto della nota
- * @param {number} height - Altezza del box
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onContentChange - Callback per cambiare il contenuto
  * @param {function} onDelete - Callback per eliminare il box
@@ -20,7 +19,6 @@ import { InputModal } from "../modal";
 const NoteBox = ({
   title = "Nota",
   content = "",
-  height = 200,
   onTitleChange,
   onContentChange,
   onDelete,
@@ -57,24 +55,22 @@ const NoteBox = ({
     <>
       <BaseBentoBox
         title={title}
-        height={height}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
         menuItems={noteMenuItems}
+        minHeight={hasContent ? undefined : 120}
       >
         {hasContent ? (
           // Mostra il contenuto della nota
-          <div className="h-full overflow-auto">
-            <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-              {content}
-            </p>
-          </div>
+          <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+            {content}
+          </p>
         ) : (
           // Mostra tasto per aggiungere la nota
           <button
             onClick={() => setIsEditNoteOpen(true)}
             className="
-              w-full h-full
+              w-full py-4
               flex flex-col items-center justify-center gap-2
               text-text-muted
               hover:text-primary

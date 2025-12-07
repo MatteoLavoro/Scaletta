@@ -2,7 +2,6 @@ import { useState } from "react";
 import { PencilIcon, TrashIcon } from "../icons";
 import { DropdownMenu, Divider } from "../ui";
 import { InputModal, ConfirmModal } from "../modal";
-import { resolveHeight } from "./bentoConstants";
 
 /**
  * BaseBentoBox - Componente base per tutti i Bento Box
@@ -22,7 +21,7 @@ import { resolveHeight } from "./bentoConstants";
  * @param {string} props.title - Titolo del box
  * @param {function} props.onTitleChange - Callback quando il titolo cambia
  * @param {function} props.onDelete - Callback per eliminare il box
- * @param {number|string} props.height - Altezza del box (default: "md")
+ * @param {number} props.minHeight - Altezza minima del box in pixel (opzionale)
  * @param {ReactNode} props.children - Contenuto del box
  * @param {Array} props.menuItems - Voci aggiuntive per il kebab menu
  * @param {Array} props.actions - Array di azioni rapide { label, icon, onClick, variant }
@@ -32,7 +31,7 @@ const BaseBentoBox = ({
   title = "Box",
   onTitleChange,
   onDelete,
-  height = "md",
+  minHeight,
   children,
   menuItems = [],
   actions = [],
@@ -40,7 +39,6 @@ const BaseBentoBox = ({
 }) => {
   const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const resolvedHeight = resolveHeight(height);
 
   // Costruisci il menu kebab
   const buildMenuItems = () => {
@@ -104,11 +102,10 @@ const BaseBentoBox = ({
           bg-bg-secondary 
           border border-border 
           rounded-xl
-          overflow-hidden
           flex flex-col
           ${className}
         `}
-        style={{ height: `${resolvedHeight}px` }}
+        style={minHeight ? { minHeight: `${minHeight}px` } : undefined}
       >
         {/* Header - Titolo centrato con kebab menu a destra */}
         <div className="flex items-center justify-between px-2 py-1.5">
@@ -137,8 +134,8 @@ const BaseBentoBox = ({
         {/* Divider sotto il titolo */}
         <Divider spacing="sm" className="my-0! mx-2!" />
 
-        {/* Area contenuto - flex-1 per occupare lo spazio disponibile */}
-        <div className="flex-1 overflow-auto p-3">{children}</div>
+        {/* Area contenuto */}
+        <div className="p-3">{children}</div>
 
         {/* Azioni rapide (se presenti) */}
         {actions.length > 0 && (

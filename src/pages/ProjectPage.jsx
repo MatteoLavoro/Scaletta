@@ -11,6 +11,7 @@ import {
   MobileAddFab,
   NoteBox,
   BaseBentoBox,
+  TutorialBox,
 } from "../components/bento";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
@@ -22,9 +23,6 @@ import {
   deleteBentoBox,
   countBentoBoxes,
 } from "../services/projects";
-
-// Altezza standard per i nuovi box
-const DEFAULT_BOX_HEIGHT = 200;
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -92,7 +90,6 @@ const ProjectPage = ({
         bentoBoxes.filter((b) => b.boxType === "note").length + 1;
       const newBox = await createBentoBox(project.id, {
         title: `Nota ${noteCount}`,
-        height: DEFAULT_BOX_HEIGHT,
         boxType: "note",
         content: "",
       });
@@ -157,52 +154,43 @@ const ProjectPage = ({
   // Numero di colonne dinamico (si aggiorna al resize)
   const columnCount = useColumnCount();
 
-  // Distribuzione box nelle colonne (memoizzata)
-  const columns = useMemo(() => {
-    // Solo i box (il bottone add quadrato compare solo con più colonne)
-    const boxItems = sortedBoxes.map((box) => ({ ...box, type: "box" }));
+  // Se non ci sono box, mostra il tutorial
+  const hasBoxes = sortedBoxes.length > 0;
 
-    // Se più di una colonna, aggiungi il bottone add alla fine
-    const allItems =
-      columnCount > 1
-        ? [
-            ...boxItems,
-            { id: "add-button", type: "add", height: DEFAULT_BOX_HEIGHT },
-          ]
-        : boxItems;
+  // Distribuzione box nelle colonne (memoizzata)
+  // Tutorial (se presente) è sempre primo, Add button è sempre ultimo
+  const columns = useMemo(() => {
+    // Costruisci l'array di tutti gli items
+    const allItems = [];
+
+    // 1. Tutorial box (primo) - solo se non ci sono box utente
+    if (!hasBoxes) {
+      allItems.push({ id: "tutorial", type: "tutorial" });
+    }
+
+    // 2. Box utente (in mezzo)
+    sortedBoxes.forEach((box) => {
+      allItems.push({ ...box, type: "box" });
+    });
+
+    // 3. Add button (ultimo) - solo su desktop (columnCount > 1)
+    if (columnCount > 1) {
+      allItems.push({ id: "add-button", type: "add" });
+    }
 
     // Crea struttura colonne
     const cols = Array(columnCount)
       .fill(null)
-      .map(() => ({
-        items: [],
-        totalHeight: 0,
-      }));
+      .map(() => []);
 
-    // Ordina per altezza decrescente per migliore distribuzione
-    const itemsByHeight = [...allItems].sort((a, b) => {
-      const heightA = typeof a.height === "number" ? a.height : 200;
-      const heightB = typeof b.height === "number" ? b.height : 200;
-      return heightB - heightA;
+    // Distribuisci in modo round-robin
+    allItems.forEach((item, index) => {
+      const colIndex = index % columnCount;
+      cols[colIndex].push(item);
     });
 
-    // Distribuisci nelle colonne (algoritmo greedy)
-    for (const item of itemsByHeight) {
-      let shortestIdx = 0;
-      let minHeight = cols[0].totalHeight;
-      for (let i = 1; i < cols.length; i++) {
-        if (cols[i].totalHeight < minHeight) {
-          minHeight = cols[i].totalHeight;
-          shortestIdx = i;
-        }
-      }
-      const itemHeight = typeof item.height === "number" ? item.height : 200;
-      cols[shortestIdx].items.push(item);
-      cols[shortestIdx].totalHeight += itemHeight + 16;
-    }
-
-    return cols.map((col) => col.items);
-  }, [sortedBoxes, columnCount]);
+    return cols;
+  }, [sortedBoxes, columnCount, hasBoxes]);
 
   // Hook per animazioni FLIP
   const { containerRef } = useBentoAnimation(sortedBoxes, columnCount);
@@ -346,10 +334,10 @@ const ProjectPage = ({
                 <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
-              /* Griglia con box - animata */
+              /* Griglia con tutti i box (normali + speciali) */
               <div
                 ref={containerRef}
-                className="flex justify-center"
+                className="flex items-start"
                 style={{ gap: `${GAP}px` }}
               >
                 {columns.map((colItems, colIdx) => (
@@ -362,7 +350,15 @@ const ProjectPage = ({
                     }}
                   >
                     {colItems.map((item) => {
-                      // Tasto aggiunta box
+                      // Tutorial box
+                      if (item.type === "tutorial") {
+                        return (
+                          <div key={item.id} data-bento-id={item.id}>
+                            <TutorialBox isMobile={columnCount === 1} />
+                          </div>
+                        );
+                      }
+                      // Add button box
                       if (item.type === "add") {
                         return (
                           <div key={item.id} data-bento-id={item.id}>
@@ -377,7 +373,6 @@ const ProjectPage = ({
                             <NoteBox
                               title={item.title}
                               content={item.content || ""}
-                              height={item.height}
                               onTitleChange={(newTitle) =>
                                 handleBoxTitleChange(item.id, newTitle)
                               }
@@ -394,13 +389,12 @@ const ProjectPage = ({
                         <div key={item.id} data-bento-id={item.id}>
                           <BaseBentoBox
                             title={item.title}
-                            height={item.height}
                             onTitleChange={(newTitle) =>
                               handleBoxTitleChange(item.id, newTitle)
                             }
                             onDelete={() => handleDeleteBox(item.id)}
                           >
-                            <div className="flex flex-col items-center justify-center h-full text-center text-text-muted">
+                            <div className="flex flex-col items-center justify-center py-8 text-center text-text-muted">
                               <span className="text-2xl mb-2 opacity-50">
                                 📦
                               </span>

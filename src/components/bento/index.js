@@ -7,6 +7,7 @@ export {
   MobileAddFab,
 } from "./AddBentoBoxButton";
 export { default as NoteBox } from "./NoteBox";
+export { default as TutorialBox } from "./TutorialBox";
 
 // Costanti e utility
 export { HEIGHT_PRESETS, resolveHeight } from "./bentoConstants";

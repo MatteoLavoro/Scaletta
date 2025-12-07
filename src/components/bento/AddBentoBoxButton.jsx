@@ -2,15 +2,22 @@ import { PlusIcon, FileTextIcon } from "../icons";
 
 /**
  * BoxTypeButton - Singolo tasto per tipo di box
+ * @param {boolean} large - Se true usa icone più grandi (desktop)
  */
-const BoxTypeButton = ({ icon: Icon, label, onClick, disabled = false }) => (
+const BoxTypeButton = ({
+  icon: Icon,
+  label,
+  onClick,
+  disabled = false,
+  large = false,
+}) => (
   <button
     onClick={onClick}
     disabled={disabled}
     className={`
       flex flex-col items-center justify-center gap-1
       border-2 border-dashed border-border rounded-lg
-      p-2
+      ${large ? "p-3" : "p-2"}
       transition-all duration-200
       ${
         disabled
@@ -21,12 +28,16 @@ const BoxTypeButton = ({ icon: Icon, label, onClick, disabled = false }) => (
     aria-label={disabled ? `${label} (non disponibile)` : `Aggiungi ${label}`}
   >
     {Icon ? (
-      <Icon className="w-5 h-5" />
+      <Icon className={large ? "w-10 h-10" : "w-5 h-5"} />
     ) : (
-      <PlusIcon className="w-5 h-5 opacity-30" />
+      <PlusIcon className={`${large ? "w-10 h-10" : "w-5 h-5"} opacity-30`} />
     )}
     {label && (
-      <span className="text-[10px] font-medium truncate w-full text-center">
+      <span
+        className={`${
+          large ? "text-sm" : "text-[10px]"
+        } font-medium truncate w-full text-center`}
+      >
         {label}
       </span>
     )}
@@ -48,17 +59,23 @@ const AddBentoBoxButton = ({ onAddNote, className = "" }) => {
       className={`
         aspect-square
         w-full
-        border-2 border-dashed border-border
+        bg-bg-secondary
+        border border-border
         rounded-xl
         p-3
         grid grid-cols-2 gap-2
         ${className}
       `}
     >
-      <BoxTypeButton icon={FileTextIcon} label="Nota" onClick={onAddNote} />
-      <BoxTypeButton icon={null} label="" disabled />
-      <BoxTypeButton icon={null} label="" disabled />
-      <BoxTypeButton icon={null} label="" disabled />
+      <BoxTypeButton
+        icon={FileTextIcon}
+        label="Nota"
+        onClick={onAddNote}
+        large
+      />
+      <BoxTypeButton icon={null} label="" disabled large />
+      <BoxTypeButton icon={null} label="" disabled large />
+      <BoxTypeButton icon={null} label="" disabled large />
     </div>
   );
 };
@@ -71,7 +88,7 @@ export const MobileAddFab = ({ onAddNote }) => (
     <div
       className="
       bg-bg-secondary 
-      border-2 border-dashed border-border 
+      border border-border 
       rounded-2xl 
       p-3
       shadow-lg
