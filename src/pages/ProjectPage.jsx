@@ -157,43 +157,30 @@ const ProjectPage = ({
   // Se non ci sono box, mostra il tutorial
   const hasBoxes = sortedBoxes.length > 0;
 
-  // Distribuzione box nelle colonne (memoizzata)
-  // Tutorial (se presente) è sempre primo, Add button è sempre ultimo
-  const columns = useMemo(() => {
-    // Costruisci l'array di tutti gli items
-    const allItems = [];
+  // Array di tutti gli items per distribuzione
+  const allItems = useMemo(() => {
+    const items = [];
 
     // 1. Tutorial box (primo) - solo se non ci sono box utente
     if (!hasBoxes) {
-      allItems.push({ id: "tutorial", type: "tutorial" });
+      items.push({ id: "tutorial", type: "tutorial" });
     }
 
     // 2. Box utente (in mezzo)
     sortedBoxes.forEach((box) => {
-      allItems.push({ ...box, type: "box" });
+      items.push({ ...box, type: "box" });
     });
 
-    // 3. Add button (ultimo) - solo su desktop (columnCount > 1)
+    // 3. Add button (ultimo) - solo su desktop (su mobile è il FAB flottante)
     if (columnCount > 1) {
-      allItems.push({ id: "add-button", type: "add" });
+      items.push({ id: "add-button", type: "add" });
     }
 
-    // Crea struttura colonne
-    const cols = Array(columnCount)
-      .fill(null)
-      .map(() => []);
+    return items;
+  }, [sortedBoxes, hasBoxes, columnCount]);
 
-    // Distribuisci in modo round-robin
-    allItems.forEach((item, index) => {
-      const colIndex = index % columnCount;
-      cols[colIndex].push(item);
-    });
-
-    return cols;
-  }, [sortedBoxes, columnCount, hasBoxes]);
-
-  // Hook per animazioni FLIP
-  const { containerRef } = useBentoAnimation(sortedBoxes, columnCount);
+  // Hook per layout "shortest column first" + animazioni FLIP
+  const { containerRef, columns } = useBentoAnimation(allItems, columnCount);
 
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
@@ -327,7 +314,11 @@ const ProjectPage = ({
 
         {/* Contenuto principale - Bento Grid */}
         <main className="flex-1 p-4">
-          <div className="flex justify-center">
+          {/* Padding extra in basso su mobile per il FAB flottante */}
+          <div
+            className="flex justify-center"
+            style={{ paddingBottom: columnCount === 1 ? "100px" : "0" }}
+          >
             {/* Loading */}
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
@@ -358,7 +349,7 @@ const ProjectPage = ({
                           </div>
                         );
                       }
-                      // Add button box
+                      // Add button box (solo desktop)
                       if (item.type === "add") {
                         return (
                           <div key={item.id} data-bento-id={item.id}>

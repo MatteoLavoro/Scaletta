@@ -1,25 +1,119 @@
-import { useRef, useLayoutEffect, useCallback, useEffect } from "react";
+import {
+  useRef,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+} from "react";
 
 /**
- * Hook per animare elementi che cambiano posizione nella griglia
- * Usa la tecnica FLIP (First, Last, Invert, Play)
- * L'animazione parte sempre dalla posizione corrente degli elementi
+ * Hook per gestire il layout Bento con distribuzione "shortest column first"
+ * e animazioni FLIP per le transizioni
+ *
+ * Algoritmo di distribuzione:
+ * - Ogni box viene assegnato alla colonna più corta al momento dell'assegnazione
+ * - Quando un box cambia altezza, si ricalcolano le assegnazioni ottimali
+ * - Le transizioni vengono animate con tecnica FLIP
  *
  * @param {Array} items - Array di elementi con id univoci
- * @param {number} columnCount - Numero di colonne (trigger per ricalcolo)
- * @returns {Object} - { containerRef }
+ * @param {number} columnCount - Numero di colonne
+ * @param {number} gap - Gap tra i box (default: 16)
+ * @returns {Object} - { containerRef, columns }
  */
-const useBentoAnimation = (items, columnCount) => {
+const useBentoAnimation = (items, columnCount, gap = 16) => {
   const containerRef = useRef(null);
   const positionsRef = useRef(new Map());
+  const heightsRef = useRef(new Map());
   const isFirstRenderRef = useRef(true);
   const animatingRef = useRef(new Set());
+  const resizeObserverRef = useRef(null);
+  const [heights, setHeights] = useState(new Map());
 
-  // Salva le posizioni correnti PRIMA che React faccia il re-render
+  // Crea una chiave unica basata sugli items per rilevare cambiamenti nel contenuto
+  const itemsKey = useMemo(() => {
+    return items
+      .map((item) => `${item.id}:${item.content || ""}:${item.title || ""}`)
+      .join("|");
+  }, [items]);
+
+  // Funzione per misurare le altezze di tutti i box
+  const measureHeights = useCallback(() => {
+    if (!containerRef.current) return new Map();
+
+    const elements = containerRef.current.querySelectorAll("[data-bento-id]");
+    const newHeights = new Map();
+    let hasChanges = false;
+
+    elements.forEach((el) => {
+      const id = el.getAttribute("data-bento-id");
+      // Usa scrollHeight per avere l'altezza reale del contenuto
+      const height = el.offsetHeight;
+      newHeights.set(id, height);
+
+      if (heightsRef.current.get(id) !== height) {
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      heightsRef.current = newHeights;
+      setHeights(new Map(newHeights));
+    }
+
+    return newHeights;
+  }, []);
+
+  // Distribuisci i box nelle colonne usando "shortest column first"
+  const columns = useMemo(() => {
+    if (!items || items.length === 0) {
+      return Array(columnCount)
+        .fill(null)
+        .map(() => []);
+    }
+
+    // Inizializza colonne con tracciamento altezza
+    const cols = Array(columnCount)
+      .fill(null)
+      .map(() => ({
+        items: [],
+        totalHeight: 0,
+      }));
+
+    // Altezza di default per box non ancora misurati
+    const DEFAULT_HEIGHT = 200;
+
+    // Distribuisci ogni item nella colonna più corta
+    // Manteniamo l'ordine originale degli items
+    items.forEach((item) => {
+      // Trova la colonna più corta
+      let shortestIndex = 0;
+      let minHeight = cols[0].totalHeight;
+
+      for (let i = 1; i < columnCount; i++) {
+        if (cols[i].totalHeight < minHeight) {
+          minHeight = cols[i].totalHeight;
+          shortestIndex = i;
+        }
+      }
+
+      // Ottieni l'altezza misurata o usa default
+      const itemHeight = heights.get(item.id) || DEFAULT_HEIGHT;
+
+      // Aggiungi alla colonna più corta
+      cols[shortestIndex].items.push(item);
+      cols[shortestIndex].totalHeight += itemHeight + gap;
+    });
+
+    // Ritorna solo gli items per colonna
+    return cols.map((col) => col.items);
+  }, [items, columnCount, heights, gap]);
+
+  // Cattura le posizioni correnti degli elementi
   const capturePositions = useCallback(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) return new Map();
 
-    const newPositions = new Map();
+    const positions = new Map();
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
 
     elements.forEach((el) => {
@@ -27,7 +121,6 @@ const useBentoAnimation = (items, columnCount) => {
       const rect = el.getBoundingClientRect();
 
       // Se l'elemento sta animando, calcola la posizione reale
-      // considerando la trasformazione corrente
       const computedStyle = window.getComputedStyle(el);
       const transform = computedStyle.transform;
 
@@ -40,7 +133,7 @@ const useBentoAnimation = (items, columnCount) => {
         offsetY = matrix.m42;
       }
 
-      newPositions.set(id, {
+      positions.set(id, {
         left: rect.left - offsetX,
         top: rect.top - offsetY,
         width: rect.width,
@@ -48,29 +141,80 @@ const useBentoAnimation = (items, columnCount) => {
       });
     });
 
-    positionsRef.current = newPositions;
+    return positions;
   }, []);
 
-  // Cattura posizioni prima di ogni cambio di layout
+  // Setup ResizeObserver per rilevare cambiamenti di altezza
   useEffect(() => {
-    capturePositions();
-  }, [items, columnCount, capturePositions]);
+    if (!containerRef.current) return;
 
-  // Anima dopo il re-render
+    // Misura iniziale dopo il mount
+    const initialMeasure = () => {
+      measureHeights();
+    };
+    requestAnimationFrame(initialMeasure);
+
+    // Observer per cambiamenti di dimensione
+    resizeObserverRef.current = new ResizeObserver((entries) => {
+      // Controlla se qualche altezza è effettivamente cambiata
+      let hasHeightChange = false;
+      entries.forEach((entry) => {
+        const id = entry.target.getAttribute("data-bento-id");
+        const currentHeight = heightsRef.current.get(id);
+        const newHeight = entry.contentRect.height;
+        if (Math.abs((currentHeight || 0) - newHeight) > 2) {
+          hasHeightChange = true;
+        }
+      });
+
+      if (hasHeightChange) {
+        measureHeights();
+      }
+    });
+
+    // Osserva tutti i box
+    const elements = containerRef.current.querySelectorAll("[data-bento-id]");
+    elements.forEach((el) => {
+      resizeObserverRef.current.observe(el);
+    });
+
+    return () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
+    };
+  }, [items, measureHeights]);
+
+  // useLayoutEffect per animazioni FLIP
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
     // Skip animazione al primo render
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
+      containerRef.current.offsetHeight;
+      positionsRef.current = capturePositions();
       return;
     }
+
+    // Usa le posizioni salvate dal ciclo precedente
+    const oldPositions = positionsRef.current;
+
+    // Forza reflow
+    containerRef.current.offsetHeight;
+
+    // Calcola le nuove posizioni
+    const newPositions = capturePositions();
+
+    // Salva per il prossimo ciclo
+    positionsRef.current = newPositions;
 
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
 
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
-      const oldPos = positionsRef.current.get(id);
+      const oldPos = oldPositions.get(id);
+      const newPos = newPositions.get(id);
 
       // Cancella eventuali animazioni in corso
       if (animatingRef.current.has(id)) {
@@ -102,20 +246,20 @@ const useBentoAnimation = (items, columnCount) => {
         return;
       }
 
-      const newRect = el.getBoundingClientRect();
-      const deltaX = oldPos.left - newRect.left;
-      const deltaY = oldPos.top - newRect.top;
+      if (!newPos) return;
+
+      const deltaX = oldPos.left - newPos.left;
+      const deltaY = oldPos.top - newPos.top;
 
       // Se non c'è movimento significativo, skip
       if (Math.abs(deltaX) < 2 && Math.abs(deltaY) < 2) return;
 
       animatingRef.current.add(id);
 
-      // FLIP: Applica trasformazione inversa (posizione precedente)
+      // FLIP: Applica trasformazione inversa
       el.style.transition = "none";
       el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
-      // Force reflow per applicare immediatamente
       el.offsetHeight;
 
       // Play: Anima verso la posizione finale
@@ -131,14 +275,13 @@ const useBentoAnimation = (items, columnCount) => {
           };
 
           el.addEventListener("transitionend", cleanup, { once: true });
-          // Fallback
           setTimeout(cleanup, 400);
         });
       });
     });
-  }, [items, columnCount]);
+  }, [columns, columnCount, capturePositions, itemsKey]);
 
-  return { containerRef };
+  return { containerRef, columns };
 };
 
 export default useBentoAnimation;

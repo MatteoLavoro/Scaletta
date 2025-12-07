@@ -61,10 +61,12 @@ const NoteBox = ({
         minHeight={hasContent ? undefined : 120}
       >
         {hasContent ? (
-          // Mostra il contenuto della nota
-          <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-            {content}
-          </p>
+          // Riquadro contenente la nota
+          <div className="bg-bg-tertiary/50 border border-border/50 rounded-lg p-3">
+            <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed text-center">
+              {content}
+            </p>
+          </div>
         ) : (
           // Mostra tasto per aggiungere la nota
           <button
