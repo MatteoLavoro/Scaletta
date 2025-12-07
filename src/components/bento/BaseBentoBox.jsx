@@ -41,38 +41,44 @@ const BaseBentoBox = ({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Costruisci il menu kebab
+  // Ordine: items specifici -> separatore -> universali (cambia titolo, elimina)
   const buildMenuItems = () => {
     const items = [];
 
-    // Opzione modifica titolo (sempre presente se onTitleChange è definito)
+    // Prima aggiungi items specifici del box (passati come props)
+    if (menuItems.length > 0) {
+      items.push(...menuItems);
+    }
+
+    // Costruisci items universali (sempre in fondo)
+    const universalItems = [];
+
+    // Opzione modifica titolo
     if (onTitleChange) {
-      items.push({
+      universalItems.push({
         label: "Cambia titolo",
         icon: <PencilIcon className="w-5 h-5" />,
         onClick: () => setIsEditTitleOpen(true),
       });
     }
 
-    // Aggiungi separatore se ci sono altri items
-    if (menuItems.length > 0 && items.length > 0) {
-      items.push({ separator: true });
-    }
-
-    // Aggiungi items personalizzati
-    items.push(...menuItems);
-
-    // Aggiungi opzione elimina (sempre in fondo)
+    // Opzione elimina (sempre per ultima)
     if (onDelete) {
-      if (items.length > 0) {
-        items.push({ separator: true });
-      }
-      items.push({
+      universalItems.push({
         label: "Elimina box",
         icon: <TrashIcon className="w-5 h-5" />,
         onClick: () => setIsDeleteConfirmOpen(true),
         danger: true,
       });
     }
+
+    // Aggiungi separatore tra specifici e universali se entrambi presenti
+    if (items.length > 0 && universalItems.length > 0) {
+      items.push({ separator: true });
+    }
+
+    // Aggiungi items universali
+    items.push(...universalItems);
 
     return items;
   };
@@ -183,7 +189,8 @@ const BaseBentoBox = ({
           setIsDeleteConfirmOpen(false);
           onDelete?.();
         }}
-        onClose={() => setIsDeleteConfirmOpen(false)}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        isDanger
         zIndex={1020}
       />
     </>

@@ -131,12 +131,10 @@ export const MobileAddFab = ({ onAddNote }) => {
   const textColor = isLight ? "#1a1a1a" : "#ffffff";
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-4">
+    <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-2">
       <div
-        className="rounded-2xl p-3 shadow-lg grid grid-cols-4 gap-2"
+        className="rounded-2xl p-3 shadow-lg grid grid-cols-4 gap-2 w-full"
         style={{
-          width: `${BOX_WIDTH}px`,
-          maxWidth: "100%",
           backgroundColor: bgColor,
         }}
       >

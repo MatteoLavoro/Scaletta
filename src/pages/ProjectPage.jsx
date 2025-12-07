@@ -313,11 +313,14 @@ const ProjectPage = ({
         </header>
 
         {/* Contenuto principale - Bento Grid */}
-        <main className="flex-1 p-4">
+        <main className={`flex-1 ${columnCount === 1 ? "px-2" : "p-4"}`}>
           {/* Padding extra in basso su mobile per il FAB flottante */}
           <div
             className="flex justify-center"
-            style={{ paddingBottom: columnCount === 1 ? "100px" : "0" }}
+            style={{
+              paddingTop: columnCount === 1 ? `${GAP}px` : "0",
+              paddingBottom: columnCount === 1 ? "120px" : "0",
+            }}
           >
             {/* Loading */}
             {isLoading ? (
@@ -336,7 +339,7 @@ const ProjectPage = ({
                     key={`col-${colIdx}`}
                     className="flex flex-col"
                     style={{
-                      width: `${BOX_WIDTH}px`,
+                      width: columnCount === 1 ? "100%" : `${BOX_WIDTH}px`,
                       gap: `${GAP}px`,
                     }}
                   >
