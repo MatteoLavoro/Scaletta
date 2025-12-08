@@ -10,18 +10,20 @@ import {
   AddBentoBoxButton,
   MobileAddFab,
   NoteBox,
+  PhotoBox,
   BaseBentoBox,
   TutorialBox,
 } from "../components/bento";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
-import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
 import {
   createBentoBox,
   updateBentoBoxTitle,
   updateBentoBoxContent,
+  updateBentoBoxPhotos,
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
+import { deletePhotos } from "../services/photos";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -91,29 +93,59 @@ const ProjectPage = ({
     }
   };
 
+  // Funzione per aggiungere un PhotoBox
+  const handleAddPhoto = async () => {
+    if (!project?.id) return;
+
+    try {
+      const photoCount =
+        bentoBoxes.filter((b) => b.boxType === "photo").length + 1;
+      await createBentoBox(project.id, {
+        title: `Foto ${photoCount}`,
+        boxType: "photo",
+        photos: [],
+      });
+    } catch (error) {
+      console.error("Errore creazione photo box:", error);
+    }
+  };
+
+  // Funzione per aggiornare le foto di un PhotoBox
+  const handlePhotosChange = async (boxId, newPhotos) => {
+    if (!project?.id) return;
+
+    try {
+      await updateBentoBoxPhotos(project.id, boxId, newPhotos);
+    } catch (error) {
+      console.error("Errore aggiornamento foto:", error);
+    }
+  };
+
+  // Funzione per eliminare un box (include eliminazione foto dallo storage)
+  const handleDeleteBox = async (boxId) => {
+    if (!project?.id) return;
+
+    try {
+      // Trova il box per verificare se ha foto da eliminare
+      const box = bentoBoxes.find((b) => b.id === boxId);
+      if (box?.boxType === "photo" && box.photos?.length > 0) {
+        // Elimina tutte le foto dallo storage
+        await deletePhotos(box.photos.map((p) => p.storagePath));
+      }
+      await deleteBentoBox(project.id, boxId);
+    } catch (error) {
+      console.error("Errore eliminazione bento box:", error);
+    }
+  };
+
   // Funzione per aggiornare il titolo di un box (salva nel database)
-  // Il listener onSnapshot aggiornerà automaticamente lo stato
   const handleBoxTitleChange = async (boxId, newTitle) => {
     if (!project?.id) return;
 
     try {
       await updateBentoBoxTitle(project.id, boxId, newTitle);
-      // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore aggiornamento titolo box:", error);
-    }
-  };
-
-  // Funzione per eliminare un box (elimina dal database)
-  // Il listener onSnapshot aggiornerà automaticamente lo stato
-  const handleDeleteBox = async (boxId) => {
-    if (!project?.id) return;
-
-    try {
-      await deleteBentoBox(project.id, boxId);
-      // Non serve setBentoBoxes - il listener lo farà automaticamente
-    } catch (error) {
-      console.error("Errore eliminazione bento box:", error);
     }
   };
 
@@ -317,7 +349,9 @@ const ProjectPage = ({
               /* Griglia con tutti i box (normali + speciali) */
               <div
                 ref={containerRef}
-                className="flex items-start"
+                className={`flex items-start ${
+                  columnCount === 1 ? "w-full" : ""
+                }`}
                 style={{ gap: `${GAP}px` }}
               >
                 {columns.map((colItems, colIdx) => (
@@ -342,7 +376,10 @@ const ProjectPage = ({
                       if (item.type === "add") {
                         return (
                           <div key={item.id} data-bento-id={item.id}>
-                            <AddBentoBoxButton onAddNote={handleAddNote} />
+                            <AddBentoBoxButton
+                              onAddNote={handleAddNote}
+                              onAddPhoto={handleAddPhoto}
+                            />
                           </div>
                         );
                       }
@@ -358,6 +395,25 @@ const ProjectPage = ({
                               }
                               onContentChange={(newContent) =>
                                 handleBoxContentChange(item.id, newContent)
+                              }
+                              onDelete={() => handleDeleteBox(item.id)}
+                            />
+                          </div>
+                        );
+                      }
+                      // Render PhotoBox per box di tipo "photo"
+                      if (item.boxType === "photo") {
+                        return (
+                          <div key={item.id} data-bento-id={item.id}>
+                            <PhotoBox
+                              projectId={project.id}
+                              title={item.title}
+                              photos={item.photos || []}
+                              onTitleChange={(newTitle) =>
+                                handleBoxTitleChange(item.id, newTitle)
+                              }
+                              onPhotosChange={(newPhotos) =>
+                                handlePhotosChange(item.id, newPhotos)
                               }
                               onDelete={() => handleDeleteBox(item.id)}
                             />
@@ -393,7 +449,7 @@ const ProjectPage = ({
 
         {/* FAB aggiunta box - solo mobile */}
         {columnCount === 1 && !isLoading && (
-          <MobileAddFab onAddNote={handleAddNote} />
+          <MobileAddFab onAddNote={handleAddNote} onAddPhoto={handleAddPhoto} />
         )}
       </div>
 

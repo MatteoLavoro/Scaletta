@@ -29,12 +29,27 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
   const animatingRef = useRef(new Set());
   const resizeObserverRef = useRef(null);
   const [heights, setHeights] = useState(new Map());
+  // Traccia gli ID conosciuti per identificare nuovi elementi
+  const knownIdsRef = useRef(new Set());
+  const [newIds, setNewIds] = useState(new Set());
 
   // Crea una chiave unica basata sugli items per rilevare cambiamenti nel contenuto
   const itemsKey = useMemo(() => {
     return items
       .map((item) => `${item.id}:${item.content || ""}:${item.title || ""}`)
       .join("|");
+  }, [items]);
+
+  // Identifica nuovi elementi PRIMA del render per nasconderli subito
+  // Questo viene eseguito durante il render, prima che il DOM venga aggiornato
+  const currentNewIds = useMemo(() => {
+    const newlyAdded = new Set();
+    items.forEach((item) => {
+      if (!knownIdsRef.current.has(item.id)) {
+        newlyAdded.add(item.id);
+      }
+    });
+    return newlyAdded;
   }, [items]);
 
   // Funzione per misurare le altezze di tutti i box
@@ -80,7 +95,14 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         totalHeight: 0,
       }));
 
-    // Altezza di default per box non ancora misurati
+    // Altezze stimate per tipo di box (per calcolo iniziale più accurato)
+    const ESTIMATED_HEIGHTS = {
+      tutorial: 200,
+      add: 320, // AddBentoBoxButton è quadrato
+      note: 180,
+      photo: 280, // PhotoBox con carousel
+      generic: 200,
+    };
     const DEFAULT_HEIGHT = 200;
 
     // Distribuisci ogni item nella colonna più corta
@@ -97,8 +119,13 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         }
       }
 
-      // Ottieni l'altezza misurata o usa default
-      const itemHeight = heights.get(item.id) || DEFAULT_HEIGHT;
+      // Ottieni l'altezza misurata, o usa altezza stimata per tipo, o default
+      const measuredHeight = heights.get(item.id);
+      const estimatedHeight =
+        ESTIMATED_HEIGHTS[item.type] ||
+        ESTIMATED_HEIGHTS[item.boxType] ||
+        DEFAULT_HEIGHT;
+      const itemHeight = measuredHeight || estimatedHeight;
 
       // Aggiungi alla colonna più corta
       cols[shortestIndex].items.push(item);
@@ -194,6 +221,8 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       isFirstRenderRef.current = false;
       containerRef.current.offsetHeight;
       positionsRef.current = capturePositions();
+      // Registra tutti gli ID iniziali come conosciuti
+      items.forEach((item) => knownIdsRef.current.add(item.id));
       return;
     }
 
@@ -210,6 +239,17 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     positionsRef.current = newPositions;
 
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
+    
+    // Trova la posizione più in basso tra tutti gli elementi esistenti
+    // per far partire i nuovi elementi da lì
+    let maxBottom = 0;
+    let containerRect = containerRef.current.getBoundingClientRect();
+    oldPositions.forEach((pos) => {
+      const bottom = pos.top + pos.height - containerRect.top;
+      if (bottom > maxBottom) {
+        maxBottom = bottom;
+      }
+    });
 
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
@@ -223,24 +263,22 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       }
 
       if (!oldPos) {
-        // Nuovo elemento - animazione di entrata
-        el.style.opacity = "0";
-        el.style.transform = "scale(0.8) translateY(20px)";
-
+        // Nuovo elemento - è già nascosto via getItemStyle()
+        // Aggiungi all'elenco dei conosciuti
+        knownIdsRef.current.add(id);
+        
+        // Fade-in nella posizione corretta (l'elemento è GIÀ nella posizione giusta)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            el.style.transition =
-              "opacity 300ms ease-out, transform 300ms ease-out";
+            el.style.transition = "opacity 200ms ease-out";
             el.style.opacity = "1";
-            el.style.transform = "scale(1) translateY(0)";
 
             const cleanup = () => {
-              el.style.transform = "";
               el.style.transition = "";
               el.style.opacity = "";
             };
             el.addEventListener("transitionend", cleanup, { once: true });
-            setTimeout(cleanup, 350);
+            setTimeout(cleanup, 250);
           });
         });
         return;
@@ -281,7 +319,19 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     });
   }, [columns, columnCount, capturePositions, itemsKey]);
 
-  return { containerRef, columns };
+  // Funzione helper per ottenere lo stile iniziale di un elemento
+  // I nuovi elementi devono essere nascosti finché non sono nella posizione corretta
+  const getItemStyle = useCallback(
+    (itemId) => {
+      if (currentNewIds.has(itemId)) {
+        return { opacity: 0 };
+      }
+      return {};
+    },
+    [currentNewIds]
+  );
+
+  return { containerRef, columns, getItemStyle };
 };
 
 export default useBentoAnimation;

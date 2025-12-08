@@ -93,6 +93,7 @@ src/components/bento/
 ├── BENTO_BOX.md           # Questa documentazione
 ├── BaseBentoBox.jsx       # Componente base per tutti i box
 ├── NoteBox.jsx            # Box per note testuali
+├── PhotoBox.jsx           # Box per foto con carosello
 ├── TutorialBox.jsx        # Box tutorial (primo avvio)
 ├── AddBentoBoxButton.jsx  # Griglia 2x2 per aggiungere box (desktop)
 │   └── MobileAddFab       # Barra flottante (mobile)
@@ -103,7 +104,12 @@ src/components/bento/
 └── index.js               # Esportazioni pubbliche
 
 src/hooks/
-└── useBentoAnimation.js   # Hook per layout + animazioni FLIP
+├── useBentoAnimation.js   # Hook per layout + animazioni FLIP
+└── useColumnCount.js      # Hook per numero colonne responsive
+
+src/services/
+├── photos.js              # Upload/delete foto Firebase Storage
+└── projects.js            # CRUD bento boxes + eliminazione cascade
 ```
 
 ---
@@ -172,6 +178,42 @@ Box specializzato per note testuali.
 - Mostra pulsante "Aggiungi nota" se vuoto
 - Menu con "Modifica nota"
 - Max 2000 caratteri
+
+### PhotoBox
+
+Box specializzato per foto con carosello.
+
+```jsx
+<PhotoBox
+  projectId="abc123"
+  title="Screenshot"
+  photos={[{ id, url, name, storagePath }, ...]}
+  onTitleChange={handleTitleChange}
+  onPhotosChange={handlePhotosChange}
+  onDelete={handleDelete}
+/>
+```
+
+**Caratteristiche:**
+
+- **Carosello**: Navigazione con frecce e swipe touch
+- **Indicatori**: Pallini per foto corrente/totale
+- **Upload multiplo**: Drag & drop o selezione file (UploadModal)
+- **Progress bar**: Indicatore progresso dentro il box
+- **Preload immagini**: Hook `useImagePreload` per scrolling fluido
+- **Formati**: JPG, PNG, GIF, WebP (max 10MB per file)
+- **Eliminazione**: Conferma prima di eliminare singola foto
+- **Altezza fissa**: 200px per il carosello
+
+**Props:**
+| Prop | Tipo | Descrizione |
+|------|------|-------------|
+| `projectId` | `string` | ID progetto per upload su Storage |
+| `title` | `string` | Titolo del box |
+| `photos` | `array` | Array di `{ id, url, name, storagePath }` |
+| `onTitleChange` | `function` | Callback cambio titolo |
+| `onPhotosChange` | `function` | Callback quando cambiano foto |
+| `onDelete` | `function` | Callback eliminazione box |
 
 ### TutorialBox
 
@@ -267,7 +309,7 @@ export const HEIGHT_PRESETS = {
 
 ## Sincronizzazione Firebase
 
-### Struttura Dati
+### Struttura Dati Firestore
 
 ```
 projects/
@@ -276,10 +318,21 @@ projects/
           └── {boxId}/
               ├── id: string
               ├── title: string
-              ├── boxType: "note" | "generic"
-              ├── content: string
-              ├── height: number
+              ├── boxType: "note" | "photo"
+              ├── content: string         // Solo per NoteBox
+              ├── photos: [               // Solo per PhotoBox
+              │   { id, url, name, storagePath }
+              │ ]
               └── createdAt: timestamp
+```
+
+### Struttura Storage (Foto)
+
+```
+projects/
+  └── {projectId}/
+      └── photos/
+          └── {photoId}.{ext}
 ```
 
 ### Funzioni Service
@@ -294,21 +347,42 @@ subscribeToBentoBoxes(projectId, onUpdate) → unsubscribe
 createBentoBox(projectId, boxData) → box
 updateBentoBoxTitle(projectId, boxId, newTitle)
 updateBentoBoxContent(projectId, boxId, newContent)
+updateBentoBoxPhotos(projectId, boxId, photos)
 deleteBentoBox(projectId, boxId)
+
+// Eliminazione cascade
+deleteProject(projectId)  // Elimina anche foto da Storage
+```
+
+```javascript
+// services/photos.js
+
+// Upload singolo con progress
+uploadPhoto(projectId, file, onProgress) → { id, url, name, storagePath }
+
+// Upload multiplo con progress totale
+uploadPhotos(projectId, files, onProgress, onPhotoUploaded) → photos[]
+
+// Eliminazione
+deletePhoto(storagePath)
+deletePhotos(photos[])
+
+// Validazione
+validateImageFile(file) → { valid, error? }
 ```
 
 ---
 
 ## Tipi di Box (Roadmap)
 
-| Tipo                | Stato     | Descrizione           |
-| ------------------- | --------- | --------------------- |
-| 📝 **NoteBox**      | ✅ Attivo | Note testuali         |
-| 🖼️ **ImageBox**     | 🔜 Futuro | Foto, screenshot      |
-| 📄 **FileBox**      | 🔜 Futuro | Documenti con preview |
-| 👤 **ContactBox**   | 🔜 Futuro | Anagrafiche persone   |
-| 🔗 **LinkBox**      | 🔜 Futuro | Link esterni          |
-| ✅ **ChecklistBox** | 🔜 Futuro | Liste di task         |
+| Tipo                | Stato     | Descrizione              |
+| ------------------- | --------- | ------------------------ |
+| 📝 **NoteBox**      | ✅ Attivo | Note testuali            |
+| 🖼️ **PhotoBox**     | ✅ Attivo | Foto con carosello       |
+| ✅ **ChecklistBox** | 🔜 Futuro | Liste di task            |
+| 🔗 **LinkBox**      | 🔜 Futuro | Link esterni con preview |
+| 👤 **ContactBox**   | 🔜 Futuro | Anagrafiche persone      |
+| 📄 **FileBox**      | 🔜 Futuro | Documenti generici       |
 
 ---
 
@@ -324,6 +398,16 @@ deleteBentoBox(projectId, boxId)
 ---
 
 ## Changelog
+
+### v1.4.0 (Dicembre 2025)
+
+- 🖼️ **PhotoBox**: Nuovo tipo di box per foto
+- 📸 Carosello foto con swipe touch e frecce
+- 📤 Upload multiplo con drag & drop
+- 📊 Progress bar dentro il box durante upload
+- 🚀 Preload immagini per scrolling fluido
+- 🗑️ Eliminazione automatica foto su delete box/progetto/gruppo
+- 📏 Altezze stimate per distribuzione più accurata
 
 ### v1.3.0 (Dicembre 2025)
 

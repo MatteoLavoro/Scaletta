@@ -13,6 +13,7 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
+import { getStorage, ref, listAll, deleteObject } from "firebase/storage";
 import app from "./config";
 import {
   DEFAULT_PROJECT_COLOR,
@@ -21,6 +22,7 @@ import {
 import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
 
 const db = getFirestore(app);
+const storage = getStorage(app);
 const PROJECTS_COLLECTION = "projects";
 
 // Lista piatta di tutti i colori disponibili
@@ -181,12 +183,64 @@ export const updateProjectStatus = async (projectId, status) => {
 };
 
 /**
- * Elimina un progetto
+ * Elimina tutte le foto di un progetto dallo Storage
+ * @param {string} projectId - ID del progetto
+ */
+const deleteProjectPhotos = async (projectId) => {
+  try {
+    const photosRef = ref(storage, `projects/${projectId}/photos`);
+    const photosList = await listAll(photosRef);
+
+    // Elimina tutti i file nella cartella photos
+    const deletePromises = photosList.items.map((item) =>
+      deleteObject(item).catch((err) => {
+        console.error(`Errore eliminazione foto ${item.fullPath}:`, err);
+      })
+    );
+
+    await Promise.all(deletePromises);
+  } catch (error) {
+    // Se la cartella non esiste, ignora l'errore
+    if (error.code !== "storage/object-not-found") {
+      console.error("Errore eliminazione foto progetto:", error);
+    }
+  }
+};
+
+/**
+ * Elimina tutti i bento box di un progetto
+ * @param {string} projectId - ID del progetto
+ */
+const deleteProjectBentoBoxes = async (projectId) => {
+  const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
+  const snapshot = await getDocs(boxesRef);
+
+  const deletePromises = snapshot.docs.map((boxDoc) => deleteDoc(boxDoc.ref));
+
+  await Promise.all(deletePromises);
+};
+
+/**
+ * Elimina un progetto con tutti i suoi contenuti
+ * Include: bento boxes, foto nello storage
  * @param {string} projectId - ID del progetto
  */
 export const deleteProject = async (projectId) => {
+  // 1. Elimina tutte le foto dallo storage
+  await deleteProjectPhotos(projectId);
+
+  // 2. Elimina tutti i bento boxes
+  await deleteProjectBentoBoxes(projectId);
+
+  // 3. Elimina il documento del progetto
   await deleteDoc(doc(db, PROJECTS_COLLECTION, projectId));
 };
+
+/**
+ * Elimina un progetto con tutti i suoi contenuti (versione esportata per uso esterno)
+ * Usata da groups.js per eliminare i progetti di un gruppo
+ */
+export const deleteProjectWithContents = deleteProject;
 
 /**
  * Conta i progetti di un gruppo
@@ -251,7 +305,7 @@ export const getBentoBoxes = async (projectId) => {
 /**
  * Crea un nuovo bento box
  * @param {string} projectId - ID del progetto
- * @param {object} boxData - Dati del box { title, height, boxType, content }
+ * @param {object} boxData - Dati del box { title, height, boxType, content, photos }
  * @returns {object} - Box creato
  */
 export const createBentoBox = async (projectId, boxData) => {
@@ -262,8 +316,9 @@ export const createBentoBox = async (projectId, boxData) => {
     id: boxId,
     title: boxData.title || "Box",
     height: boxData.height || 200,
-    boxType: boxData.boxType || "generic", // "generic", "note", etc.
+    boxType: boxData.boxType || "generic", // "generic", "note", "photo", etc.
     content: boxData.content || "", // Contenuto per le note
+    photos: boxData.photos || [], // Array foto per PhotoBox
     createdAt: serverTimestamp(),
   };
 
@@ -292,6 +347,17 @@ export const updateBentoBoxTitle = async (projectId, boxId, newTitle) => {
 export const updateBentoBoxContent = async (projectId, boxId, newContent) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { content: newContent });
+};
+
+/**
+ * Aggiorna le foto di un bento box (PhotoBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {array} photos - Array di foto { id, url, name, storagePath }
+ */
+export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { photos });
 };
 
 /**

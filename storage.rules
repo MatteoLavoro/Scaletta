@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Funzione helper: verifica se l'utente è autenticato
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Funzione helper: verifica che il file sia un'immagine valida
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Funzione helper: verifica dimensione massima (10MB)
+    function isUnderMaxSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // ==========================================
+    // FOTO DEI PROGETTI
+    // Struttura: projects/{projectId}/photos/{photoId}
+    // ==========================================
+    match /projects/{projectId}/photos/{photoId} {
+      // Lettura: utente autenticato
+      // La verifica che l'utente sia membro del gruppo è fatta lato client
+      allow read: if isAuthenticated();
+      
+      // Scrittura: utente autenticato + file immagine + dimensione ok
+      allow write: if isAuthenticated() 
+        && isImage() 
+        && isUnderMaxSize();
+      
+      // Eliminazione: utente autenticato
+      allow delete: if isAuthenticated();
+    }
+  }
+}

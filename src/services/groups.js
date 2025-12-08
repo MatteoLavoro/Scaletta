@@ -15,6 +15,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import app from "./config";
+import { deleteProjectWithContents } from "./projects";
 
 const db = getFirestore(app);
 const GROUPS_COLLECTION = "groups";
@@ -206,7 +207,7 @@ export const leaveGroup = async (groupId, user) => {
 
 /**
  * Elimina un gruppo (solo il founder può farlo)
- * Elimina anche tutti i progetti associati al gruppo
+ * Elimina anche tutti i progetti associati al gruppo con foto e bento boxes
  * @param {string} groupId - ID del gruppo
  * @param {string} userId - ID dell'utente che richiede l'eliminazione
  */
@@ -224,25 +225,21 @@ export const deleteGroup = async (groupId, userId) => {
     throw new Error("Solo il creatore può eliminare il gruppo");
   }
 
-  // Elimina tutti i progetti del gruppo usando batch
+  // Ottieni tutti i progetti del gruppo
   const projectsQuery = query(
     collection(db, PROJECTS_COLLECTION),
     where("groupId", "==", groupId)
   );
   const projectsSnapshot = await getDocs(projectsQuery);
 
-  const batch = writeBatch(db);
+  // Elimina ogni progetto con tutti i suoi contenuti (foto, bento boxes)
+  const deletePromises = projectsSnapshot.docs.map((projectDoc) =>
+    deleteProjectWithContents(projectDoc.id)
+  );
+  await Promise.all(deletePromises);
 
-  // Aggiungi tutti i progetti al batch di eliminazione
-  projectsSnapshot.forEach((projectDoc) => {
-    batch.delete(projectDoc.ref);
-  });
-
-  // Aggiungi il gruppo al batch di eliminazione
-  batch.delete(groupRef);
-
-  // Esegui il batch
-  await batch.commit();
+  // Elimina il gruppo
+  await deleteDoc(groupRef);
 };
 
 /**

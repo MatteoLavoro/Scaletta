@@ -7,6 +7,7 @@ export {
   MobileAddFab,
 } from "./AddBentoBoxButton";
 export { default as NoteBox } from "./NoteBox";
+export { default as PhotoBox } from "./PhotoBox";
 export { default as TutorialBox } from "./TutorialBox";
 
 // Costanti e utility

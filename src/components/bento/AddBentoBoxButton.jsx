@@ -1,4 +1,4 @@
-import { PlusIcon, FileTextIcon } from "../icons";
+import { PlusIcon, FileTextIcon, ImageIcon } from "../icons";
 import { BOX_WIDTH } from "../../hooks/useColumnCount";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -53,9 +53,10 @@ const BoxTypeButton = ({
  * (Su mobile viene usato MobileAddFab invece di questo componente)
  *
  * @param {function} onAddNote - Handler per aggiungere una nota
+ * @param {function} onAddPhoto - Handler per aggiungere una foto
  * @param {string} className - Classi CSS aggiuntive
  */
-const AddBentoBoxButton = ({ onAddNote, className = "" }) => {
+const AddBentoBoxButton = ({ onAddNote, onAddPhoto, className = "" }) => {
   return (
     <div
       className={`
@@ -75,7 +76,7 @@ const AddBentoBoxButton = ({ onAddNote, className = "" }) => {
         onClick={onAddNote}
         large
       />
-      <BoxTypeButton icon={null} label="" disabled large />
+      <BoxTypeButton icon={ImageIcon} label="Foto" onClick={onAddPhoto} large />
       <BoxTypeButton icon={null} label="" disabled large />
       <BoxTypeButton icon={null} label="" disabled large />
     </div>
@@ -112,8 +113,9 @@ const isLightColor = (hexColor) => {
  * Il colore del testo si adatta automaticamente in base alla luminosità dello sfondo
  *
  * @param {function} onAddNote - Handler per aggiungere una nota
+ * @param {function} onAddPhoto - Handler per aggiungere una foto
  */
-export const MobileAddFab = ({ onAddNote }) => {
+export const MobileAddFab = ({ onAddNote, onAddPhoto }) => {
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema del profilo
@@ -155,8 +157,25 @@ export const MobileAddFab = ({ onAddNote }) => {
           <span className="text-xs font-medium">Nota</span>
         </button>
 
+        {/* Foto - attivo */}
+        <button
+          onClick={onAddPhoto}
+          className="
+            flex flex-col items-center justify-center gap-1
+            border-2 border-dashed rounded-lg
+            p-2
+            transition-all duration-200
+            hover:opacity-80 active:opacity-60
+          "
+          style={{ borderColor: `${textColor}50`, color: textColor }}
+          aria-label="Aggiungi Foto"
+        >
+          <ImageIcon className="w-6 h-6" />
+          <span className="text-xs font-medium">Foto</span>
+        </button>
+
         {/* Bottoni disabilitati */}
-        {[1, 2, 3].map((i) => (
+        {[1, 2].map((i) => (
           <div
             key={i}
             className="

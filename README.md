@@ -6,7 +6,7 @@
 
 - **Frontend**: React 19 + Vite 7
 - **Styling**: Tailwind CSS 4 con variabili CSS custom
-- **Backend**: Firebase (Authentication + Firestore)
+- **Backend**: Firebase (Authentication + Firestore + Storage)
 - **Icone**: Lucide React
 - **PWA**: Service Worker per installazione
 
@@ -25,8 +25,25 @@
 - Partecipazione tramite codice
 - Modifica nome gruppo
 - Uscita dal gruppo
-- Eliminazione gruppo (solo founder)
+- Eliminazione gruppo (solo founder, elimina anche progetti e foto)
 - Lista membri con identificazione founder (corona 👑)
+
+### Progetti
+
+- Creazione con colore automatico (evita duplicati)
+- 12 colori disponibili
+- 4 stati: In corso, Completato, Archiviato, Cestinato
+- Ordinamento automatico per stato e data
+- Eliminazione con pulizia automatica di contenuti e foto
+
+### Bento Box (Contenuto Progetti)
+
+- **Layout dinamico**: Griglia responsive 1-4 colonne
+- **Algoritmo "shortest column first"**: Distribuzione ottimale
+- **Animazioni FLIP**: Transizioni fluide
+- **Sincronizzazione real-time**: Modifiche istantanee tra dispositivi
+- **NoteBox**: Note testuali con editor
+- **PhotoBox**: Carosello foto con upload multiplo e drag & drop
 
 ### Personalizzazione
 
@@ -62,17 +79,20 @@ firebase deploy
 src/
 ├── components/
 │   ├── auth/        # Autenticazione
+│   ├── bento/       # Sistema Bento Box (NoteBox, PhotoBox, ecc.)
 │   ├── form/        # Componenti form
 │   ├── groups/      # Sistema gruppi
+│   ├── icons/       # Wrapper icone Lucide
 │   ├── modal/       # Sistema modale
 │   ├── profile/     # Profilo utente
+│   ├── projects/    # Sistema progetti
 │   ├── pwa/         # Installazione PWA
 │   └── ui/          # Componenti UI base
-├── contexts/        # React contexts
-├── hooks/           # Custom hooks
-├── pages/           # Pagine app
-├── services/        # Firebase services
-└── utils/           # Utility functions
+├── contexts/        # React contexts (Auth, Modal, Theme)
+├── hooks/           # Custom hooks (useBentoAnimation, useColumnCount, ecc.)
+├── pages/           # Pagine app (Dashboard, ProjectPage, ecc.)
+├── services/        # Firebase services (auth, groups, projects, photos)
+└── utils/           # Utility functions (validation, colors, statuses)
 ```
 
 ## 📚 Documentazione

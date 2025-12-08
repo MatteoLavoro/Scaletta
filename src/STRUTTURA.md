@@ -19,6 +19,22 @@
 | `AuthModal.jsx` | Modale login/registrazione |
 | `index.js`      | Export pubblici            |
 
+### `bento/` - Sistema Bento Box
+
+| File                    | Descrizione                                   |
+| ----------------------- | --------------------------------------------- |
+| `BaseBentoBox.jsx`      | Componente base per tutti i tipi di box       |
+| `NoteBox.jsx`           | Box per note testuali                         |
+| `PhotoBox.jsx`          | Box per foto con carosello                    |
+| `TutorialBox.jsx`       | Box tutorial (primo avvio)                    |
+| `AddBentoBoxButton.jsx` | Griglia 2x2 per aggiungere box + MobileAddFab |
+| `BentoGrid.jsx`         | Container griglia principale                  |
+| `BentoBox.jsx`          | Box semplice generico                         |
+| `bentoConstants.js`     | Costanti (altezze preset)                     |
+| `useBentoLayout.js`     | Hook legacy (non usato)                       |
+| `BENTO_BOX.md`          | Documentazione dettagliata sistema Bento      |
+| `index.js`              | Export pubblici                               |
+
 ### `form/` - Componenti Form Standard
 
 | File                | Descrizione                          |
@@ -67,6 +83,7 @@
 | `ModalFab.jsx`     | FAB conferma fluttuante (mobile)                        |
 | `ConfirmModal.jsx` | Modale di conferma con box colorata                     |
 | `InputModal.jsx`   | Modale di input con validazione e exactLength           |
+| `UploadModal.jsx`  | Modale upload file con drag & drop e preview            |
 | `index.js`         | Export pubblici                                         |
 
 ### `profile/` - Componenti Profilo
@@ -113,30 +130,37 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 | ----------------------- | ------------------------------ |
 | `AlertCircleIcon.jsx`   | Icona alert cerchio            |
 | `AlertTriangleIcon.jsx` | Icona alert triangolo          |
+| `ArchiveIcon.jsx`       | Archivio                       |
 | `ArrowLeftIcon.jsx`     | Freccia indietro               |
 | `CheckIcon.jsx`         | Spunta                         |
 | `CheckCircleIcon.jsx`   | Spunta in cerchio (completato) |
+| `ChevronDownIcon.jsx`   | Freccia giù                    |
+| `ChevronLeftIcon.jsx`   | Freccia sinistra               |
+| `ChevronRightIcon.jsx`  | Freccia destra                 |
 | `CloseIcon.jsx`         | X chiudi                       |
 | `CopyIcon.jsx`          | Copia clipboard                |
 | `CrownIcon.jsx`         | Corona (founder)               |
 | `DownloadIcon.jsx`      | Download                       |
 | `EyeIcon.jsx`           | Occhio (mostra)                |
 | `EyeOffIcon.jsx`        | Occhio barrato (nascondi)      |
+| `FileTextIcon.jsx`      | File documento                 |
+| `ImageIcon.jsx`         | Immagine                       |
 | `InfoIcon.jsx`          | Info cerchio                   |
+| `ListChecksIcon.jsx`    | Lista checklist                |
 | `LogOutIcon.jsx`        | Logout                         |
+| `MoonIcon.jsx`          | Luna (tema scuro)              |
 | `MoreVerticalIcon.jsx`  | Tre puntini verticali (kebab)  |
 | `PencilIcon.jsx`        | Matita (modifica)              |
-| `PlusIcon.jsx`          | Più                            |
 | `PlayIcon.jsx`          | Play (in corso)                |
-| `ArchiveIcon.jsx`       | Archivio                       |
-| `TrashIcon.jsx`         | Cestino                        |
+| `PlusIcon.jsx`          | Più                            |
 | `SettingsIcon.jsx`      | Ingranaggio                    |
-| `UsersIcon.jsx`         | Utenti                         |
+| `SunIcon.jsx`           | Sole (tema chiaro)             |
+| `TrashIcon.jsx`         | Cestino                        |
+| `UploadIcon.jsx`        | Upload                         |
 | `UserIcon.jsx`          | Utente singolo                 |
 | `UserPlusIcon.jsx`      | Aggiungi utente                |
-| `ChevronDownIcon.jsx`   | Freccia giù                    |
-| `SunIcon.jsx`           | Sole (tema chiaro)             |
-| `MoonIcon.jsx`          | Luna (tema scuro)              |
+| `UsersIcon.jsx`         | Utenti                         |
+| `ZapIcon.jsx`           | Fulmine (azione rapida)        |
 | `index.js`              | Export pubblici                |
 
 ---
@@ -153,11 +177,13 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 
 ## `hooks/`
 
-| File                   | Descrizione                     |
-| ---------------------- | ------------------------------- |
-| `useIsMobile.js`       | Rileva viewport mobile (<768px) |
-| `useKeyboardHeight.js` | Altezza tastiera virtuale       |
-| `usePWAInstall.js`     | Gestione installazione PWA      |
+| File                   | Descrizione                                    |
+| ---------------------- | ---------------------------------------------- |
+| `useBentoAnimation.js` | Layout Bento + animazioni FLIP + distribuzione |
+| `useColumnCount.js`    | Calcola colonne responsive (1-4)               |
+| `useIsMobile.js`       | Rileva viewport mobile (<768px)                |
+| `useKeyboardHeight.js` | Altezza tastiera virtuale                      |
+| `usePWAInstall.js`     | Gestione installazione PWA                     |
 
 ---
 
@@ -175,12 +201,13 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 
 ## `services/`
 
-| File          | Descrizione                                                         |
-| ------------- | ------------------------------------------------------------------- |
-| `config.js`   | Configurazione Firebase                                             |
-| `auth.js`     | Funzioni auth (login, register, logout, updateUsername)             |
-| `groups.js`   | Funzioni CRUD gruppi (crea, unisciti, esci, elimina, aggiorna nome) |
-| `projects.js` | Funzioni CRUD progetti (crea, modifica nome/colore/stato, elimina)  |
+| File          | Descrizione                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| `config.js`   | Configurazione Firebase                                                 |
+| `auth.js`     | Funzioni auth (login, register, logout, updateUsername)                 |
+| `groups.js`   | Funzioni CRUD gruppi (crea, unisciti, esci, elimina con cascade)        |
+| `projects.js` | Funzioni CRUD progetti + bento boxes (con eliminazione foto automatica) |
+| `photos.js`   | Upload/delete foto Firebase Storage con progress                        |
 
 ---
 

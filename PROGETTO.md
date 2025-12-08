@@ -13,18 +13,22 @@
 - **Autenticazione Firebase** (login, registrazione, logout, modifica username)
 - **Sistema Gruppi** completo (creazione, partecipazione, uscita, eliminazione)
 - **Sistema Progetti** completo (creazione, modifica, stati, colori, eliminazione)
+- **Sistema Bento Box** (layout a griglia dinamico con animazioni FLIP)
+- **NoteBox** (box per note testuali con editor)
+- **PhotoBox** (box per foto con carosello, upload multiplo, drag & drop)
 - **Sistema Tema** (chiaro/scuro + 6 colori accent)
 - **PWA** (installabile su dispositivi)
 - **UI/UX responsive** (mobile fullscreen, desktop centrato)
 - **Sistema Modali** con gestione history browser
+- **Sincronizzazione real-time** tra dispositivi
 
 ### 🚧 In Sviluppo
 
-- Contenuto dettagliato dei progetti (task, note, file)
+- Altri tipi di Bento Box (checklist, link, contatti)
 
 ### 📋 Pianificato
 
-- Gestione file e note nei progetti
+- Gestione file e documenti
 - Notifiche
 - Ricerca avanzata
 
@@ -132,6 +136,93 @@ Organizzati in 3 righe da 4:
   createdBy: string,       // UID del creatore
   createdByName: string    // Nome del creatore
 }
+```
+
+---
+
+### 3. Bento Box (Contenuto Progetti)
+
+Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una griglia a colonne che si adatta al contenuto.
+
+#### Caratteristiche del Layout:
+
+- **Larghezza fissa**: 320px per box (desktop), 100% (mobile)
+- **Gap**: 16px tra i box
+- **Colonne responsive**:
+  - 📱 Mobile (< 640px): 1 colonna
+  - 📱 Tablet (640-1023px): 2 colonne
+  - 💻 Desktop (1024-1343px): 3 colonne
+  - 🖥️ Large (≥ 1344px): 4 colonne
+- **Algoritmo "shortest column first"**: Ogni box viene assegnato alla colonna più corta
+- **Animazioni FLIP**: Transizioni fluide quando i box cambiano posizione
+- **Sincronizzazione real-time**: Modifiche visibili istantaneamente su tutti i dispositivi
+
+#### Tipi di Bento Box:
+
+| Tipo          | Stato     | Descrizione                        |
+| ------------- | --------- | ---------------------------------- |
+| 📝 NoteBox    | ✅ Attivo | Note testuali (max 2000 caratteri) |
+| 🖼️ PhotoBox   | ✅ Attivo | Foto con carosello e upload        |
+| ✅ Checklist  | 🔜 Futuro | Liste di task                      |
+| 🔗 LinkBox    | 🔜 Futuro | Link esterni con preview           |
+| 👤 ContactBox | 🔜 Futuro | Anagrafiche persone                |
+
+#### Struttura Comune Bento Box:
+
+```
+┌────────────────────────────────────┐
+│  Titolo (centrato)           [⋮]  │  ← Header con kebab menu
+├────────────────────────────────────┤
+│                                    │
+│         Contenuto                  │  ← Area contenuto (varia per tipo)
+│                                    │
+└────────────────────────────────────┘
+```
+
+#### NoteBox - Box Note
+
+- Textarea autoespandente per testi fino a 2000 caratteri
+- Pulsante "Aggiungi nota" se vuoto
+- Salvataggio automatico su Firestore
+
+#### PhotoBox - Box Foto
+
+- **Carosello**: Navigazione tra foto con frecce e swipe touch
+- **Indicatori**: Pallini per numero foto corrente
+- **Upload multiplo**: Drag & drop o selezione file
+- **Progress bar**: Indicatore progresso dentro il box durante upload
+- **Preload immagini**: Caricamento anticipato per scroll fluido
+- **Formati supportati**: JPG, PNG, GIF, WebP (max 10MB)
+- **Eliminazione singola**: Conferma prima di eliminare una foto
+
+#### Struttura Dati Bento Box (Firestore):
+
+```javascript
+// Collection: projects/{projectId}/bentoBoxes/{boxId}
+{
+  id: string,              // ID documento
+  title: string,           // Titolo box (max 50 caratteri)
+  boxType: string,         // "note" | "photo"
+  content: string,         // Contenuto testuale (per NoteBox)
+  photos: [                // Array foto (per PhotoBox)
+    {
+      id: string,
+      url: string,         // URL Firebase Storage
+      name: string,        // Nome file originale
+      storagePath: string  // Path completo nello storage
+    }
+  ],
+  createdAt: Timestamp
+}
+```
+
+#### Storage Foto (Firebase Storage):
+
+```
+projects/
+  └── {projectId}/
+      └── photos/
+          └── {photoId}.{ext}
 ```
 
 ---
@@ -269,6 +360,7 @@ delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 
 - **Firebase Authentication** (email/password)
 - **Cloud Firestore** (database NoSQL)
+- **Firebase Storage** (upload foto)
 - **Firebase Hosting** (deployment)
 
 ### Configurazione
@@ -301,18 +393,25 @@ delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 - [x] Permessi eliminazione (founder gruppo O creatore progetto)
 - [x] Validazione nomi duplicati
 
-### Fase 3 - File Management (Prossima)
+### Fase 3 - Bento Box ✅ COMPLETATA
 
-- [ ] Upload file
-- [ ] Download file
-- [ ] Anteprima file
-- [ ] Organizzazione cartelle
+- [x] Sistema layout Bento responsive (1-4 colonne)
+- [x] Algoritmo "shortest column first" per distribuzione
+- [x] Animazioni FLIP per transizioni fluide
+- [x] Sincronizzazione real-time tra dispositivi
+- [x] NoteBox per note testuali
+- [x] PhotoBox con carosello e upload multiplo
+- [x] Drag & drop per upload foto
+- [x] Progress bar in-box durante upload
+- [x] Preload immagini per scrolling fluido
+- [x] Eliminazione automatica foto su delete box/progetto/gruppo
 
-### Fase 4 - Note e Dati
+### Fase 4 - Altri Bento Box (Prossima)
 
-- [ ] Sistema note con editor
-- [ ] Campi dati personalizzati
-- [ ] Sistema di tag
+- [ ] ChecklistBox per liste di task
+- [ ] LinkBox per link esterni con preview
+- [ ] ContactBox per anagrafiche
+- [ ] FileBox per documenti generici
 
 ### Fase 5 - Miglioramenti
 
