@@ -13,6 +13,7 @@ import {
   arrayRemove,
   serverTimestamp,
   writeBatch,
+  onSnapshot,
 } from "firebase/firestore";
 import app from "./config";
 import { deleteProjectWithContents } from "./projects";
@@ -254,4 +255,66 @@ export const getGroupById = async (groupId) => {
   if (!groupSnap.exists()) return null;
 
   return { id: groupSnap.id, ...groupSnap.data() };
+};
+
+/**
+ * Sottoscrive ai cambiamenti dei gruppi di un utente in tempo reale
+ * @param {string} userId - ID dell'utente
+ * @param {function} onUpdate - Callback chiamata quando i gruppi cambiano
+ * @returns {function} - Funzione per annullare la sottoscrizione
+ */
+export const subscribeToUserGroups = (userId, onUpdate) => {
+  const groupsRef = collection(db, GROUPS_COLLECTION);
+
+  return onSnapshot(
+    groupsRef,
+    (snapshot) => {
+      const groups = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        // Filtra solo i gruppi dove l'utente è membro
+        const isMember = data.members?.some((m) => m.uid === userId);
+        if (isMember) {
+          groups.push({ id: doc.id, ...data });
+        }
+      });
+
+      // Ordina per data di creazione (più recenti prima)
+      groups.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB - dateA;
+      });
+
+      onUpdate(groups);
+    },
+    (error) => {
+      console.error("Errore sincronizzazione gruppi:", error);
+    }
+  );
+};
+
+/**
+ * Sottoscrive ai cambiamenti di un singolo gruppo in tempo reale
+ * @param {string} groupId - ID del gruppo
+ * @param {function} onUpdate - Callback chiamata quando il gruppo cambia
+ * @returns {function} - Funzione per annullare la sottoscrizione
+ */
+export const subscribeToGroup = (groupId, onUpdate) => {
+  const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+
+  return onSnapshot(
+    groupRef,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        onUpdate({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        onUpdate(null);
+      }
+    },
+    (error) => {
+      console.error("Errore sincronizzazione gruppo:", error);
+    }
+  );
 };

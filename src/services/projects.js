@@ -149,6 +149,60 @@ export const getProjectById = async (projectId) => {
   return { id: projectSnap.id, ...projectSnap.data() };
 };
 
+// Priorità stati per ordinamento
+const STATUS_PRIORITY = {
+  "in-corso": 0,
+  completato: 1,
+  archiviato: 2,
+  cestinato: 3,
+};
+
+/**
+ * Funzione di ordinamento progetti per stato e data
+ */
+const sortProjects = (projects) => {
+  return [...projects].sort((a, b) => {
+    const statusA = STATUS_PRIORITY[a.status] ?? 99;
+    const statusB = STATUS_PRIORITY[b.status] ?? 99;
+
+    if (statusA !== statusB) {
+      return statusA - statusB;
+    }
+
+    const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+    const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+    return dateB - dateA;
+  });
+};
+
+/**
+ * Sottoscrive ai progetti di un gruppo in tempo reale
+ * @param {string} groupId - ID del gruppo
+ * @param {function} onUpdate - Callback chiamata quando i progetti cambiano
+ * @returns {function} - Funzione per annullare la sottoscrizione
+ */
+export const subscribeToGroupProjects = (groupId, onUpdate) => {
+  const q = query(
+    collection(db, PROJECTS_COLLECTION),
+    where("groupId", "==", groupId)
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const projects = [];
+      snapshot.forEach((doc) => {
+        projects.push({ id: doc.id, ...doc.data() });
+      });
+
+      onUpdate(sortProjects(projects));
+    },
+    (error) => {
+      console.error("Errore sincronizzazione progetti gruppo:", error);
+    }
+  );
+};
+
 /**
  * Aggiorna il nome del progetto
  * @param {string} projectId - ID del progetto

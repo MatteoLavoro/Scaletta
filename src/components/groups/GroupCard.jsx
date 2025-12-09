@@ -3,7 +3,6 @@ import { InfoIcon, ChevronDownIcon, UsersIcon } from "../icons";
 import GroupInfoModal from "./GroupInfoModal";
 import { ProjectGrid } from "../projects";
 import { Badge } from "../ui";
-import { countProjectsByGroup } from "../../services/projects";
 
 // Chiave localStorage per lo stato di espansione dei gruppi
 const EXPANDED_GROUPS_KEY = "scaletta_expanded_groups";
@@ -32,18 +31,9 @@ const saveExpandedGroups = (groupIds) => {
  * @param {object} group - Dati del gruppo
  * @param {string} currentUserId - ID dell'utente corrente
  * @param {object} currentUser - Oggetto utente corrente { uid, displayName, email }
- * @param {function} onGroupUpdated - Callback quando il gruppo viene aggiornato
- * @param {function} onGroupLeft - Callback quando l'utente esce dal gruppo
  * @param {function} onProjectClick - Callback quando un progetto viene cliccato
  */
-const GroupCard = ({
-  group,
-  currentUserId,
-  currentUser,
-  onGroupUpdated,
-  onGroupLeft,
-  onProjectClick,
-}) => {
+const GroupCard = ({ group, currentUserId, currentUser, onProjectClick }) => {
   // Inizializza lo stato di espansione da localStorage
   const [isExpanded, setIsExpanded] = useState(() => {
     const expandedGroups = getExpandedGroups();
@@ -52,23 +42,9 @@ const GroupCard = ({
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [projectCount, setProjectCount] = useState(null);
 
-  // Carica il conteggio dei progetti
-  useEffect(() => {
-    const loadProjectCount = async () => {
-      try {
-        const count = await countProjectsByGroup(group.id);
-        setProjectCount(count);
-      } catch (error) {
-        console.error("Errore conteggio progetti:", error);
-        setProjectCount(0);
-      }
-    };
-    loadProjectCount();
-  }, [group.id]);
-
-  // Aggiorna il conteggio quando un progetto viene aggiunto/rimosso
-  const handleProjectCountChange = (delta) => {
-    setProjectCount((prev) => (prev !== null ? prev + delta : delta));
+  // Callback per aggiornare il conteggio progetti (chiamato da ProjectGrid)
+  const handleProjectCountChange = (count) => {
+    setProjectCount(count);
   };
 
   // Salva lo stato di espansione in localStorage quando cambia
@@ -176,8 +152,6 @@ const GroupCard = ({
         currentUserId={currentUserId}
         isFounder={isFounder}
         onClose={() => setIsInfoOpen(false)}
-        onGroupUpdated={onGroupUpdated}
-        onGroupLeft={onGroupLeft}
       />
     </>
   );

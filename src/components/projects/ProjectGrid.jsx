@@ -5,7 +5,7 @@ import { InputModal } from "../modal";
 import { Spinner } from "../ui";
 import {
   createProject,
-  getProjectsByGroup,
+  subscribeToGroupProjects,
   projectNameExists,
 } from "../../services/projects";
 import { validateProjectName } from "../../utils/projectValidation";
@@ -17,7 +17,7 @@ import { validateProjectName } from "../../utils/projectValidation";
  * @param {object} group - Oggetto gruppo completo (per founder check)
  * @param {object} currentUser - Utente corrente { uid, displayName, email }
  * @param {function} onProjectClick - Callback quando un progetto viene cliccato (riceve { project, group })
- * @param {function} onProjectCountChange - Callback quando cambia il numero di progetti (riceve delta: +1 o -1)
+ * @param {function} onProjectCountChange - Callback quando cambia il numero di progetti (riceve il count totale)
  */
 const ProjectGrid = ({
   groupId,
@@ -31,23 +31,19 @@ const ProjectGrid = ({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Carica i progetti del gruppo
+  // Sottoscrizione real-time ai progetti del gruppo
   useEffect(() => {
-    const loadProjects = async () => {
-      if (!groupId) return;
+    if (!groupId) return;
 
-      try {
-        const groupProjects = await getProjectsByGroup(groupId);
-        setProjects(groupProjects);
-      } catch (error) {
-        console.error("Errore caricamento progetti:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const unsubscribe = subscribeToGroupProjects(groupId, (groupProjects) => {
+      setProjects(groupProjects);
+      // Aggiorna il contatore progetti con il count totale
+      onProjectCountChange?.(groupProjects.length);
+      setLoading(false);
+    });
 
-    loadProjects();
-  }, [groupId]);
+    return () => unsubscribe();
+  }, [groupId, onProjectCountChange]);
 
   // Validazione nome progetto con controllo duplicati
   const validateProjectNameWithDuplicate = useCallback(
@@ -71,9 +67,8 @@ const ProjectGrid = ({
   const handleCreateProject = async (name) => {
     setIsCreating(true);
     try {
-      const newProject = await createProject(name, groupId, currentUser);
-      setProjects((prev) => [newProject, ...prev]);
-      onProjectCountChange?.(1); // Incrementa il contatore
+      await createProject(name, groupId, currentUser);
+      // Non serve setProjects - il listener real-time aggiornerà automaticamente
       setIsCreateModalOpen(false);
     } catch (error) {
       console.error("Errore creazione progetto:", error);

@@ -24,8 +24,6 @@ const GroupInfoModal = ({
   currentUserId,
   isFounder,
   onClose,
-  onGroupUpdated,
-  onGroupLeft,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -40,9 +38,7 @@ const GroupInfoModal = ({
     setIsUpdating(true);
     try {
       await updateGroupName(group.id, newName);
-      if (onGroupUpdated) {
-        onGroupUpdated({ ...group, name: newName.trim() });
-      }
+      // Real-time aggiornerà automaticamente
       setIsEditingName(false);
     } catch (error) {
       console.error("Errore aggiornamento nome gruppo:", error);
@@ -54,9 +50,8 @@ const GroupInfoModal = ({
   const handleLeaveGroup = async () => {
     try {
       await leaveGroup(group.id, { uid: currentUserId });
-      if (onGroupLeft) {
-        onGroupLeft(group.id);
-      }
+      // Real-time rimuoverà automaticamente il gruppo dalla lista
+      onClose();
     } catch (error) {
       console.error("Errore uscita dal gruppo:", error);
     }
@@ -65,9 +60,8 @@ const GroupInfoModal = ({
   const handleDeleteGroup = async () => {
     try {
       await deleteGroup(group.id, currentUserId);
-      if (onGroupLeft) {
-        onGroupLeft(group.id);
-      }
+      // Real-time rimuoverà automaticamente il gruppo dalla lista
+      onClose();
     } catch (error) {
       console.error("Errore eliminazione gruppo:", error);
     }

@@ -97,6 +97,14 @@ const InputModal = ({
   const isDisabled =
     loading || isValidating || !isLengthValid || value === initialValue;
 
+  // Gestione tasto Invio
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !isDisabled) {
+      e.preventDefault();
+      handleConfirm();
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -113,6 +121,7 @@ const InputModal = ({
           label={label}
           value={value}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           error={error}
           autoFocus

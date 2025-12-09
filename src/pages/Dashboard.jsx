@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { UserIcon } from "../components/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { useModal } from "../contexts/ModalContext";
@@ -11,7 +11,12 @@ import {
 } from "../components/groups";
 import { InputModal } from "../components/modal";
 import { Spinner } from "../components/ui";
-import { getUserGroups, createGroup, joinGroup } from "../services/groups";
+import {
+  getUserGroups,
+  createGroup,
+  joinGroup,
+  subscribeToUserGroups,
+} from "../services/groups";
 import { validateGroupName, validateGroupCode } from "../utils/groupValidation";
 
 const Dashboard = ({ onProjectClick }) => {
@@ -37,34 +42,32 @@ const Dashboard = ({ onProjectClick }) => {
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
 
-  // Carica i gruppi dell'utente
-  const loadGroups = useCallback(async () => {
+  // Sottoscrizione real-time ai gruppi dell'utente
+  useEffect(() => {
     if (!user?.uid) return;
 
-    try {
-      const userGroups = await getUserGroups(user.uid);
-      setGroups(userGroups);
-    } catch (error) {
-      console.error("Errore caricamento gruppi:", error);
-    } finally {
-      setLoadingGroups(false);
-    }
-  }, [user?.uid]);
+    setLoadingGroups(true);
 
-  useEffect(() => {
-    loadGroups();
-  }, [loadGroups]);
+    // Usa onSnapshot per sincronizzazione in tempo reale
+    const unsubscribe = subscribeToUserGroups(user.uid, (userGroups) => {
+      setGroups(userGroups);
+      setLoadingGroups(false);
+    });
+
+    // Cleanup: annulla la sottoscrizione quando il componente si smonta
+    return () => unsubscribe();
+  }, [user?.uid]);
 
   // Crea un nuovo gruppo
   const handleCreateGroup = async (name) => {
     setIsCreating(true);
     try {
-      const newGroup = await createGroup(name, {
+      await createGroup(name, {
         uid: user.uid,
         displayName: user.displayName,
         email: user.email,
       });
-      setGroups((prev) => [newGroup, ...prev]);
+      // Non serve setGroups - il listener real-time aggiornerà automaticamente
       setIsCreateModalOpen(false);
     } catch (error) {
       console.error("Errore creazione gruppo:", error);
@@ -78,12 +81,12 @@ const Dashboard = ({ onProjectClick }) => {
     setIsJoining(true);
     setJoinError("");
     try {
-      const group = await joinGroup(code, {
+      await joinGroup(code, {
         uid: user.uid,
         displayName: user.displayName,
         email: user.email,
       });
-      setGroups((prev) => [group, ...prev]);
+      // Non serve setGroups - il listener real-time aggiornerà automaticamente
       setIsJoinModalOpen(false);
     } catch (error) {
       setJoinError(error.message);
@@ -91,18 +94,6 @@ const Dashboard = ({ onProjectClick }) => {
     } finally {
       setIsJoining(false);
     }
-  };
-
-  // Aggiorna un gruppo nella lista
-  const handleGroupUpdated = (updatedGroup) => {
-    setGroups((prev) =>
-      prev.map((g) => (g.id === updatedGroup.id ? updatedGroup : g))
-    );
-  };
-
-  // Rimuovi un gruppo dalla lista (uscita o eliminazione)
-  const handleGroupLeft = (groupId) => {
-    setGroups((prev) => prev.filter((g) => g.id !== groupId));
   };
 
   // Validazione codice con errore server
@@ -152,8 +143,6 @@ const Dashboard = ({ onProjectClick }) => {
                     group={group}
                     currentUserId={user?.uid}
                     currentUser={currentUser}
-                    onGroupUpdated={handleGroupUpdated}
-                    onGroupLeft={handleGroupLeft}
                     onProjectClick={onProjectClick}
                   />
                 ))}
