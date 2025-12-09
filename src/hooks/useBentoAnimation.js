@@ -19,7 +19,7 @@ import {
  * @param {Array} items - Array di elementi con id univoci
  * @param {number} columnCount - Numero di colonne
  * @param {number} gap - Gap tra i box (default: 16)
- * @returns {Object} - { containerRef, columns }
+ * @returns {Object} - { containerRef, columns, getItemStyle }
  */
 const useBentoAnimation = (items, columnCount, gap = 16) => {
   const containerRef = useRef(null);
@@ -29,27 +29,14 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
   const animatingRef = useRef(new Set());
   const resizeObserverRef = useRef(null);
   const [heights, setHeights] = useState(new Map());
-  // Traccia gli ID conosciuti per identificare nuovi elementi
-  const knownIdsRef = useRef(new Set());
-  const [newIds, setNewIds] = useState(new Set());
+  // Set di ID degli elementi che devono fare fade-in (nascosti inizialmente)
+  const [newItemIds, setNewItemIds] = useState(() => new Set());
 
   // Crea una chiave unica basata sugli items per rilevare cambiamenti nel contenuto
   const itemsKey = useMemo(() => {
     return items
       .map((item) => `${item.id}:${item.content || ""}:${item.title || ""}`)
       .join("|");
-  }, [items]);
-
-  // Identifica nuovi elementi PRIMA del render per nasconderli subito
-  // Questo viene eseguito durante il render, prima che il DOM venga aggiornato
-  const currentNewIds = useMemo(() => {
-    const newlyAdded = new Set();
-    items.forEach((item) => {
-      if (!knownIdsRef.current.has(item.id)) {
-        newlyAdded.add(item.id);
-      }
-    });
-    return newlyAdded;
   }, [items]);
 
   // Funzione per misurare le altezze di tutti i box
@@ -221,8 +208,6 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       isFirstRenderRef.current = false;
       containerRef.current.offsetHeight;
       positionsRef.current = capturePositions();
-      // Registra tutti gli ID iniziali come conosciuti
-      items.forEach((item) => knownIdsRef.current.add(item.id));
       return;
     }
 
@@ -239,17 +224,7 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     positionsRef.current = newPositions;
 
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
-    
-    // Trova la posizione più in basso tra tutti gli elementi esistenti
-    // per far partire i nuovi elementi da lì
-    let maxBottom = 0;
-    let containerRect = containerRef.current.getBoundingClientRect();
-    oldPositions.forEach((pos) => {
-      const bottom = pos.top + pos.height - containerRect.top;
-      if (bottom > maxBottom) {
-        maxBottom = bottom;
-      }
-    });
+    const newIds = new Set();
 
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
@@ -263,22 +238,27 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       }
 
       if (!oldPos) {
-        // Nuovo elemento - è già nascosto via getItemStyle()
-        // Aggiungi all'elenco dei conosciuti
-        knownIdsRef.current.add(id);
-        
-        // Fade-in nella posizione corretta (l'elemento è GIÀ nella posizione giusta)
+        // Nuovo elemento - traccia per nasconderlo via getItemStyle
+        newIds.add(id);
+
+        // Fade-in semplice dalla posizione corretta (già nella griglia)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            el.style.transition = "opacity 200ms ease-out";
+            el.style.transition = "opacity 250ms ease-out";
             el.style.opacity = "1";
 
             const cleanup = () => {
               el.style.transition = "";
               el.style.opacity = "";
+              // Rimuovi dall'elenco dei nuovi dopo l'animazione
+              setNewItemIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+              });
             };
             el.addEventListener("transitionend", cleanup, { once: true });
-            setTimeout(cleanup, 250);
+            setTimeout(cleanup, 300);
           });
         });
         return;
@@ -317,18 +297,25 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         });
       });
     });
+
+    // Aggiorna lo stato dei nuovi elementi da nascondere (asincrono per evitare cascading renders)
+    if (newIds.size > 0) {
+      queueMicrotask(() => {
+        setNewItemIds((prev) => new Set([...prev, ...newIds]));
+      });
+    }
   }, [columns, columnCount, capturePositions, itemsKey]);
 
   // Funzione helper per ottenere lo stile iniziale di un elemento
   // I nuovi elementi devono essere nascosti finché non sono nella posizione corretta
   const getItemStyle = useCallback(
     (itemId) => {
-      if (currentNewIds.has(itemId)) {
+      if (newItemIds.has(itemId)) {
         return { opacity: 0 };
       }
       return {};
     },
-    [currentNewIds]
+    [newItemIds]
   );
 
   return { containerRef, columns, getItemStyle };

@@ -13,7 +13,9 @@ import {
   PhotoBox,
   BaseBentoBox,
   TutorialBox,
+  CameraFab,
 } from "../components/bento";
+import { CameraModal } from "../components/modal";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import {
   createBentoBox,
@@ -23,7 +25,7 @@ import {
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
-import { deletePhotos } from "../services/photos";
+import { deletePhotos, uploadPhoto } from "../services/photos";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -51,6 +53,7 @@ const ProjectPage = ({
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
@@ -107,6 +110,28 @@ const ProjectPage = ({
       });
     } catch (error) {
       console.error("Errore creazione photo box:", error);
+    }
+  };
+
+  // Funzione per gestire la foto dalla fotocamera
+  // Crea un nuovo PhotoBox con la foto scattata
+  const handleCameraCapture = async (file) => {
+    if (!project?.id || !file) return;
+
+    try {
+      // 1. Carica la foto su Firebase Storage
+      const uploadedPhoto = await uploadPhoto(project.id, file);
+
+      // 2. Crea un nuovo PhotoBox con la foto
+      const photoCount =
+        bentoBoxes.filter((b) => b.boxType === "photo").length + 1;
+      await createBentoBox(project.id, {
+        title: `Foto ${photoCount}`,
+        boxType: "photo",
+        photos: [uploadedPhoto],
+      });
+    } catch (error) {
+      console.error("Errore salvataggio foto dalla fotocamera:", error);
     }
   };
 
@@ -198,7 +223,10 @@ const ProjectPage = ({
   }, [sortedBoxes, hasBoxes, columnCount]);
 
   // Hook per layout "shortest column first" + animazioni FLIP
-  const { containerRef, columns } = useBentoAnimation(allItems, columnCount);
+  const { containerRef, columns, getItemStyle } = useBentoAnimation(
+    allItems,
+    columnCount
+  );
 
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
@@ -243,7 +271,12 @@ const ProjectPage = ({
   // Gestione tasto ESC (solo se non c'è un modale aperto)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && !isInfoModalOpen && !isStatusModalOpen) {
+      if (
+        e.key === "Escape" &&
+        !isInfoModalOpen &&
+        !isStatusModalOpen &&
+        !isCameraModalOpen
+      ) {
         e.preventDefault();
         handleClose();
       }
@@ -251,7 +284,7 @@ const ProjectPage = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, isInfoModalOpen, isStatusModalOpen]);
+  }, [handleClose, isInfoModalOpen, isStatusModalOpen, isCameraModalOpen]);
 
   // Gestione cambio stato
   const handleStatusChange = async (newStatus) => {
@@ -367,7 +400,11 @@ const ProjectPage = ({
                       // Tutorial box
                       if (item.type === "tutorial") {
                         return (
-                          <div key={item.id} data-bento-id={item.id}>
+                          <div
+                            key={item.id}
+                            data-bento-id={item.id}
+                            style={getItemStyle(item.id)}
+                          >
                             <TutorialBox isMobile={columnCount === 1} />
                           </div>
                         );
@@ -375,7 +412,11 @@ const ProjectPage = ({
                       // Add button box (solo desktop)
                       if (item.type === "add") {
                         return (
-                          <div key={item.id} data-bento-id={item.id}>
+                          <div
+                            key={item.id}
+                            data-bento-id={item.id}
+                            style={getItemStyle(item.id)}
+                          >
                             <AddBentoBoxButton
                               onAddNote={handleAddNote}
                               onAddPhoto={handleAddPhoto}
@@ -386,7 +427,11 @@ const ProjectPage = ({
                       // Render NoteBox per box di tipo "note"
                       if (item.boxType === "note") {
                         return (
-                          <div key={item.id} data-bento-id={item.id}>
+                          <div
+                            key={item.id}
+                            data-bento-id={item.id}
+                            style={getItemStyle(item.id)}
+                          >
                             <NoteBox
                               title={item.title}
                               content={item.content || ""}
@@ -404,7 +449,11 @@ const ProjectPage = ({
                       // Render PhotoBox per box di tipo "photo"
                       if (item.boxType === "photo") {
                         return (
-                          <div key={item.id} data-bento-id={item.id}>
+                          <div
+                            key={item.id}
+                            data-bento-id={item.id}
+                            style={getItemStyle(item.id)}
+                          >
                             <PhotoBox
                               projectId={project.id}
                               title={item.title}
@@ -422,7 +471,11 @@ const ProjectPage = ({
                       }
                       // Render BaseBentoBox per box generici (fallback)
                       return (
-                        <div key={item.id} data-bento-id={item.id}>
+                        <div
+                          key={item.id}
+                          data-bento-id={item.id}
+                          style={getItemStyle(item.id)}
+                        >
                           <BaseBentoBox
                             title={item.title}
                             onTitleChange={(newTitle) =>
@@ -451,6 +504,11 @@ const ProjectPage = ({
         {columnCount === 1 && !isLoading && (
           <MobileAddFab onAddNote={handleAddNote} onAddPhoto={handleAddPhoto} />
         )}
+
+        {/* FAB fotocamera rapida - solo mobile */}
+        {columnCount === 1 && !isLoading && (
+          <CameraFab onClick={() => setIsCameraModalOpen(true)} />
+        )}
       </div>
 
       {/* Modale info progetto */}
@@ -472,6 +530,13 @@ const ProjectPage = ({
         onClose={() => setIsStatusModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
+      />
+
+      {/* Modale fotocamera */}
+      <CameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onConfirm={handleCameraCapture}
       />
     </>
   );

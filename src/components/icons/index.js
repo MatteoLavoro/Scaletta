@@ -2,6 +2,7 @@
 export { default as AlertCircleIcon } from "./AlertCircleIcon";
 export { default as AlertTriangleIcon } from "./AlertTriangleIcon";
 export { default as ArrowLeftIcon } from "./ArrowLeftIcon";
+export { default as CameraIcon } from "./CameraIcon";
 export { default as CheckIcon } from "./CheckIcon";
 export { default as CheckCircleIcon } from "./CheckCircleIcon";
 export { default as ChevronDownIcon } from "./ChevronDownIcon";
