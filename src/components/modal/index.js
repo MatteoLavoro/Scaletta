@@ -5,4 +5,3 @@ export { default as ModalFab } from "./ModalFab";
 export { default as ConfirmModal } from "./ConfirmModal";
 export { default as InputModal } from "./InputModal";
 export { default as UploadModal } from "./UploadModal";
-export { default as CameraModal } from "./CameraModal";

@@ -15,7 +15,6 @@ import {
   TutorialBox,
   CameraFab,
 } from "../components/bento";
-import { CameraModal } from "../components/modal";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import {
   createBentoBox,
@@ -53,7 +52,6 @@ const ProjectPage = ({
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
@@ -271,12 +269,7 @@ const ProjectPage = ({
   // Gestione tasto ESC (solo se non c'è un modale aperto)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (
-        e.key === "Escape" &&
-        !isInfoModalOpen &&
-        !isStatusModalOpen &&
-        !isCameraModalOpen
-      ) {
+      if (e.key === "Escape" && !isInfoModalOpen && !isStatusModalOpen) {
         e.preventDefault();
         handleClose();
       }
@@ -284,7 +277,7 @@ const ProjectPage = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, isInfoModalOpen, isStatusModalOpen, isCameraModalOpen]);
+  }, [handleClose, isInfoModalOpen, isStatusModalOpen]);
 
   // Gestione cambio stato
   const handleStatusChange = async (newStatus) => {
@@ -507,7 +500,7 @@ const ProjectPage = ({
 
         {/* FAB fotocamera rapida - solo mobile */}
         {columnCount === 1 && !isLoading && (
-          <CameraFab onClick={() => setIsCameraModalOpen(true)} />
+          <CameraFab onCapture={handleCameraCapture} />
         )}
       </div>
 
@@ -530,13 +523,6 @@ const ProjectPage = ({
         onClose={() => setIsStatusModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
-      />
-
-      {/* Modale fotocamera */}
-      <CameraModal
-        isOpen={isCameraModalOpen}
-        onClose={() => setIsCameraModalOpen(false)}
-        onConfirm={handleCameraCapture}
       />
     </>
   );

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { CameraIcon } from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -20,9 +21,13 @@ const isLightColor = (hexColor) => {
  * Usa il colore accent del tema profilo.
  * Solo per mobile (1 colonna).
  *
- * @param {function} onClick - Handler per click
+ * Utilizza l'app fotocamera nativa del dispositivo tramite
+ * input file con capture="environment" (fotocamera posteriore).
+ *
+ * @param {function} onCapture - Handler chiamato con il file immagine
  */
-const CameraFab = ({ onClick }) => {
+const CameraFab = ({ onCapture }) => {
+  const inputRef = useRef(null);
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema del profilo
@@ -35,29 +40,58 @@ const CameraFab = ({ onClick }) => {
   const isLight = isLightColor(primaryColor);
   const iconColor = isLight ? "#1a1a1a" : "#ffffff";
 
+  // Gestisce il click sul FAB - apre l'app fotocamera del dispositivo
+  const handleClick = () => {
+    inputRef.current?.click();
+  };
+
+  // Gestisce la foto scattata
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onCapture) {
+      onCapture(file);
+    }
+    // Reset input per permettere di scattare la stessa foto di nuovo
+    e.target.value = "";
+  };
+
   return (
-    <button
-      onClick={onClick}
-      className="
-        fixed z-50
-        w-14 h-14
-        rounded-full
-        shadow-lg
-        flex items-center justify-center
-        hover:scale-105 active:scale-95
-        transition-transform duration-150
-      "
-      style={{
-        backgroundColor: primaryColor,
-        // Posizionato sopra la barra MobileAddFab (che è alta circa 88px con padding)
-        // e a destra dello schermo
-        bottom: "120px",
-        right: "16px",
-      }}
-      aria-label="Scatta foto"
-    >
-      <CameraIcon className="w-7 h-7" style={{ color: iconColor }} />
-    </button>
+    <>
+      {/* Input nascosto che apre la fotocamera nativa */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-hidden="true"
+      />
+
+      {/* FAB visibile */}
+      <button
+        onClick={handleClick}
+        className="
+          fixed z-50
+          w-14 h-14
+          rounded-full
+          shadow-lg
+          flex items-center justify-center
+          hover:scale-105 active:scale-95
+          transition-transform duration-150
+        "
+        style={{
+          backgroundColor: primaryColor,
+          // Posizionato sopra la barra MobileAddFab (che è alta circa 88px con padding)
+          // e a destra dello schermo
+          bottom: "120px",
+          right: "16px",
+        }}
+        aria-label="Scatta foto"
+      >
+        <CameraIcon className="w-7 h-7" style={{ color: iconColor }} />
+      </button>
+    </>
   );
 };
 
