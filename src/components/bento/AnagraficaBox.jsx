@@ -11,6 +11,7 @@ import {
   MapPinIcon,
   PercentIcon,
   FileTypeIcon,
+  IdCardIcon,
 } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { InputModal, ConfirmModal } from "../modal";
@@ -25,6 +26,7 @@ const FIELD_ICONS = {
   iva: PercentIcon,
   email: MailIcon,
   telefono: PhoneIcon,
+  codiceFiscale: IdCardIcon,
 };
 
 /**
@@ -36,6 +38,7 @@ const PREDEFINED_FIELDS = [
   { key: "iva", label: "% IVA" },
   { key: "email", label: "Email" },
   { key: "telefono", label: "Telefono" },
+  { key: "codiceFiscale", label: "Codice Fiscale" },
 ];
 
 /**

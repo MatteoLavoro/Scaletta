@@ -25,9 +25,14 @@
 | ----------------------- | --------------------------------------------- |
 | `BaseBentoBox.jsx`      | Componente base per tutti i tipi di box       |
 | `NoteBox.jsx`           | Box per note testuali                         |
-| `PhotoBox.jsx`          | Box per foto con carosello                    |
+| `PhotoBox.jsx`          | Box per foto con carosello e ImageModal       |
+| `PdfBox.jsx`            | Box per PDF con anteprima e carosello         |
+| `FileBox.jsx`           | Box per file generici con icone per tipo      |
+| `ChecklistBox.jsx`      | Box per liste di task con checkbox            |
+| `AnagraficaBox.jsx`     | Box per dati cliente con campi strutturati    |
 | `TutorialBox.jsx`       | Box tutorial (primo avvio)                    |
 | `AddBentoBoxButton.jsx` | Griglia 2x2 per aggiungere box + MobileAddFab |
+| `CameraFab.jsx`         | FAB per scattare foto (mobile)                |
 | `BentoGrid.jsx`         | Container griglia principale                  |
 | `BentoBox.jsx`          | Box semplice generico                         |
 | `bentoConstants.js`     | Costanti (altezze preset)                     |
@@ -75,16 +80,20 @@
 
 ### `modal/` - Sistema Modale
 
-| File               | Descrizione                                             |
-| ------------------ | ------------------------------------------------------- |
-| `Modal.jsx`        | Modale principale (mobile fullscreen, desktop centrato) |
-| `ModalHeader.jsx`  | Header con titolo e tasto chiudi                        |
-| `ModalFooter.jsx`  | Footer con bottone conferma (desktop)                   |
-| `ModalFab.jsx`     | FAB conferma fluttuante (mobile)                        |
-| `ConfirmModal.jsx` | Modale di conferma con box colorata                     |
-| `InputModal.jsx`   | Modale di input con validazione e exactLength           |
-| `UploadModal.jsx`  | Modale upload file con drag & drop e preview            |
-| `index.js`         | Export pubblici                                         |
+| File                  | Descrizione                                             |
+| --------------------- | ------------------------------------------------------- |
+| `Modal.jsx`           | Modale principale (mobile fullscreen, desktop centrato) |
+| `ModalHeader.jsx`     | Header con titolo e tasto chiudi                        |
+| `ModalFooter.jsx`     | Footer con bottone conferma (desktop)                   |
+| `ModalFab.jsx`        | FAB conferma fluttuante (mobile)                        |
+| `ConfirmModal.jsx`    | Modale di conferma con box colorata                     |
+| `InputModal.jsx`      | Modale di input con validazione e exactLength           |
+| `UploadModal.jsx`     | Modale upload foto con drag & drop e preview            |
+| `PdfUploadModal.jsx`  | Modale upload PDF con drag & drop                       |
+| `FileUploadModal.jsx` | Modale upload file generici                             |
+| `ImageModal.jsx`      | Visualizzatore immagini fullscreen con toolbar          |
+| `MoreBoxesModal.jsx`  | Modale per selezionare altri tipi di box                |
+| `index.js`            | Export pubblici                                         |
 
 ### `profile/` - Componenti Profilo
 
@@ -126,42 +135,60 @@
 
 Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 
-| File                    | Descrizione                    |
-| ----------------------- | ------------------------------ |
-| `AlertCircleIcon.jsx`   | Icona alert cerchio            |
-| `AlertTriangleIcon.jsx` | Icona alert triangolo          |
-| `ArchiveIcon.jsx`       | Archivio                       |
-| `ArrowLeftIcon.jsx`     | Freccia indietro               |
-| `CheckIcon.jsx`         | Spunta                         |
-| `CheckCircleIcon.jsx`   | Spunta in cerchio (completato) |
-| `ChevronDownIcon.jsx`   | Freccia giù                    |
-| `ChevronLeftIcon.jsx`   | Freccia sinistra               |
-| `ChevronRightIcon.jsx`  | Freccia destra                 |
-| `CloseIcon.jsx`         | X chiudi                       |
-| `CopyIcon.jsx`          | Copia clipboard                |
-| `CrownIcon.jsx`         | Corona (founder)               |
-| `DownloadIcon.jsx`      | Download                       |
-| `EyeIcon.jsx`           | Occhio (mostra)                |
-| `EyeOffIcon.jsx`        | Occhio barrato (nascondi)      |
-| `FileTextIcon.jsx`      | File documento                 |
-| `ImageIcon.jsx`         | Immagine                       |
-| `InfoIcon.jsx`          | Info cerchio                   |
-| `ListChecksIcon.jsx`    | Lista checklist                |
-| `LogOutIcon.jsx`        | Logout                         |
-| `MoonIcon.jsx`          | Luna (tema scuro)              |
-| `MoreVerticalIcon.jsx`  | Tre puntini verticali (kebab)  |
-| `PencilIcon.jsx`        | Matita (modifica)              |
-| `PlayIcon.jsx`          | Play (in corso)                |
-| `PlusIcon.jsx`          | Più                            |
-| `SettingsIcon.jsx`      | Ingranaggio                    |
-| `SunIcon.jsx`           | Sole (tema chiaro)             |
-| `TrashIcon.jsx`         | Cestino                        |
-| `UploadIcon.jsx`        | Upload                         |
-| `UserIcon.jsx`          | Utente singolo                 |
-| `UserPlusIcon.jsx`      | Aggiungi utente                |
-| `UsersIcon.jsx`         | Utenti                         |
-| `ZapIcon.jsx`           | Fulmine (azione rapida)        |
-| `index.js`              | Export pubblici                |
+| File                      | Descrizione                     |
+| ------------------------- | ------------------------------- |
+| `AlertCircleIcon.jsx`     | Icona alert cerchio             |
+| `AlertTriangleIcon.jsx`   | Icona alert triangolo           |
+| `ArchiveIcon.jsx`         | Archivio                        |
+| `ArrowLeftIcon.jsx`       | Freccia indietro                |
+| `CameraIcon.jsx`          | Fotocamera                      |
+| `CheckIcon.jsx`           | Spunta                          |
+| `CheckCircleIcon.jsx`     | Spunta in cerchio (completato)  |
+| `ChevronDownIcon.jsx`     | Freccia giù                     |
+| `ChevronLeftIcon.jsx`     | Freccia sinistra                |
+| `ChevronRightIcon.jsx`    | Freccia destra                  |
+| `CloseIcon.jsx`           | X chiudi                        |
+| `CodeIcon.jsx`            | Codice sorgente                 |
+| `CopyIcon.jsx`            | Copia clipboard                 |
+| `CrownIcon.jsx`           | Corona (founder)                |
+| `DownloadIcon.jsx`        | Download                        |
+| `EyeIcon.jsx`             | Occhio (mostra)                 |
+| `EyeOffIcon.jsx`          | Occhio barrato (nascondi)       |
+| `FileArchiveIcon.jsx`     | File archivio compresso         |
+| `FileSpreadsheetIcon.jsx` | File foglio di calcolo          |
+| `FileTextIcon.jsx`        | File documento                  |
+| `FileTypeIcon.jsx`        | File generico                   |
+| `FolderIcon.jsx`          | Cartella                        |
+| `IdCardIcon.jsx`          | Carta d'identità (cod. fiscale) |
+| `ImageIcon.jsx`           | Immagine                        |
+| `InfoIcon.jsx`            | Info cerchio                    |
+| `ListChecksIcon.jsx`      | Lista checklist                 |
+| `LogOutIcon.jsx`          | Logout                          |
+| `MailIcon.jsx`            | Email                           |
+| `MapPinIcon.jsx`          | Segnaposto mappa                |
+| `MoonIcon.jsx`            | Luna (tema scuro)               |
+| `MoreHorizontalIcon.jsx`  | Tre puntini orizzontali         |
+| `MoreVerticalIcon.jsx`    | Tre puntini verticali (kebab)   |
+| `MusicIcon.jsx`           | Audio/musica                    |
+| `PencilIcon.jsx`          | Matita (modifica)               |
+| `PercentIcon.jsx`         | Percentuale (IVA)               |
+| `PhoneIcon.jsx`           | Telefono                        |
+| `PinIcon.jsx`             | Pin/fissato                     |
+| `PlayIcon.jsx`            | Play (in corso)                 |
+| `PlusIcon.jsx`            | Più                             |
+| `PresentationIcon.jsx`    | Presentazione                   |
+| `RotateCwIcon.jsx`        | Ruota in senso orario           |
+| `RulerIcon.jsx`           | Righello (file 3D)              |
+| `SettingsIcon.jsx`        | Ingranaggio                     |
+| `SunIcon.jsx`             | Sole (tema chiaro)              |
+| `TrashIcon.jsx`           | Cestino                         |
+| `UploadIcon.jsx`          | Upload                          |
+| `UserIcon.jsx`            | Utente singolo                  |
+| `UserPlusIcon.jsx`        | Aggiungi utente                 |
+| `UsersIcon.jsx`           | Utenti                          |
+| `VideoIcon.jsx`           | Video                           |
+| `ZapIcon.jsx`             | Fulmine (azione rapida)         |
+| `index.js`                | Export pubblici                 |
 
 ---
 
@@ -208,6 +235,8 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 | `groups.js`   | Funzioni CRUD gruppi (crea, unisciti, esci, elimina con cascade)        |
 | `projects.js` | Funzioni CRUD progetti + bento boxes (con eliminazione foto automatica) |
 | `photos.js`   | Upload/delete foto Firebase Storage con progress                        |
+| `pdfs.js`     | Upload/delete PDF Firebase Storage con progress                         |
+| `files.js`    | Upload/delete file generici Firebase Storage                            |
 
 ---
 
@@ -363,6 +392,28 @@ const ParentModal = ({ isOpen }) => {
 1. **z-Index**: Padre < Figlio (es. 990 vs 1010)
 2. **Blur**: Applica `blur-sm pointer-events-none` al contenuto del padre
 3. **onClose**: Sempre passare callback per gestione history
+4. **skipHistory**: Usa `skipHistory={true}` per modali "volatili" sopra altri modali (es. ConfirmModal sopra ImageModal)
+
+### skipHistory - Modali Volatili
+
+Per modali che si aprono sopra altri modali senza aggiungere entry alla history:
+
+```jsx
+// ImageModal aperto → ConfirmModal si apre sopra
+<ConfirmModal
+  isOpen={isDeleteConfirmOpen}
+  zIndex={2100}
+  skipHistory={true} // Non aggiunge entry alla history
+  onCancel={() => setIsDeleteConfirmOpen(false)}
+  onConfirm={handleDelete}
+/>
+```
+
+**Comportamento con skipHistory:**
+
+- Il modale si chiude direttamente tramite callback, senza `history.back()`
+- Il modale padre (es. ImageModal) rimane aperto
+- Utile per conferme rapide che non devono interferire con la navigazione
 
 ---
 

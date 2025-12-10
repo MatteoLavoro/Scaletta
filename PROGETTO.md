@@ -15,20 +15,25 @@
 - **Sistema Progetti** completo (creazione, modifica, stati, colori, eliminazione)
 - **Sistema Bento Box** (layout a griglia dinamico con animazioni FLIP)
 - **NoteBox** (box per note testuali con editor)
-- **PhotoBox** (box per foto con carosello, upload multiplo, drag & drop)
+- **PhotoBox** (box per foto con carosello, upload multiplo, drag & drop, visualizzazione fullscreen)
+- **PdfBox** (box per PDF con carosello, anteprima e apertura)
+- **FileBox** (box per file generici con upload, download, icone per tipo)
+- **ChecklistBox** (box per liste di task con checkbox)
+- **AnagraficaBox** (box per dati cliente con campi predefiniti e custom)
+- **ImageModal** (visualizzatore immagini fullscreen con rotazione, download, eliminazione)
 - **Sistema Tema** (chiaro/scuro + 6 colori accent)
 - **PWA** (installabile su dispositivi)
 - **UI/UX responsive** (mobile fullscreen, desktop centrato)
-- **Sistema Modali** con gestione history browser
+- **Sistema Modali** con gestione history browser (incluso `skipHistory` per modali annidati)
 - **Sincronizzazione real-time** tra dispositivi
 
 ### 🚧 In Sviluppo
 
-- Altri tipi di Bento Box (checklist, link, contatti)
+- Miglioramenti UI/UX
 
 ### 📋 Pianificato
 
-- Gestione file e documenti
+- LinkBox per link esterni con preview
 - Notifiche
 - Ricerca avanzata
 
@@ -159,13 +164,15 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
 
 #### Tipi di Bento Box:
 
-| Tipo          | Stato     | Descrizione                        |
-| ------------- | --------- | ---------------------------------- |
-| 📝 NoteBox    | ✅ Attivo | Note testuali (max 2000 caratteri) |
-| 🖼️ PhotoBox   | ✅ Attivo | Foto con carosello e upload        |
-| ✅ Checklist  | 🔜 Futuro | Liste di task                      |
-| 🔗 LinkBox    | 🔜 Futuro | Link esterni con preview           |
-| 👤 ContactBox | 🔜 Futuro | Anagrafiche persone                |
+| Tipo             | Stato     | Descrizione                                     |
+| ---------------- | --------- | ----------------------------------------------- |
+| 📝 NoteBox       | ✅ Attivo | Note testuali (max 2000 caratteri)              |
+| 🖼️ PhotoBox      | ✅ Attivo | Foto con carosello, upload e preview fullscreen |
+| 📄 PdfBox        | ✅ Attivo | PDF con carosello e anteprima                   |
+| 📁 FileBox       | ✅ Attivo | File generici con upload e download             |
+| ✅ ChecklistBox  | ✅ Attivo | Liste di task con checkbox                      |
+| 👤 AnagraficaBox | ✅ Attivo | Dati cliente/anagrafica strutturati             |
+| 🔗 LinkBox       | 🔜 Futuro | Link esterni con preview                        |
 
 #### Struttura Comune Bento Box:
 
@@ -194,6 +201,56 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
 - **Preload immagini**: Caricamento anticipato per scroll fluido
 - **Formati supportati**: JPG, PNG, GIF, WebP (max 10MB)
 - **Eliminazione singola**: Conferma prima di eliminare una foto
+- **Visualizzazione fullscreen**: Click su foto apre ImageModal
+
+#### PdfBox - Box PDF
+
+- **Carosello**: Navigazione tra PDF con frecce e swipe touch
+- **Anteprima**: Rendering prima pagina con react-pdf
+- **Click per aprire**: Apre il PDF in una nuova scheda
+- **Upload multiplo**: Selezione multipla file PDF
+- **Progress bar**: Indicatore progresso durante upload
+- **Error Boundary**: Gestione errori compatibile con React 19 Strict Mode
+
+#### FileBox - Box File
+
+- **Lista file**: Elenco verticale con icone per tipo
+- **Icone differenziate**: Riconoscimento automatico per:
+  - Immagini, PDF, Documenti Word, Fogli Excel
+  - Presentazioni, Audio, Video, Archivi compressi
+  - Codice sorgente, File 3D (OBJ, STL, FBX, ecc.)
+- **Upload multiplo**: Drag & drop o selezione file (max 50MB)
+- **Download diretto**: Click sull'icona download
+- **Eliminazione**: Conferma prima di eliminare
+
+#### ChecklistBox - Box Checklist
+
+- **Lista task**: Elementi con checkbox, testo, modifica ed eliminazione
+- **Toggle completamento**: Click su checkbox per segnare come completato
+- **Stile completato**: Testo barrato e colore attenuato
+- **Aggiunta task**: Tasto + per aggiungere nuovi elementi
+- **Modifica/Elimina**: Azioni inline per ogni elemento
+
+#### AnagraficaBox - Box Anagrafica
+
+- **Campi predefiniti**: Cliente, Luogo, % IVA, Email, Telefono, Codice Fiscale
+- **Icone campo**: Ogni campo ha un'icona dedicata
+- **Copia valore**: Tasto copia per ogni campo con valore
+- **Modifica inline**: Tasto matita per modificare il valore
+- **Svuota campo**: Tasto cestino per rimuovere il valore
+- **Campi custom**: Possibilità di aggiungere campi personalizzati
+
+#### ImageModal - Visualizzatore Immagini
+
+- **Fullscreen**: Visualizzazione a schermo intero con sfondo nero
+- **Carosello**: Navigazione tra immagini con frecce e swipe
+- **Toolbar centrale**: Pillola con counter, ruota, download, elimina
+- **Rotazione**: Rotazione 90° in senso orario con transizione animata
+- **Download**: Scarica immagine con nome originale
+- **Eliminazione**: Conferma eliminazione con ConfirmModal (skipHistory)
+- **Preload**: Caricamento anticipato immagini adiacenti
+- **Mobile**: Tasto back con freccia a sinistra
+- **Desktop**: Tasto X in alto a destra
 
 #### Struttura Dati Bento Box (Firestore):
 
@@ -401,19 +458,24 @@ delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 - [x] Sincronizzazione real-time tra dispositivi
 - [x] NoteBox per note testuali
 - [x] PhotoBox con carosello e upload multiplo
+- [x] PdfBox con anteprima e carosello PDF
+- [x] FileBox per file generici con icone per tipo
+- [x] ChecklistBox per liste di task
+- [x] AnagraficaBox per dati cliente strutturati
+- [x] ImageModal per visualizzazione fullscreen immagini
 - [x] Drag & drop per upload foto
 - [x] Progress bar in-box durante upload
 - [x] Preload immagini per scrolling fluido
 - [x] Eliminazione automatica foto su delete box/progetto/gruppo
+- [x] Gestione history modali annidati (skipHistory)
 
-### Fase 4 - Altri Bento Box (Prossima)
+### Fase 4 - Miglioramenti UI/UX (Prossima)
 
-- [ ] ChecklistBox per liste di task
 - [ ] LinkBox per link esterni con preview
-- [ ] ContactBox per anagrafiche
-- [ ] FileBox per documenti generici
+- [ ] Miglioramenti accessibilità
+- [ ] Animazioni e transizioni aggiuntive
 
-### Fase 5 - Miglioramenti
+### Fase 5 - Funzionalità Avanzate
 
 - [ ] Ricerca avanzata
 - [ ] Notifiche

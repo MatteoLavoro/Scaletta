@@ -8,3 +8,4 @@ export { default as UploadModal } from "./UploadModal";
 export { default as PdfUploadModal } from "./PdfUploadModal";
 export { default as FileUploadModal } from "./FileUploadModal";
 export { default as MoreBoxesModal } from "./MoreBoxesModal";
+export { default as ImageModal } from "./ImageModal";

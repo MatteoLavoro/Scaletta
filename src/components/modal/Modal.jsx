@@ -18,6 +18,7 @@ const Modal = ({
   isLoading = false,
   variant = "default", // "default" | "info" (informativo senza tasto conferma)
   zIndex, // z-index personalizzato per modali annidati
+  skipHistory = false, // Skip history management (per modali sopra altri modali)
 }) => {
   const isMobile = useIsMobile();
   const keyboardHeight = useKeyboardHeight();
@@ -29,14 +30,19 @@ const Modal = ({
   // Se variant è "info", non mostrare il tasto conferma
   const showConfirm = variant === "info" ? false : showConfirmButton;
 
-  // Handle close - chiude sempre con history.back() per mantenere la history sincronizzata
+  // Handle close - chiude via history.back() o direttamente tramite callback
   const handleClose = useCallback(() => {
-    window.history.back();
-  }, []);
+    if (skipHistory && onClose) {
+      // Se skipHistory è true, chiudi direttamente senza toccare la history
+      onClose();
+    } else {
+      window.history.back();
+    }
+  }, [skipHistory, onClose]);
 
-  // Gestione history per modali annidati
+  // Gestione history per modali annidati (solo se non skipHistory)
   useEffect(() => {
-    if (isOpen && onClose) {
+    if (isOpen && onClose && !skipHistory) {
       // Modale annidato: aggiungi entry nella history
       if (!hasAddedHistoryRef.current) {
         window.history.pushState({ nestedModal: true }, "");
@@ -52,7 +58,7 @@ const Modal = ({
     if (!isOpen) {
       hasAddedHistoryRef.current = false;
     }
-  }, [isOpen, onClose, registerNestedClose]);
+  }, [isOpen, onClose, registerNestedClose, skipHistory]);
 
   // Calcola z-index basato su profondità o valore personalizzato
   const computedZIndex = zIndex ?? 1000 + modalDepth * 10;

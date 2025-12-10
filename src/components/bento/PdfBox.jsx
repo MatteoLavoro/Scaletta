@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Component } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -22,6 +22,34 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 // Altezza fissa del carosello (stessa del PhotoBox)
 const CAROUSEL_HEIGHT = 200;
+
+/**
+ * PdfErrorBoundary - Cattura errori di react-pdf e mostra fallback
+ */
+class PdfErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    // Log solo in dev
+    if (import.meta.env.DEV) {
+      console.warn("PdfErrorBoundary caught error:", error.message);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * PdfThumbnail - Anteprima di un singolo PDF
@@ -81,38 +109,56 @@ const PdfThumbnail = ({ pdf, containerWidth }) => {
     );
   }
 
+  // Fallback UI per quando c'è un errore
+  const fallbackUI = (
+    <div
+      className="relative w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900/70 transition-colors"
+      onClick={handleClick}
+    >
+      <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center mb-2">
+        <FileTextIcon className="w-8 h-8 text-primary" />
+      </div>
+      <p className="text-sm font-medium text-text-primary truncate max-w-[90%] px-2">
+        {pdf?.name || "PDF"}
+      </p>
+      <p className="text-xs text-text-muted mt-1">Tocca per aprire</p>
+    </div>
+  );
+
   return (
     <div
       className="relative w-full h-full flex items-center justify-center bg-white rounded-lg overflow-hidden cursor-pointer"
       onClick={handleClick}
     >
-      <Document
-        key={pdf.id || pdf.url}
-        file={pdf.url}
-        onLoadSuccess={onDocumentLoadSuccess}
-        onLoadError={onDocumentLoadError}
-        loading={
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
-          </div>
-        }
-        error={null} // Gestiamo l'errore con onLoadError
-      >
-        {numPages !== null && (
-          <Page
-            pageNumber={1}
-            width={pageWidth}
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-            onRenderSuccess={onPageRenderSuccess}
-            loading={
-              <div className="flex items-center justify-center w-full h-full">
-                <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
-              </div>
-            }
-          />
-        )}
-      </Document>
+      <PdfErrorBoundary fallback={fallbackUI}>
+        <Document
+          key={pdf.id || pdf.url}
+          file={pdf.url}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          loading={
+            <div className="flex items-center justify-center w-full h-full">
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+            </div>
+          }
+          error={null} // Gestiamo l'errore con onLoadError
+        >
+          {numPages !== null && (
+            <Page
+              pageNumber={1}
+              width={pageWidth}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+              onRenderSuccess={onPageRenderSuccess}
+              loading={
+                <div className="flex items-center justify-center w-full h-full">
+                  <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                </div>
+              }
+            />
+          )}
+        </Document>
+      </PdfErrorBoundary>
 
       {/* Indicatore pagine multiple */}
       {isLoaded && numPages && numPages > 1 && (

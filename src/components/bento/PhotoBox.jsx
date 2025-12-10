@@ -7,8 +7,7 @@ import {
   TrashIcon,
 } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { UploadModal } from "../modal";
-import { ConfirmModal } from "../modal";
+import { UploadModal, ConfirmModal, ImageModal } from "../modal";
 import { uploadPhotos, deletePhoto } from "../../services/photos";
 
 // Altezza fissa del carosello
@@ -45,6 +44,9 @@ const useImagePreload = (photos) => {
   return loadedUrls;
 };
 
+// Ref condiviso per l'indice corrente dell'ImageModal (usato per sincronizzare dopo delete)
+// Questo è un workaround per comunicare l'indice corrente tra ImageModal e PhotoBox
+
 /**
  * PhotoBox - Bento Box per le foto
  *
@@ -80,6 +82,11 @@ const PhotoBox = ({
   const [isDeletePhotoConfirmOpen, setIsDeletePhotoConfirmOpen] =
     useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
+  // Stato per visualizzazione fullscreen
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageModalIndex, setImageModalIndex] = useState(0);
+  // Ref per tracciare l'indice corrente nell'ImageModal (aggiornato via onIndexChange)
+  const currentImageIndexRef = useRef(0);
 
   // Precarica tutte le immagini per scrolling fluido
   const loadedUrls = useImagePreload(photos);
@@ -186,6 +193,20 @@ const PhotoBox = ({
 
       setIsDeletePhotoConfirmOpen(false);
       setPhotoToDelete(null);
+
+      // Se non ci sono più foto, chiudi l'ImageModal
+      if (newPhotos.length === 0) {
+        setIsImageModalOpen(false);
+      } else {
+        // Aggiorna l'indice per mostrare l'immagine successiva (o precedente se era l'ultima)
+        const deletedIndex = currentImageIndexRef.current;
+        const newIndex =
+          deletedIndex >= newPhotos.length
+            ? newPhotos.length - 1
+            : deletedIndex;
+        setImageModalIndex(newIndex);
+        currentImageIndexRef.current = newIndex;
+      }
     } catch (error) {
       console.error("Errore eliminazione foto:", error);
     }
@@ -255,11 +276,15 @@ const PhotoBox = ({
               <img
                 src={photos[currentIndex]?.url}
                 alt={photos[currentIndex]?.name || `Foto ${currentIndex + 1}`}
-                className={`w-full h-full object-contain transition-opacity duration-150 ${
+                className={`w-full h-full object-contain transition-opacity duration-150 cursor-pointer ${
                   loadedUrls.has(photos[currentIndex]?.url)
                     ? "opacity-100"
                     : "opacity-0"
                 }`}
+                onClick={() => {
+                  setImageModalIndex(currentIndex);
+                  setIsImageModalOpen(true);
+                }}
               />
 
               {/* Loader mentre l'immagine carica */}
@@ -385,16 +410,36 @@ const PhotoBox = ({
       />
 
       {/* Conferma eliminazione foto */}
+      {/* Conferma eliminazione foto - skipHistory per non interferire con ImageModal */}
       <ConfirmModal
         isOpen={isDeletePhotoConfirmOpen}
         title="Elimina foto"
         message="Sei sicuro di voler eliminare questa foto? L'azione non può essere annullata."
         confirmText="Elimina"
         danger
+        zIndex={2100}
+        skipHistory={true}
         onConfirm={handleDeletePhotoConfirm}
         onCancel={() => {
           setIsDeletePhotoConfirmOpen(false);
           setPhotoToDelete(null);
+        }}
+      />
+
+      {/* Modale immagine fullscreen */}
+      <ImageModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        images={photos}
+        initialIndex={imageModalIndex}
+        onIndexChange={(index) => {
+          currentImageIndexRef.current = index;
+        }}
+        onDelete={(photo, currentIndex) => {
+          // NON chiudere l'ImageModal - apri il ConfirmModal sopra
+          currentImageIndexRef.current = currentIndex;
+          setPhotoToDelete(photo);
+          setIsDeletePhotoConfirmOpen(true);
         }}
       />
     </>

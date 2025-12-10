@@ -93,15 +93,27 @@ src/components/bento/
 ├── BENTO_BOX.md           # Questa documentazione
 ├── BaseBentoBox.jsx       # Componente base per tutti i box
 ├── NoteBox.jsx            # Box per note testuali
-├── PhotoBox.jsx           # Box per foto con carosello
+├── PhotoBox.jsx           # Box per foto con carosello e ImageModal
+├── PdfBox.jsx             # Box per PDF con anteprima e carosello
+├── FileBox.jsx            # Box per file generici con icone per tipo
+├── ChecklistBox.jsx       # Box per liste di task con checkbox
+├── AnagraficaBox.jsx      # Box per dati cliente strutturati
 ├── TutorialBox.jsx        # Box tutorial (primo avvio)
-├── AddBentoBoxButton.jsx  # Griglia 2x2 per aggiungere box (desktop)
+├── AddBentoBoxButton.jsx  # Griglia per aggiungere box (desktop)
 │   └── MobileAddFab       # Barra flottante (mobile)
+├── CameraFab.jsx          # FAB per scattare foto (mobile)
 ├── BentoGrid.jsx          # Container griglia principale
 ├── BentoBox.jsx           # Box semplice generico
 ├── bentoConstants.js      # Costanti (altezze preset)
 ├── useBentoLayout.js      # Hook legacy (non usato)
 └── index.js               # Esportazioni pubbliche
+
+src/components/modal/
+├── ImageModal.jsx         # Visualizzatore immagini fullscreen
+├── PdfUploadModal.jsx     # Upload PDF
+├── FileUploadModal.jsx    # Upload file generici
+├── MoreBoxesModal.jsx     # Selezione tipi di box aggiuntivi
+└── ...
 
 src/hooks/
 ├── useBentoAnimation.js   # Hook per layout + animazioni FLIP
@@ -109,6 +121,8 @@ src/hooks/
 
 src/services/
 ├── photos.js              # Upload/delete foto Firebase Storage
+├── pdfs.js                # Upload/delete PDF Firebase Storage
+├── files.js               # Upload/delete file generici Firebase Storage
 └── projects.js            # CRUD bento boxes + eliminazione cascade
 ```
 
@@ -204,6 +218,133 @@ Box specializzato per foto con carosello.
 - **Formati**: JPG, PNG, GIF, WebP (max 10MB per file)
 - **Eliminazione**: Conferma prima di eliminare singola foto
 - **Altezza fissa**: 200px per il carosello
+- **Visualizzazione fullscreen**: Click su foto apre ImageModal
+
+**ImageModal Features:**
+
+- Fullscreen con sfondo nero
+- Toolbar centrale (counter, ruota, download, elimina)
+- Rotazione 90° in senso orario
+- Preload immagini adiacenti
+- Eliminazione con ConfirmModal (skipHistory per non interferire)
+- Mobile: tasto back | Desktop: tasto X
+
+### PdfBox
+
+Box specializzato per PDF con carosello e anteprima.
+
+```jsx
+<PdfBox
+  projectId="abc123"
+  title="Documenti"
+  pdfs={[{ id, url, name, storagePath }, ...]}
+  onTitleChange={handleTitleChange}
+  onPdfsChange={handlePdfsChange}
+  onDelete={handleDelete}
+/>
+```
+
+**Caratteristiche:**
+
+- **Carosello**: Navigazione con frecce e swipe touch
+- **Anteprima**: Rendering prima pagina con react-pdf
+- **Click per aprire**: Apre il PDF in una nuova scheda
+- **Upload multiplo**: PdfUploadModal con selezione multipla
+- **Progress bar**: Indicatore progresso durante upload
+- **Error Boundary**: Gestione errori compatibile con React 19 Strict Mode
+- **Altezza fissa**: 200px per il carosello
+
+### FileBox
+
+Box specializzato per file generici.
+
+```jsx
+<FileBox
+  projectId="abc123"
+  title="Allegati"
+  files={[{ id, url, name, storagePath, size }, ...]}
+  onTitleChange={handleTitleChange}
+  onFilesChange={handleFilesChange}
+  onDelete={handleDelete}
+/>
+```
+
+**Caratteristiche:**
+
+- **Lista verticale**: Elenco file con icona, nome, dimensione
+- **Icone per tipo**: Riconoscimento automatico per:
+  - 🖼️ Immagini (jpg, png, gif, webp, svg)
+  - 📄 PDF
+  - 📝 Documenti (doc, docx, odt, rtf, txt)
+  - 📊 Fogli di calcolo (xls, xlsx, csv)
+  - 📽️ Presentazioni (ppt, pptx)
+  - 🎵 Audio (mp3, wav, ogg, m4a)
+  - 🎬 Video (mp4, avi, mkv, mov)
+  - 📦 Archivi (zip, rar, 7z)
+  - 💻 Codice (js, py, html, css, ecc.)
+  - 📐 File 3D (obj, stl, fbx, blend, ecc.)
+- **Upload multiplo**: FileUploadModal (max 50MB per file)
+- **Download diretto**: Click su icona download
+- **Eliminazione**: Conferma prima di eliminare
+
+### ChecklistBox
+
+Box specializzato per liste di task.
+
+```jsx
+<ChecklistBox
+  title="Todo"
+  items={[{ id, text, completed }, ...]}
+  onTitleChange={handleTitleChange}
+  onItemsChange={handleItemsChange}
+  onDelete={handleDelete}
+/>
+```
+
+**Caratteristiche:**
+
+- **Lista task**: Elementi con checkbox, testo, modifica ed eliminazione
+- **Toggle completamento**: Click su checkbox
+- **Stile completato**: Checkbox colorato, testo barrato
+- **Aggiunta task**: Tasto + per aggiungere elementi
+- **Modifica inline**: Tasto matita per modificare
+- **Elimina**: Tasto cestino con conferma
+
+### AnagraficaBox
+
+Box specializzato per dati cliente strutturati.
+
+```jsx
+<AnagraficaBox
+  title="Anagrafica"
+  anagrafica={{
+    cliente: "Mario Rossi",
+    luogo: "Milano",
+    iva: "22",
+    email: "mario@email.com",
+    telefono: "123456789",
+    codiceFiscale: "RSSMRA80A01F205X",
+    customFields: [{ key: "...", label: "...", value: "..." }],
+  }}
+  onTitleChange={handleTitleChange}
+  onAnagraficaChange={handleAnagraficaChange}
+  onDelete={handleDelete}
+/>
+```
+
+**Caratteristiche:**
+
+- **Campi predefiniti**:
+  - 👤 Cliente (UserIcon)
+  - 📍 Luogo (MapPinIcon)
+  - % IVA (PercentIcon)
+  - ✉️ Email (MailIcon)
+  - 📞 Telefono (PhoneIcon)
+  - 🪪 Codice Fiscale (IdCardIcon)
+- **Campi custom**: Possibilità di aggiungere campi personalizzati
+- **Copia valore**: Tasto copia per ogni campo con valore
+- **Modifica inline**: Tasto matita per modificare
+- **Svuota campo**: Tasto cestino per rimuovere valore
 
 **Props:**
 | Prop | Tipo | Descrizione |
@@ -375,14 +516,15 @@ validateImageFile(file) → { valid, error? }
 
 ## Tipi di Box (Roadmap)
 
-| Tipo                | Stato     | Descrizione              |
-| ------------------- | --------- | ------------------------ |
-| 📝 **NoteBox**      | ✅ Attivo | Note testuali            |
-| 🖼️ **PhotoBox**     | ✅ Attivo | Foto con carosello       |
-| ✅ **ChecklistBox** | 🔜 Futuro | Liste di task            |
-| 🔗 **LinkBox**      | 🔜 Futuro | Link esterni con preview |
-| 👤 **ContactBox**   | 🔜 Futuro | Anagrafiche persone      |
-| 📄 **FileBox**      | 🔜 Futuro | Documenti generici       |
+| Tipo                 | Stato     | Descrizione                     |
+| -------------------- | --------- | ------------------------------- |
+| 📝 **NoteBox**       | ✅ Attivo | Note testuali                   |
+| 🖼️ **PhotoBox**      | ✅ Attivo | Foto con carosello e fullscreen |
+| 📄 **PdfBox**        | ✅ Attivo | PDF con anteprima               |
+| 📁 **FileBox**       | ✅ Attivo | File generici con icone         |
+| ✅ **ChecklistBox**  | ✅ Attivo | Liste di task                   |
+| 👤 **AnagraficaBox** | ✅ Attivo | Dati cliente strutturati        |
+| 🔗 **LinkBox**       | 🔜 Futuro | Link esterni con preview        |
 
 ---
 
@@ -398,6 +540,20 @@ validateImageFile(file) → { valid, error? }
 ---
 
 ## Changelog
+
+### v2.0.0 (Gennaio 2025)
+
+- 📄 **PdfBox**: Nuovo box per PDF con anteprima react-pdf
+- 📁 **FileBox**: Nuovo box per file generici con icone per tipo
+- ✅ **ChecklistBox**: Nuovo box per liste di task
+- 👤 **AnagraficaBox**: Nuovo box per dati cliente strutturati
+- 🖼️ **ImageModal**: Visualizzatore fullscreen con toolbar
+- 🔄 Rotazione immagini 90° in senso orario
+- ⬇️ Download immagini diretto
+- 🗑️ Eliminazione immagini da fullscreen (con skipHistory)
+- 🔮 Preload immagini adiacenti in ImageModal
+- 🪪 Aggiunto campo Codice Fiscale in AnagraficaBox
+- 📐 Icone per file 3D (OBJ, STL, FBX, ecc.) in FileBox
 
 ### v1.4.0 (Dicembre 2025)
 

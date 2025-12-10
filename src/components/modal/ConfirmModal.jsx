@@ -16,6 +16,7 @@ import Button from "../ui/Button";
  * @param {boolean} isDanger - Se è un'azione pericolosa (rosso)
  * @param {boolean} loading - Se sta caricando
  * @param {number} zIndex - z-index personalizzato per modali annidati
+ * @param {boolean} skipHistory - Se true, non usa history.back() (per modali sopra altri modali)
  */
 const ConfirmModal = ({
   isOpen,
@@ -28,11 +29,15 @@ const ConfirmModal = ({
   isDanger = false,
   loading = false,
   zIndex,
+  skipHistory = false,
 }) => {
-  // Handler per chiusura - sempre via history.back per mantenere sincronizzazione
-  // Il ModalContext intercetterà il popstate e chiamerà onCancel
+  // Handler per chiusura - via history.back o direttamente se skipHistory
   const handleClose = () => {
-    window.history.back();
+    if (skipHistory) {
+      if (onCancel) onCancel();
+    } else {
+      window.history.back();
+    }
   };
 
   // Callback interna chiamata dal Modal quando il popstate è gestito
@@ -57,6 +62,7 @@ const ConfirmModal = ({
       variant="info"
       zIndex={zIndex}
       onClose={handleModalClose}
+      skipHistory={skipHistory}
     >
       <div className="flex flex-col gap-5 py-2">
         {/* Box con icona e messaggio */}
