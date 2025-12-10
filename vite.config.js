@@ -11,11 +11,11 @@ export default defineConfig({
         manualChunks: {
           // Vendor chunks - librerie esterne
           "vendor-react": ["react", "react-dom"],
-          "vendor-firebase": [
-            "firebase/app",
-            "firebase/auth",
-            "firebase/firestore",
-          ],
+          "vendor-firebase-core": ["firebase/app", "firebase/auth"],
+          "vendor-firebase-db": ["firebase/firestore"],
+          "vendor-firebase-storage": ["firebase/storage"],
+          "vendor-pdf": ["react-pdf", "pdfjs-dist"],
+          "vendor-icons": ["lucide-react"],
         },
       },
     },
