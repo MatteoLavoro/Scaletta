@@ -20,6 +20,7 @@ import { useTheme } from "../../contexts/ThemeContext";
  *
  * @param {Object} props
  * @param {string} props.title - Titolo del box
+ * @param {string} props.badgeCount - Badge contatore da mostrare accanto al titolo (non modificabile)
  * @param {boolean} props.isPinned - Se il box è fissato in alto
  * @param {function} props.onPinToggle - Callback quando si clicca sul pin
  * @param {function} props.onTitleChange - Callback quando il titolo cambia
@@ -32,6 +33,7 @@ import { useTheme } from "../../contexts/ThemeContext";
  */
 const BaseBentoBox = ({
   title = "Box",
+  badgeCount = null,
   isPinned = false,
   onPinToggle,
   onTitleChange,
@@ -157,10 +159,17 @@ const BaseBentoBox = ({
             <div className="w-7" />
           )}
 
-          {/* Titolo centrato */}
-          <h3 className="text-xs font-semibold text-text-primary truncate flex-1 text-center">
-            {title}
-          </h3>
+          {/* Titolo centrato con badge opzionale */}
+          <div className="flex-1 flex items-center justify-center gap-1.5 min-w-0">
+            <h3 className="text-xs font-semibold text-text-primary truncate">
+              {title}
+            </h3>
+            {badgeCount && (
+              <span className="text-xs font-medium text-text-muted shrink-0">
+                ({badgeCount})
+              </span>
+            )}
+          </div>
 
           {/* Kebab menu in cerchietto */}
           {allMenuItems.length > 0 ? (

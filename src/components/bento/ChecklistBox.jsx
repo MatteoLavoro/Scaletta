@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   PlusIcon,
   TrashIcon,
@@ -49,7 +49,7 @@ const ChecklistItemRow = ({
       <div className="flex-1 min-w-0">
         <p
           className={`
-            text-sm font-medium
+            text-sm font-medium truncate
             ${
               item.completed
                 ? "line-through text-text-muted"
@@ -104,7 +104,6 @@ const ChecklistItemRow = ({
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onItemsChange - Callback quando cambiano gli items
  * @param {function} onDelete - Callback per eliminare il box
- * @param {function} onModalStateChange - Callback quando il modal di inserimento si apre/chiude
  */
 const ChecklistBox = ({
   title = "Checklist",
@@ -114,7 +113,6 @@ const ChecklistBox = ({
   onTitleChange,
   onItemsChange,
   onDelete,
-  onModalStateChange,
 }) => {
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null); // null = nuovo, object = modifica
@@ -122,11 +120,6 @@ const ChecklistBox = ({
   const [deletingItemId, setDeletingItemId] = useState(null); // ID dell'item da eliminare
 
   const { colors, accentColor, isDark } = useTheme();
-
-  // Notifica il parent quando il modal si apre/chiude
-  useEffect(() => {
-    onModalStateChange?.(isInputModalOpen);
-  }, [isInputModalOpen, onModalStateChange]);
 
   // Ottieni il colore primario del tema
   const themeColors =
@@ -229,7 +222,8 @@ const ChecklistBox = ({
   return (
     <>
       <BaseBentoBox
-        title={hasItems ? `${title} (${completedCount}/${totalCount})` : title}
+        title={title}
+        badgeCount={hasItems ? `${completedCount}/${totalCount}` : null}
         isPinned={isPinned}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}

@@ -9,8 +9,10 @@ export {
 } from "./AddBentoBoxButton";
 export { default as NoteBox } from "./NoteBox";
 export { default as PhotoBox } from "./PhotoBox";
+export { default as PdfBox } from "./PdfBox";
 export { default as FileBox } from "./FileBox";
 export { default as ChecklistBox } from "./ChecklistBox";
+export { default as AnagraficaBox } from "./AnagraficaBox";
 export { default as TutorialBox } from "./TutorialBox";
 export { default as CameraFab } from "./CameraFab";
 

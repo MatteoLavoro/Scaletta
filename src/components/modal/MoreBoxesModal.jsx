@@ -1,5 +1,5 @@
 import Modal from "./Modal";
-import { ListChecksIcon } from "../icons";
+import { ListChecksIcon, UserIcon, FileTextIcon } from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
@@ -50,9 +50,18 @@ const BoxOptionCard = ({ icon, title, description, onClick, primaryColor }) => {
  * @param {boolean} isOpen - Se il modale è aperto
  * @param {function} onClose - Callback per chiudere il modale
  * @param {function} onAddChecklist - Callback per aggiungere una checklist
+ * @param {function} onAddAnagrafica - Callback per aggiungere una anagrafica
+ * @param {function} onAddPdf - Callback per aggiungere un PDF box
  * @param {number} zIndex - z-index per modali annidati
  */
-const MoreBoxesModal = ({ isOpen, onClose, onAddChecklist, zIndex }) => {
+const MoreBoxesModal = ({
+  isOpen,
+  onClose,
+  onAddChecklist,
+  onAddAnagrafica,
+  onAddPdf,
+  zIndex,
+}) => {
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema
@@ -67,6 +76,18 @@ const MoreBoxesModal = ({ isOpen, onClose, onAddChecklist, zIndex }) => {
     onClose?.();
   };
 
+  // Handler per aggiungere anagrafica
+  const handleAddAnagrafica = () => {
+    onAddAnagrafica?.();
+    onClose?.();
+  };
+
+  // Handler per aggiungere PDF
+  const handleAddPdf = () => {
+    onAddPdf?.();
+    onClose?.();
+  };
+
   // Lista di opzioni box disponibili
   const boxOptions = [
     {
@@ -76,14 +97,20 @@ const MoreBoxesModal = ({ isOpen, onClose, onAddChecklist, zIndex }) => {
       description: "Lista di cose da fare con checkbox",
       onClick: handleAddChecklist,
     },
-    // Qui potrai aggiungere altri tipi di box in futuro
-    // {
-    //   id: "countdown",
-    //   icon: <ClockIcon className="w-6 h-6" />,
-    //   title: "Countdown",
-    //   description: "Timer con conto alla rovescia",
-    //   onClick: handleAddCountdown,
-    // },
+    {
+      id: "anagrafica",
+      icon: <UserIcon className="w-6 h-6" />,
+      title: "Anagrafica",
+      description: "Dati cliente: nome, luogo, email, telefono...",
+      onClick: handleAddAnagrafica,
+    },
+    {
+      id: "pdf",
+      icon: <FileTextIcon className="w-6 h-6" />,
+      title: "PDF",
+      description: "Documenti PDF con anteprima prima pagina",
+      onClick: handleAddPdf,
+    },
   ];
 
   return (
@@ -107,11 +134,6 @@ const MoreBoxesModal = ({ isOpen, onClose, onAddChecklist, zIndex }) => {
           />
         ))}
       </div>
-
-      {/* Info aggiuntiva */}
-      <p className="text-xs text-text-muted text-center mt-4">
-        Altri tipi di box saranno disponibili presto
-      </p>
     </Modal>
   );
 };

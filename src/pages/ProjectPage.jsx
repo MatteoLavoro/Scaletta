@@ -11,8 +11,10 @@ import {
   DesktopAddFab,
   NoteBox,
   PhotoBox,
+  PdfBox,
   FileBox,
   ChecklistBox,
+  AnagraficaBox,
   BaseBentoBox,
   TutorialBox,
   CameraFab,
@@ -24,14 +26,18 @@ import {
   updateBentoBoxTitle,
   updateBentoBoxContent,
   updateBentoBoxPhotos,
+  updateBentoBoxPdfs,
   updateBentoBoxFiles,
   updateBentoBoxChecklistItems,
+  updateBentoBoxAnagraficaFields,
+  updateBentoBoxAnagraficaCustomFields,
   updateBentoBoxPin,
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
 import { deletePhotos, uploadPhoto } from "../services/photos";
 import { deleteFiles } from "../services/files";
+import { deletePdfs } from "../services/pdfs";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -67,25 +73,9 @@ const ProjectPage = ({
   // Stato per i bento box del progetto
   const [bentoBoxes, setBentoBoxes] = useState([]);
 
-  // Traccia i box con modal di inserimento aperto (per prevenire auto-delete)
-  const [boxesWithOpenModal, setBoxesWithOpenModal] = useState(new Set());
-  // Traccia quando un box ha chiuso il modal (per resettare il timer)
-  const boxModalClosedAtRef = useRef(new Map()); // boxId -> timestamp
-
-  // Callback per segnalare quando un box apre/chiude il suo modal di inserimento
-  const handleBoxModalStateChange = useCallback((boxId, isOpen) => {
-    if (isOpen) {
-      setBoxesWithOpenModal((prev) => new Set([...prev, boxId]));
-    } else {
-      setBoxesWithOpenModal((prev) => {
-        const next = new Set(prev);
-        next.delete(boxId);
-        return next;
-      });
-      // Registra quando il modal è stato chiuso per resettare il timer
-      boxModalClosedAtRef.current.set(boxId, Date.now());
-    }
-  }, []);
+  // Traccia i box che sono stati modificati durante questa sessione
+  // I box in questo Set non verranno eliminati automaticamente
+  const modifiedBoxesRef = useRef(new Set());
 
   // Sottoscrizione in tempo reale ai bento boxes
   useEffect(() => {
@@ -103,86 +93,63 @@ const ProjectPage = ({
     return () => unsubscribe();
   }, [project?.id]);
 
-  // Auto-delete: elimina i box vuoti dopo 1 minuto dalla creazione
-  // Il timer si resetta quando il modal di inserimento viene chiuso
-  // Il timer è in pausa mentre il modal è aperto
-  useEffect(() => {
+  // Funzione per verificare se un box è vuoto (nessun contenuto significativo)
+  const isBoxEmpty = useCallback((box) => {
+    if (box.boxType === "note") {
+      return !box.content || box.content.trim().length === 0;
+    }
+    if (box.boxType === "photo") {
+      return !box.photos || box.photos.length === 0;
+    }
+    if (box.boxType === "file") {
+      return !box.files || box.files.length === 0;
+    }
+    if (box.boxType === "checklist") {
+      return !box.checklistItems || box.checklistItems.length === 0;
+    }
+    if (box.boxType === "pdf") {
+      return !box.pdfs || box.pdfs.length === 0;
+    }
+    if (box.boxType === "anagrafica") {
+      // Non considerare mai vuoto un box anagrafica
+      return false;
+    }
+    return false; // Non eliminare box di tipo sconosciuto
+  }, []);
+
+  // Funzione per pulire i box vuoti e non modificati (chiamata quando si torna alla home)
+  const cleanupEmptyBoxes = useCallback(async () => {
     if (!project?.id || bentoBoxes.length === 0) return;
 
-    const ONE_MINUTE = 60 * 1000; // 1 minuto in ms
+    const boxesToDelete = bentoBoxes.filter((box) => {
+      // Non eliminare i box pinnati
+      if (box.isPinned) return false;
+      // Non eliminare i box che sono stati modificati
+      if (modifiedBoxesRef.current.has(box.id)) return false;
+      // Elimina solo i box vuoti
+      return isBoxEmpty(box);
+    });
 
-    // Funzione per verificare se un box è vuoto
-    const isBoxEmpty = (box) => {
-      if (box.boxType === "note") {
-        return !box.content || box.content.trim().length === 0;
-      }
-      if (box.boxType === "photo") {
-        return !box.photos || box.photos.length === 0;
-      }
-      if (box.boxType === "file") {
-        return !box.files || box.files.length === 0;
-      }
-      if (box.boxType === "checklist") {
-        return !box.checklistItems || box.checklistItems.length === 0;
-      }
-      return false; // Non eliminare box di tipo sconosciuto
-    };
-
-    // Controlla ogni 10 secondi se ci sono box vuoti da eliminare
-    const checkAndDeleteEmptyBoxes = async () => {
-      const now = Date.now();
-
-      for (const box of bentoBoxes) {
-        // Salta i box pinnati
-        if (box.isPinned) continue;
-
-        // Salta i box con modal aperto (timer in pausa)
-        if (boxesWithOpenModal.has(box.id)) continue;
-
-        // Verifica se il box è vuoto
-        if (!isBoxEmpty(box)) continue;
-
-        // Determina il timestamp di riferimento per il timer
-        // Se il modal è stato chiuso di recente, usa quel timestamp (timer resettato)
-        // Altrimenti usa il timestamp di creazione
-        const modalClosedAt = boxModalClosedAtRef.current.get(box.id);
-
-        let referenceTime;
-        if (modalClosedAt) {
-          referenceTime = modalClosedAt;
-        } else {
-          const createdAt = box.createdAt?.toDate?.() || box.createdAt;
-          if (!createdAt) continue;
-          referenceTime =
-            createdAt instanceof Date
-              ? createdAt.getTime()
-              : new Date(createdAt).getTime();
+    // Elimina i box in background (senza await per non bloccare la navigazione)
+    for (const box of boxesToDelete) {
+      try {
+        // Elimina anche foto/file/pdf dallo storage se presenti
+        if (box.boxType === "photo" && box.photos?.length > 0) {
+          await deletePhotos(box.photos.map((p) => p.storagePath));
         }
-
-        const elapsed = now - referenceTime;
-
-        // Se è passato più di 1 minuto, elimina il box
-        if (elapsed > ONE_MINUTE) {
-          try {
-            await deleteBentoBox(project.id, box.id);
-            // Pulisci il riferimento del modal chiuso
-            boxModalClosedAtRef.current.delete(box.id);
-            console.log(
-              `Box vuoto "${box.title}" eliminato automaticamente dopo 1 minuto`
-            );
-          } catch (error) {
-            console.error("Errore eliminazione automatica box:", error);
-          }
+        if (box.boxType === "file" && box.files?.length > 0) {
+          await deleteFiles(box.files);
         }
+        if (box.boxType === "pdf" && box.pdfs?.length > 0) {
+          await deletePdfs(box.pdfs);
+        }
+        await deleteBentoBox(project.id, box.id);
+        console.log(`Box vuoto "${box.title}" eliminato automaticamente`);
+      } catch (error) {
+        console.error("Errore eliminazione automatica box:", error);
       }
-    };
-
-    // Controlla subito e poi ogni 10 secondi (per essere più reattivi)
-    checkAndDeleteEmptyBoxes();
-    const intervalId = setInterval(checkAndDeleteEmptyBoxes, 10 * 1000);
-
-    return () => clearInterval(intervalId);
-  }, [project?.id, bentoBoxes, boxesWithOpenModal]);
+    }
+  }, [project?.id, bentoBoxes, isBoxEmpty]);
 
   // Funzione per aggiungere una nota (salva nel database)
   // Il listener onSnapshot aggiornerà automaticamente lo stato
@@ -254,6 +221,40 @@ const ProjectPage = ({
     }
   };
 
+  // Funzione per aggiungere un AnagraficaBox
+  const handleAddAnagrafica = async () => {
+    if (!project?.id) return;
+
+    try {
+      const anagraficaCount =
+        bentoBoxes.filter((b) => b.boxType === "anagrafica").length + 1;
+      await createBentoBox(project.id, {
+        title: `Anagrafica ${anagraficaCount}`,
+        boxType: "anagrafica",
+        anagraficaFields: {},
+        anagraficaCustomFields: [],
+      });
+    } catch (error) {
+      console.error("Errore creazione anagrafica box:", error);
+    }
+  };
+
+  // Funzione per aggiungere un PdfBox
+  const handleAddPdf = async () => {
+    if (!project?.id) return;
+
+    try {
+      const pdfCount = bentoBoxes.filter((b) => b.boxType === "pdf").length + 1;
+      await createBentoBox(project.id, {
+        title: `PDF ${pdfCount}`,
+        boxType: "pdf",
+        pdfs: [],
+      });
+    } catch (error) {
+      console.error("Errore creazione pdf box:", error);
+    }
+  };
+
   // Funzione per gestire la foto dalla fotocamera
   // Crea un nuovo PhotoBox con la foto scattata
   const handleCameraCapture = async (file) => {
@@ -281,9 +282,28 @@ const ProjectPage = ({
     if (!project?.id) return;
 
     try {
+      // Segna il box come modificato (se ha foto)
+      if (newPhotos.length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
       await updateBentoBoxPhotos(project.id, boxId, newPhotos);
     } catch (error) {
       console.error("Errore aggiornamento foto:", error);
+    }
+  };
+
+  // Funzione per aggiornare i PDF di un PdfBox
+  const handlePdfsChange = async (boxId, newPdfs) => {
+    if (!project?.id) return;
+
+    try {
+      // Segna il box come modificato (se ha PDF)
+      if (newPdfs.length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
+      await updateBentoBoxPdfs(project.id, boxId, newPdfs);
+    } catch (error) {
+      console.error("Errore aggiornamento PDF:", error);
     }
   };
 
@@ -292,6 +312,10 @@ const ProjectPage = ({
     if (!project?.id) return;
 
     try {
+      // Segna il box come modificato (se ha file)
+      if (newFiles.length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
       await updateBentoBoxFiles(project.id, boxId, newFiles);
     } catch (error) {
       console.error("Errore aggiornamento file:", error);
@@ -303,22 +327,65 @@ const ProjectPage = ({
     if (!project?.id) return;
 
     try {
+      // Segna il box come modificato (se ha items)
+      if (newItems.length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
       await updateBentoBoxChecklistItems(project.id, boxId, newItems);
     } catch (error) {
       console.error("Errore aggiornamento checklist:", error);
     }
   };
 
-  // Funzione per eliminare un box (include eliminazione foto/file dallo storage)
+  // Funzione per aggiornare i campi di un AnagraficaBox
+  const handleAnagraficaFieldsChange = async (boxId, newFields) => {
+    if (!project?.id) return;
+
+    try {
+      // Segna il box come modificato (se ha campi compilati)
+      const hasValues = Object.values(newFields).some((v) => v && v.trim());
+      if (hasValues) {
+        modifiedBoxesRef.current.add(boxId);
+      }
+      await updateBentoBoxAnagraficaFields(project.id, boxId, newFields);
+    } catch (error) {
+      console.error("Errore aggiornamento campi anagrafica:", error);
+    }
+  };
+
+  // Funzione per aggiornare i campi custom di un AnagraficaBox
+  const handleAnagraficaCustomFieldsChange = async (boxId, newCustomFields) => {
+    if (!project?.id) return;
+
+    try {
+      // Segna il box come modificato (se ha campi custom)
+      if (newCustomFields.length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
+      await updateBentoBoxAnagraficaCustomFields(
+        project.id,
+        boxId,
+        newCustomFields
+      );
+    } catch (error) {
+      console.error("Errore aggiornamento campi custom anagrafica:", error);
+    }
+  };
+
+  // Funzione per eliminare un box (include eliminazione foto/file/pdf dallo storage)
   const handleDeleteBox = async (boxId) => {
     if (!project?.id) return;
 
     try {
-      // Trova il box per verificare se ha foto/file da eliminare
+      // Trova il box per verificare se ha foto/file/pdf da eliminare
       const box = bentoBoxes.find((b) => b.id === boxId);
       if (box?.boxType === "photo" && box.photos?.length > 0) {
         // Elimina tutte le foto dallo storage
         await deletePhotos(box.photos.map((p) => p.storagePath));
+      }
+      if (box?.boxType === "pdf" && box.pdfs?.length > 0) {
+        // Elimina tutti i PDF dallo storage
+        await deletePdfs(box.pdfs);
       }
       if (box?.boxType === "file" && box.files?.length > 0) {
         // Elimina tutti i file dallo storage
@@ -335,6 +402,8 @@ const ProjectPage = ({
     if (!project?.id) return;
 
     try {
+      // Segna il box come modificato
+      modifiedBoxesRef.current.add(boxId);
       await updateBentoBoxTitle(project.id, boxId, newTitle);
     } catch (error) {
       console.error("Errore aggiornamento titolo box:", error);
@@ -347,6 +416,10 @@ const ProjectPage = ({
     if (!project?.id) return;
 
     try {
+      // Segna il box come modificato (se ha contenuto)
+      if (newContent && newContent.trim().length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
       await updateBentoBoxContent(project.id, boxId, newContent);
       // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
@@ -447,13 +520,16 @@ const ProjectPage = ({
       // Non reagire se ci sono ancora modali annidati aperti
       if (hasNestedModals()) return;
 
+      // Pulisci i box vuoti e non modificati in background prima di tornare alla home
+      cleanupEmptyBoxes();
+
       // Altrimenti torna alla home
       onBack();
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [project, onBack, hasNestedModals, wasPopstateHandled]);
+  }, [project, onBack, hasNestedModals, wasPopstateHandled, cleanupEmptyBoxes]);
 
   // Gestione tasto ESC (solo se non c'è un modale aperto)
   useEffect(() => {
@@ -625,9 +701,6 @@ const ProjectPage = ({
                             handleBoxContentChange(item.id, newContent)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
-                          onModalStateChange={(isOpen) =>
-                            handleBoxModalStateChange(item.id, isOpen)
-                          }
                         />
                       </div>
                     );
@@ -655,9 +728,33 @@ const ProjectPage = ({
                             handlePhotosChange(item.id, newPhotos)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
-                          onModalStateChange={(isOpen) =>
-                            handleBoxModalStateChange(item.id, isOpen)
+                        />
+                      </div>
+                    );
+                  }
+                  // Render PdfBox per box di tipo "pdf"
+                  if (item.boxType === "pdf") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <PdfBox
+                          projectId={project.id}
+                          title={item.title}
+                          pdfs={item.pdfs || []}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
                           }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onPdfsChange={(newPdfs) =>
+                            handlePdfsChange(item.id, newPdfs)
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
                         />
                       </div>
                     );
@@ -685,9 +782,6 @@ const ProjectPage = ({
                             handleFilesChange(item.id, newFiles)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
-                          onModalStateChange={(isOpen) =>
-                            handleBoxModalStateChange(item.id, isOpen)
-                          }
                         />
                       </div>
                     );
@@ -714,9 +808,39 @@ const ProjectPage = ({
                             handleChecklistItemsChange(item.id, newItems)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
-                          onModalStateChange={(isOpen) =>
-                            handleBoxModalStateChange(item.id, isOpen)
+                        />
+                      </div>
+                    );
+                  }
+                  // Render AnagraficaBox per box di tipo "anagrafica"
+                  if (item.boxType === "anagrafica") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <AnagraficaBox
+                          title={item.title}
+                          fields={item.anagraficaFields || {}}
+                          customFields={item.anagraficaCustomFields || []}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
                           }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onFieldsChange={(newFields) =>
+                            handleAnagraficaFieldsChange(item.id, newFields)
+                          }
+                          onCustomFieldsChange={(newCustomFields) =>
+                            handleAnagraficaCustomFieldsChange(
+                              item.id,
+                              newCustomFields
+                            )
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
                         />
                       </div>
                     );
@@ -804,6 +928,8 @@ const ProjectPage = ({
         isOpen={isMoreBoxesModalOpen}
         onClose={() => setIsMoreBoxesModalOpen(false)}
         onAddChecklist={handleAddChecklist}
+        onAddAnagrafica={handleAddAnagrafica}
+        onAddPdf={handleAddPdf}
       />
     </>
   );

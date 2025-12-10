@@ -56,5 +56,21 @@ service firebase.storage {
       // Eliminazione: utente autenticato
       allow delete: if isAuthenticated();
     }
+    
+    // ==========================================
+    // PDF DEI PROGETTI
+    // Struttura: projects/{projectId}/pdfs/{pdfId}
+    // ==========================================
+    match /projects/{projectId}/pdfs/{pdfId} {
+      // Lettura: utente autenticato
+      allow read: if isAuthenticated();
+      
+      // Scrittura: utente autenticato + dimensione ok (50MB)
+      allow write: if isAuthenticated() 
+        && isUnderFileMaxSize();
+      
+      // Eliminazione: utente autenticato
+      allow delete: if isAuthenticated();
+    }
   }
 }

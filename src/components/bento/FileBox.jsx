@@ -1,5 +1,19 @@
-import { useState, useRef, useEffect } from "react";
-import { PlusIcon, DownloadIcon, TrashIcon, FolderIcon } from "../icons";
+import { useState, useRef } from "react";
+import {
+  PlusIcon,
+  DownloadIcon,
+  TrashIcon,
+  FolderIcon,
+  ImageIcon,
+  FileTextIcon,
+  FileSpreadsheetIcon,
+  PresentationIcon,
+  MusicIcon,
+  VideoIcon,
+  CodeIcon,
+  FileArchiveIcon,
+  RulerIcon,
+} from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { FileUploadModal } from "../modal";
 import { ConfirmModal } from "../modal";
@@ -9,8 +23,128 @@ import {
   downloadFile,
   formatFileSize,
   getFileType,
+  getFileExtension,
 } from "../../services/files";
 import { useTheme } from "../../contexts/ThemeContext";
+
+/**
+ * Renderizza l'icona appropriata per un tipo di file
+ */
+const renderFileIcon = (filename) => {
+  const ext = getFileExtension(filename).toLowerCase();
+
+  // Immagini
+  if (
+    ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico"].includes(ext)
+  ) {
+    return <ImageIcon className="w-5 h-5" />;
+  }
+
+  // PDF
+  if (ext === "pdf") {
+    return <FileTextIcon className="w-5 h-5" />;
+  }
+
+  // Documenti di testo
+  if (["doc", "docx", "odt", "rtf", "txt"].includes(ext)) {
+    return <FileTextIcon className="w-5 h-5" />;
+  }
+
+  // Fogli di calcolo
+  if (["xls", "xlsx", "ods", "csv"].includes(ext)) {
+    return <FileSpreadsheetIcon className="w-5 h-5" />;
+  }
+
+  // Presentazioni
+  if (["ppt", "pptx", "odp"].includes(ext)) {
+    return <PresentationIcon className="w-5 h-5" />;
+  }
+
+  // Audio
+  if (["mp3", "wav", "ogg", "m4a", "flac", "aac", "wma"].includes(ext)) {
+    return <MusicIcon className="w-5 h-5" />;
+  }
+
+  // Video
+  if (["mp4", "avi", "mkv", "mov", "webm", "wmv", "flv"].includes(ext)) {
+    return <VideoIcon className="w-5 h-5" />;
+  }
+
+  // Archivi compressi
+  if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(ext)) {
+    return <FileArchiveIcon className="w-5 h-5" />;
+  }
+
+  // Codice sorgente
+  if (
+    [
+      "js",
+      "ts",
+      "jsx",
+      "tsx",
+      "py",
+      "java",
+      "c",
+      "cpp",
+      "h",
+      "cs",
+      "rb",
+      "php",
+      "html",
+      "css",
+      "scss",
+      "json",
+      "xml",
+      "yaml",
+      "yml",
+      "md",
+      "sql",
+    ].includes(ext)
+  ) {
+    return <CodeIcon className="w-5 h-5" />;
+  }
+
+  // CAD e disegni tecnici
+  if (["dwg", "dxf", "dwf", "dgn"].includes(ext)) {
+    return <RulerIcon className="w-5 h-5" />;
+  }
+
+  // File 3D (modelli, stampa 3D, scambio)
+  if (
+    [
+      "stl",
+      "obj",
+      "3ds",
+      "skp",
+      "blend",
+      "fbx",
+      "gltf",
+      "glb",
+      "step",
+      "stp",
+      "iges",
+      "igs",
+      "3mf",
+      "dae",
+      "x3d",
+      "vrml",
+      "wrl",
+      "c4d",
+      "max",
+      "ma",
+      "mb",
+      "lwo",
+      "lws",
+      "ply",
+      "amf",
+    ].includes(ext)
+  ) {
+    return <RulerIcon className="w-5 h-5" />;
+  }
+
+  // Default: cartella generica
+  return <FolderIcon className="w-5 h-5" />;
+};
 
 /**
  * FileRowUploading - Riga file in fase di upload con progress bar
@@ -20,7 +154,7 @@ const FileRowUploading = ({ file, progress }) => {
     <div className="flex items-center gap-3 bg-bg-tertiary/50 border border-border/50 rounded-lg p-3">
       {/* Icona tipo file */}
       <div className="w-10 h-10 rounded-lg bg-bg-secondary flex items-center justify-center text-text-muted shrink-0">
-        <FolderIcon className="w-5 h-5" />
+        {renderFileIcon(file.name)}
       </div>
 
       {/* Info file + progress bar */}
@@ -64,7 +198,7 @@ const FileRow = ({ file, onDownload, onDelete, primaryColor }) => {
     <div className="flex items-center gap-3 bg-bg-tertiary/50 border border-border/50 rounded-lg p-3">
       {/* Icona tipo file */}
       <div className="w-10 h-10 rounded-lg bg-bg-secondary flex items-center justify-center text-text-muted shrink-0">
-        <FolderIcon className="w-5 h-5" />
+        {renderFileIcon(file.name)}
       </div>
 
       {/* Info file */}
@@ -123,7 +257,6 @@ const FileRow = ({ file, onDownload, onDelete, primaryColor }) => {
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onFilesChange - Callback quando cambiano i file
  * @param {function} onDelete - Callback per eliminare il box
- * @param {function} onModalStateChange - Callback quando il modal di upload si apre/chiude
  */
 const FileBox = ({
   projectId,
@@ -134,7 +267,6 @@ const FileBox = ({
   onTitleChange,
   onFilesChange,
   onDelete,
-  onModalStateChange,
 }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadResetKey, setUploadResetKey] = useState(0);
@@ -146,11 +278,6 @@ const FileBox = ({
   const completedFilesRef = useRef([]);
 
   const { colors, accentColor, isDark } = useTheme();
-
-  // Notifica il parent quando il modal di upload si apre/chiude
-  useEffect(() => {
-    onModalStateChange?.(isUploadModalOpen);
-  }, [isUploadModalOpen, onModalStateChange]);
 
   // Ottieni il colore primario del tema
   const themeColors =
@@ -262,6 +389,7 @@ const FileBox = ({
     <>
       <BaseBentoBox
         title={title}
+        badgeCount={hasFiles ? files.length : null}
         isPinned={isPinned}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}

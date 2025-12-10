@@ -425,6 +425,17 @@ export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
 };
 
 /**
+ * Aggiorna i PDF di un bento box (PdfBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {array} pdfs - Array di PDF { id, url, name, storagePath, pageCount }
+ */
+export const updateBentoBoxPdfs = async (projectId, boxId, pdfs) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { pdfs });
+};
+
+/**
  * Aggiorna i file di un bento box (FileBox)
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
@@ -444,6 +455,36 @@ export const updateBentoBoxFiles = async (projectId, boxId, files) => {
 export const updateBentoBoxChecklistItems = async (projectId, boxId, items) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { checklistItems: items });
+};
+
+/**
+ * Aggiorna i campi di un bento box anagrafica (AnagraficaBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {object} fields - Oggetto con i valori dei campi
+ */
+export const updateBentoBoxAnagraficaFields = async (
+  projectId,
+  boxId,
+  fields
+) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { anagraficaFields: fields });
+};
+
+/**
+ * Aggiorna i campi custom di un bento box anagrafica (AnagraficaBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {array} customFields - Array di campi custom [{ key, label }]
+ */
+export const updateBentoBoxAnagraficaCustomFields = async (
+  projectId,
+  boxId,
+  customFields
+) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { anagraficaCustomFields: customFields });
 };
 
 /**
