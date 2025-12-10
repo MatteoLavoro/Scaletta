@@ -341,7 +341,75 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     [newItemIds, fadingInIds]
   );
 
-  return { containerRef, columns, getItemStyle };
+  // Crea un array flat di tutti gli items con la loro colonna assegnata
+  // e le coordinate assolute per il posizionamento
+  // Questo permette di renderizzare tutti i box in un unico contenitore
+  // mantenendo lo stato quando vengono spostati tra colonne
+  const flatItems = useMemo(() => {
+    const result = [];
+    // Traccia l'altezza cumulativa per ogni colonna
+    const columnTops = Array(columnCount).fill(0);
+
+    columns.forEach((colItems, colIndex) => {
+      colItems.forEach((item) => {
+        const top = columnTops[colIndex];
+
+        // Ottieni l'altezza misurata o stimata
+        const measuredHeight = heights.get(item.id);
+        const ESTIMATED_HEIGHTS = {
+          tutorial: 200,
+          note: 180,
+          photo: 280,
+          file: 200,
+          generic: 200,
+        };
+        const estimatedHeight =
+          ESTIMATED_HEIGHTS[item.type] ||
+          ESTIMATED_HEIGHTS[item.boxType] ||
+          200;
+        const itemHeight = measuredHeight || estimatedHeight;
+
+        result.push({
+          ...item,
+          columnIndex: colIndex,
+          top: top,
+        });
+
+        // Aggiorna l'altezza cumulativa per questa colonna
+        columnTops[colIndex] = top + itemHeight + gap;
+      });
+    });
+
+    return result;
+  }, [columns, columnCount, heights, gap]);
+
+  // Calcola l'altezza totale del container (altezza della colonna più alta)
+  const containerHeight = useMemo(() => {
+    const columnTops = Array(columnCount).fill(0);
+
+    columns.forEach((colItems, colIndex) => {
+      colItems.forEach((item) => {
+        const measuredHeight = heights.get(item.id);
+        const ESTIMATED_HEIGHTS = {
+          tutorial: 200,
+          note: 180,
+          photo: 280,
+          file: 200,
+          generic: 200,
+        };
+        const estimatedHeight =
+          ESTIMATED_HEIGHTS[item.type] ||
+          ESTIMATED_HEIGHTS[item.boxType] ||
+          200;
+        const itemHeight = measuredHeight || estimatedHeight;
+        columnTops[colIndex] += itemHeight + gap;
+      });
+    });
+
+    return Math.max(...columnTops, 0);
+  }, [columns, columnCount, heights, gap]);
+
+  return { containerRef, columns, getItemStyle, flatItems, containerHeight };
 };
 
 export default useBentoAnimation;

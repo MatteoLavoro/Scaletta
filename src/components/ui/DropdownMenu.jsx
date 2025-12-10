@@ -3,8 +3,10 @@ import { MoreVerticalIcon } from "../icons";
 
 /**
  * DropdownMenu - Menu dropdown con icona kebab
+ * Supporta gruppi di items separati visivamente
  *
- * @param {Array} items - Array di oggetti { label, onClick, icon?, danger? }
+ * @param {Array} items - Array di oggetti { label, onClick, icon?, danger?, separator? }
+ *                        Usa { separator: true } per dividere i gruppi
  * @param {string} buttonColor - Colore del testo del bottone (default: currentColor)
  * @param {string} ariaLabel - Label accessibilità per il bottone
  * @param {boolean} compact - Modalità compatta (w-full h-full per riempire container)
@@ -64,6 +66,40 @@ const DropdownMenu = ({
     item.onClick?.();
   };
 
+  // Dividi gli items in gruppi basandosi sui separatori
+  const itemGroups = [];
+  let currentGroup = [];
+
+  items.forEach((item) => {
+    if (item.separator) {
+      if (currentGroup.length > 0) {
+        itemGroups.push(currentGroup);
+        currentGroup = [];
+      }
+    } else {
+      currentGroup.push(item);
+    }
+  });
+
+  // Aggiungi l'ultimo gruppo se non vuoto
+  if (currentGroup.length > 0) {
+    itemGroups.push(currentGroup);
+  }
+
+  // Determina lo stile in base alla variante dell'item
+  const getItemStyle = (item) => {
+    if (item.isDangerous || item.danger) {
+      return "text-red-500";
+    }
+    if (item.variant === "success") {
+      return "text-green-500";
+    }
+    if (item.variant === "muted") {
+      return "text-text-secondary";
+    }
+    return "text-text-primary";
+  };
+
   return (
     <div
       className={`relative ${
@@ -89,15 +125,14 @@ const DropdownMenu = ({
         <MoreVerticalIcon className={compact ? "w-5 h-5" : "w-6 h-6"} />
       </button>
 
-      {/* Menu dropdown */}
+      {/* Menu dropdown - Gruppi separati */}
       {isOpen && (
         <div
           ref={menuRef}
           className={`
             absolute right-0 top-full mt-1
-            min-w-[200px] py-1
-            bg-bg-secondary border border-border rounded-xl
-            shadow-lg
+            min-w-[200px]
+            flex flex-col gap-2
             z-50
             transition-all duration-150 ease-out
             origin-top-right
@@ -109,49 +144,30 @@ const DropdownMenu = ({
           `}
           role="menu"
         >
-          {items.map((item, index) => {
-            // Separatore
-            if (item.separator) {
-              return (
-                <div
-                  key={`sep-${index}`}
-                  className="my-1 border-t border-border"
-                />
-              );
-            }
-
-            // Determina lo stile in base alla variante
-            const getItemStyle = () => {
-              if (item.isDangerous || item.danger) {
-                return "text-red-500";
-              }
-              if (item.variant === "success") {
-                return "text-green-500";
-              }
-              if (item.variant === "muted") {
-                return "text-text-secondary";
-              }
-              return "text-text-primary";
-            };
-
-            return (
-              <button
-                key={index}
-                onClick={() => handleItemClick(item)}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-2.5
-                  text-sm text-left
-                  ${getItemStyle()}
-                  hover:bg-bg-tertiary
-                  transition-colors duration-150
-                `}
-                role="menuitem"
-              >
-                {item.icon && <span className="w-5 h-5">{item.icon}</span>}
-                {item.label}
-              </button>
-            );
-          })}
+          {itemGroups.map((group, groupIndex) => (
+            <div
+              key={`group-${groupIndex}`}
+              className="bg-bg-secondary border border-border rounded-xl shadow-lg py-1 overflow-hidden"
+            >
+              {group.map((item, itemIndex) => (
+                <button
+                  key={`${groupIndex}-${itemIndex}`}
+                  onClick={() => handleItemClick(item)}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-2.5
+                    text-sm text-left
+                    ${getItemStyle(item)}
+                    hover:bg-bg-tertiary
+                    transition-colors duration-150
+                  `}
+                  role="menuitem"
+                >
+                  {item.icon && <span className="w-5 h-5">{item.icon}</span>}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>

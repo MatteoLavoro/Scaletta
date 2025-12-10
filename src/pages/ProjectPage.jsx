@@ -341,10 +341,8 @@ const ProjectPage = ({
   }, [sortedBoxes, hasBoxes]);
 
   // Hook per layout "shortest column first" + animazioni FLIP
-  const { containerRef, columns, getItemStyle } = useBentoAnimation(
-    allItems,
-    columnCount
-  );
+  const { containerRef, columns, getItemStyle, flatItems, containerHeight } =
+    useBentoAnimation(allItems, columnCount);
 
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
@@ -492,146 +490,154 @@ const ProjectPage = ({
                 <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
-              /* Griglia con tutti i box (normali + speciali) */
+              /* Griglia con tutti i box - Struttura flat con posizionamento assoluto per mantenere stato componenti */
               <div
                 ref={containerRef}
-                className={`flex items-start ${
-                  columnCount === 1 ? "w-full" : ""
-                }`}
-                style={{ gap: `${GAP}px` }}
+                className={columnCount === 1 ? "w-full" : ""}
+                style={{
+                  position: "relative",
+                  minHeight: containerHeight,
+                  width:
+                    columnCount === 1
+                      ? "100%"
+                      : columnCount * BOX_WIDTH + (columnCount - 1) * GAP,
+                }}
               >
-                {columns.map((colItems, colIdx) => (
-                  <div
-                    key={`col-${colIdx}`}
-                    className="flex flex-col"
-                    style={{
-                      width: columnCount === 1 ? "100%" : `${BOX_WIDTH}px`,
-                      gap: `${GAP}px`,
-                    }}
-                  >
-                    {colItems.map((item) => {
-                      // Tutorial box
-                      if (item.type === "tutorial") {
-                        return (
-                          <div
-                            key={item.id}
-                            data-bento-id={item.id}
-                            style={getItemStyle(item.id)}
-                          >
-                            <TutorialBox isMobile={columnCount === 1} />
-                          </div>
-                        );
-                      }
-                      // Render NoteBox per box di tipo "note"
-                      if (item.boxType === "note") {
-                        return (
-                          <div
-                            key={item.id}
-                            data-bento-id={item.id}
-                            style={getItemStyle(item.id)}
-                          >
-                            <NoteBox
-                              title={item.title}
-                              content={item.content || ""}
-                              isPinned={item.isPinned || false}
-                              onPinToggle={() =>
-                                handleBoxPinToggle(item.id, item.isPinned)
-                              }
-                              onTitleChange={(newTitle) =>
-                                handleBoxTitleChange(item.id, newTitle)
-                              }
-                              onContentChange={(newContent) =>
-                                handleBoxContentChange(item.id, newContent)
-                              }
-                              onDelete={() => handleDeleteBox(item.id)}
-                            />
-                          </div>
-                        );
-                      }
-                      // Render PhotoBox per box di tipo "photo"
-                      if (item.boxType === "photo") {
-                        return (
-                          <div
-                            key={item.id}
-                            data-bento-id={item.id}
-                            style={getItemStyle(item.id)}
-                          >
-                            <PhotoBox
-                              projectId={project.id}
-                              title={item.title}
-                              photos={item.photos || []}
-                              isPinned={item.isPinned || false}
-                              onPinToggle={() =>
-                                handleBoxPinToggle(item.id, item.isPinned)
-                              }
-                              onTitleChange={(newTitle) =>
-                                handleBoxTitleChange(item.id, newTitle)
-                              }
-                              onPhotosChange={(newPhotos) =>
-                                handlePhotosChange(item.id, newPhotos)
-                              }
-                              onDelete={() => handleDeleteBox(item.id)}
-                            />
-                          </div>
-                        );
-                      }
-                      // Render FileBox per box di tipo "file"
-                      if (item.boxType === "file") {
-                        return (
-                          <div
-                            key={item.id}
-                            data-bento-id={item.id}
-                            style={getItemStyle(item.id)}
-                          >
-                            <FileBox
-                              projectId={project.id}
-                              title={item.title}
-                              files={item.files || []}
-                              isPinned={item.isPinned || false}
-                              onPinToggle={() =>
-                                handleBoxPinToggle(item.id, item.isPinned)
-                              }
-                              onTitleChange={(newTitle) =>
-                                handleBoxTitleChange(item.id, newTitle)
-                              }
-                              onFilesChange={(newFiles) =>
-                                handleFilesChange(item.id, newFiles)
-                              }
-                              onDelete={() => handleDeleteBox(item.id)}
-                            />
-                          </div>
-                        );
-                      }
-                      // Render BaseBentoBox per box generici (fallback)
-                      return (
-                        <div
-                          key={item.id}
-                          data-bento-id={item.id}
-                          style={getItemStyle(item.id)}
-                        >
-                          <BaseBentoBox
-                            title={item.title}
-                            isPinned={item.isPinned || false}
-                            onPinToggle={() =>
-                              handleBoxPinToggle(item.id, item.isPinned)
-                            }
-                            onTitleChange={(newTitle) =>
-                              handleBoxTitleChange(item.id, newTitle)
-                            }
-                            onDelete={() => handleDeleteBox(item.id)}
-                          >
-                            <div className="flex flex-col items-center justify-center py-8 text-center text-text-muted">
-                              <span className="text-2xl mb-2 opacity-50">
-                                📦
-                              </span>
-                              <span className="text-xs">Box generico</span>
-                            </div>
-                          </BaseBentoBox>
+                {/* Renderizza tutti i box in un contenitore flat usando flatItems */}
+                {flatItems.map((item) => {
+                  // Calcola la posizione left basandosi sulla colonna
+                  const left =
+                    columnCount === 1
+                      ? 0
+                      : item.columnIndex * (BOX_WIDTH + GAP);
+
+                  // Stile per posizionare il box con posizione assoluta
+                  const itemStyle = {
+                    ...getItemStyle(item.id),
+                    position: "absolute",
+                    top: item.top,
+                    left: left,
+                    width: columnCount === 1 ? "100%" : BOX_WIDTH,
+                  };
+
+                  // Tutorial box
+                  if (item.type === "tutorial") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <TutorialBox isMobile={columnCount === 1} />
+                      </div>
+                    );
+                  }
+                  // Render NoteBox per box di tipo "note"
+                  if (item.boxType === "note") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <NoteBox
+                          title={item.title}
+                          content={item.content || ""}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
+                          }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onContentChange={(newContent) =>
+                            handleBoxContentChange(item.id, newContent)
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
+                        />
+                      </div>
+                    );
+                  }
+                  // Render PhotoBox per box di tipo "photo"
+                  if (item.boxType === "photo") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <PhotoBox
+                          projectId={project.id}
+                          title={item.title}
+                          photos={item.photos || []}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
+                          }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onPhotosChange={(newPhotos) =>
+                            handlePhotosChange(item.id, newPhotos)
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
+                        />
+                      </div>
+                    );
+                  }
+                  // Render FileBox per box di tipo "file"
+                  if (item.boxType === "file") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <FileBox
+                          projectId={project.id}
+                          title={item.title}
+                          files={item.files || []}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
+                          }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onFilesChange={(newFiles) =>
+                            handleFilesChange(item.id, newFiles)
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
+                        />
+                      </div>
+                    );
+                  }
+                  // Render BaseBentoBox per box generici (fallback)
+                  return (
+                    <div
+                      key={item.id}
+                      data-bento-id={item.id}
+                      style={itemStyle}
+                    >
+                      <BaseBentoBox
+                        title={item.title}
+                        isPinned={item.isPinned || false}
+                        onPinToggle={() =>
+                          handleBoxPinToggle(item.id, item.isPinned)
+                        }
+                        onTitleChange={(newTitle) =>
+                          handleBoxTitleChange(item.id, newTitle)
+                        }
+                        onDelete={() => handleDeleteBox(item.id)}
+                      >
+                        <div className="flex flex-col items-center justify-center py-8 text-center text-text-muted">
+                          <span className="text-2xl mb-2 opacity-50">📦</span>
+                          <span className="text-xs">Box generico</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                      </BaseBentoBox>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
