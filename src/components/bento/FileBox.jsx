@@ -286,22 +286,31 @@ const FileBox = ({
             ))}
           </div>
         ) : (
-          // Stato vuoto - messaggio senza pulsante
-          <div
+          // Stato vuoto - uniforme
+          <button
+            onClick={() => {
+              setUploadResetKey((k) => k + 1);
+              setIsUploadModalOpen(true);
+            }}
             className="
-              w-full py-4
-              flex flex-col items-center justify-center gap-2
+              w-full py-6
+              flex flex-col items-center justify-center gap-3
               text-text-muted
+              hover:text-primary
+              transition-colors duration-200
+              group
             "
           >
-            <div className="w-12 h-12 rounded-full bg-bg-tertiary flex items-center justify-center">
-              <FolderIcon className="w-6 h-6" />
+            <div className="w-14 h-14 rounded-full bg-bg-tertiary group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+              <FolderIcon className="w-7 h-7" />
             </div>
-            <span className="text-xs font-medium">Nessun file</span>
-            <span className="text-xs text-text-muted/70">
-              Usa il menu per aggiungere file
-            </span>
-          </div>
+            <div className="text-center">
+              <p className="text-sm font-medium">Aggiungi file</p>
+              <p className="text-xs text-text-muted/70 mt-0.5">
+                Tocca per caricare
+              </p>
+            </div>
+          </button>
         )}
       </BaseBentoBox>
 

@@ -79,6 +79,68 @@ const ProjectPage = ({
     return () => unsubscribe();
   }, [project?.id]);
 
+  // Auto-delete: elimina i box vuoti dopo 10 minuti dalla creazione
+  useEffect(() => {
+    if (!project?.id || bentoBoxes.length === 0) return;
+
+    const TEN_MINUTES = 10 * 60 * 1000; // 10 minuti in ms
+
+    // Funzione per verificare se un box è vuoto
+    const isBoxEmpty = (box) => {
+      if (box.boxType === "note") {
+        return !box.content || box.content.trim().length === 0;
+      }
+      if (box.boxType === "photo") {
+        return !box.photos || box.photos.length === 0;
+      }
+      if (box.boxType === "file") {
+        return !box.files || box.files.length === 0;
+      }
+      return false; // Non eliminare box di tipo sconosciuto
+    };
+
+    // Controlla ogni minuto se ci sono box vuoti da eliminare
+    const checkAndDeleteEmptyBoxes = async () => {
+      const now = Date.now();
+
+      for (const box of bentoBoxes) {
+        // Salta i box pinnati
+        if (box.isPinned) continue;
+
+        // Verifica se il box è vuoto
+        if (!isBoxEmpty(box)) continue;
+
+        // Ottieni il timestamp di creazione
+        const createdAt = box.createdAt?.toDate?.() || box.createdAt;
+        if (!createdAt) continue;
+
+        const createdTime =
+          createdAt instanceof Date
+            ? createdAt.getTime()
+            : new Date(createdAt).getTime();
+        const elapsed = now - createdTime;
+
+        // Se sono passati più di 10 minuti, elimina il box
+        if (elapsed > TEN_MINUTES) {
+          try {
+            await deleteBentoBox(project.id, box.id);
+            console.log(
+              `Box vuoto "${box.title}" eliminato automaticamente dopo 10 minuti`
+            );
+          } catch (error) {
+            console.error("Errore eliminazione automatica box:", error);
+          }
+        }
+      }
+    };
+
+    // Controlla subito e poi ogni minuto
+    checkAndDeleteEmptyBoxes();
+    const intervalId = setInterval(checkAndDeleteEmptyBoxes, 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [project?.id, bentoBoxes]);
+
   // Funzione per aggiungere una nota (salva nel database)
   // Il listener onSnapshot aggiornerà automaticamente lo stato
   const handleAddNote = async () => {

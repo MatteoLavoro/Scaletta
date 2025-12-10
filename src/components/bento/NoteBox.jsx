@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PencilIcon, FileTextIcon, PlusIcon } from "../icons";
+import { PencilIcon, FileTextIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { InputModal } from "../modal";
 
@@ -64,7 +64,7 @@ const NoteBox = ({
         onTitleChange={onTitleChange}
         onDelete={onDelete}
         menuItems={noteMenuItems}
-        minHeight={hasContent ? undefined : 120}
+        minHeight={hasContent ? undefined : 150}
       >
         {hasContent ? (
           // Riquadro contenente la nota
@@ -74,21 +74,27 @@ const NoteBox = ({
             </p>
           </div>
         ) : (
-          // Mostra tasto per aggiungere la nota
+          // Stato vuoto - uniforme
           <button
             onClick={() => setIsEditNoteOpen(true)}
             className="
-              w-full py-4
-              flex flex-col items-center justify-center gap-2
+              w-full py-6
+              flex flex-col items-center justify-center gap-3
               text-text-muted
               hover:text-primary
               transition-colors duration-200
+              group
             "
           >
-            <div className="w-12 h-12 rounded-full bg-bg-tertiary flex items-center justify-center">
-              <PlusIcon className="w-6 h-6" />
+            <div className="w-14 h-14 rounded-full bg-bg-tertiary group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+              <FileTextIcon className="w-7 h-7" />
             </div>
-            <span className="text-xs font-medium">Aggiungi nota</span>
+            <div className="text-center">
+              <p className="text-sm font-medium">Scrivi una nota</p>
+              <p className="text-xs text-text-muted/70 mt-0.5">
+                Tocca per iniziare
+              </p>
+            </div>
           </button>
         )}
       </BaseBentoBox>
