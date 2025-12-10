@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PencilIcon, FileTextIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { InputModal } from "../modal";
@@ -17,6 +17,7 @@ import { InputModal } from "../modal";
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onContentChange - Callback per cambiare il contenuto
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onModalStateChange - Callback quando il modal di inserimento si apre/chiude
  */
 const NoteBox = ({
   title = "Nota",
@@ -26,8 +27,14 @@ const NoteBox = ({
   onTitleChange,
   onContentChange,
   onDelete,
+  onModalStateChange,
 }) => {
   const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
+
+  // Notifica il parent quando il modal si apre/chiude
+  useEffect(() => {
+    onModalStateChange?.(isEditNoteOpen);
+  }, [isEditNoteOpen, onModalStateChange]);
 
   // Menu aggiuntivo per il box nota
   const noteMenuItems = [

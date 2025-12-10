@@ -21,6 +21,7 @@ export { default as InfoIcon } from "./InfoIcon";
 export { default as ListChecksIcon } from "./ListChecksIcon";
 export { default as LogOutIcon } from "./LogOutIcon";
 export { default as MoonIcon } from "./MoonIcon";
+export { default as MoreHorizontalIcon } from "./MoreHorizontalIcon";
 export { default as MoreVerticalIcon } from "./MoreVerticalIcon";
 export { default as PencilIcon } from "./PencilIcon";
 export { default as PinIcon } from "./PinIcon";

@@ -436,6 +436,17 @@ export const updateBentoBoxFiles = async (projectId, boxId, files) => {
 };
 
 /**
+ * Aggiorna gli items di un bento box checklist (ChecklistBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {array} items - Array di items { id, text, completed }
+ */
+export const updateBentoBoxChecklistItems = async (projectId, boxId, items) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { checklistItems: items });
+};
+
+/**
  * Aggiorna lo stato pin di un bento box
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box

@@ -6,3 +6,4 @@ export { default as ConfirmModal } from "./ConfirmModal";
 export { default as InputModal } from "./InputModal";
 export { default as UploadModal } from "./UploadModal";
 export { default as FileUploadModal } from "./FileUploadModal";
+export { default as MoreBoxesModal } from "./MoreBoxesModal";

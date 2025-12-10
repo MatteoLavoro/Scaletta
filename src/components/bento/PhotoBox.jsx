@@ -60,6 +60,7 @@ const useImagePreload = (photos) => {
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPhotosChange - Callback quando cambiano le foto
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onModalStateChange - Callback quando il modal di upload si apre/chiude
  */
 const PhotoBox = ({
   projectId,
@@ -70,6 +71,7 @@ const PhotoBox = ({
   onTitleChange,
   onPhotosChange,
   onDelete,
+  onModalStateChange,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -80,6 +82,11 @@ const PhotoBox = ({
   const [isDeletePhotoConfirmOpen, setIsDeletePhotoConfirmOpen] =
     useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
+
+  // Notifica il parent quando il modal di upload si apre/chiude
+  useEffect(() => {
+    onModalStateChange?.(isUploadModalOpen);
+  }, [isUploadModalOpen, onModalStateChange]);
 
   // Precarica tutte le immagini per scrolling fluido
   const loadedUrls = useImagePreload(photos);

@@ -12,10 +12,12 @@ import {
   NoteBox,
   PhotoBox,
   FileBox,
+  ChecklistBox,
   BaseBentoBox,
   TutorialBox,
   CameraFab,
 } from "../components/bento";
+import { MoreBoxesModal } from "../components/modal";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import {
   createBentoBox,
@@ -23,6 +25,7 @@ import {
   updateBentoBoxContent,
   updateBentoBoxPhotos,
   updateBentoBoxFiles,
+  updateBentoBoxChecklistItems,
   updateBentoBoxPin,
   deleteBentoBox,
   subscribeToBentoBoxes,
@@ -56,12 +59,33 @@ const ProjectPage = ({
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isMoreBoxesModalOpen, setIsMoreBoxesModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
 
   // Stato per i bento box del progetto
   const [bentoBoxes, setBentoBoxes] = useState([]);
+
+  // Traccia i box con modal di inserimento aperto (per prevenire auto-delete)
+  const [boxesWithOpenModal, setBoxesWithOpenModal] = useState(new Set());
+  // Traccia quando un box ha chiuso il modal (per resettare il timer)
+  const boxModalClosedAtRef = useRef(new Map()); // boxId -> timestamp
+
+  // Callback per segnalare quando un box apre/chiude il suo modal di inserimento
+  const handleBoxModalStateChange = useCallback((boxId, isOpen) => {
+    if (isOpen) {
+      setBoxesWithOpenModal((prev) => new Set([...prev, boxId]));
+    } else {
+      setBoxesWithOpenModal((prev) => {
+        const next = new Set(prev);
+        next.delete(boxId);
+        return next;
+      });
+      // Registra quando il modal è stato chiuso per resettare il timer
+      boxModalClosedAtRef.current.set(boxId, Date.now());
+    }
+  }, []);
 
   // Sottoscrizione in tempo reale ai bento boxes
   useEffect(() => {
@@ -79,11 +103,13 @@ const ProjectPage = ({
     return () => unsubscribe();
   }, [project?.id]);
 
-  // Auto-delete: elimina i box vuoti dopo 10 minuti dalla creazione
+  // Auto-delete: elimina i box vuoti dopo 1 minuto dalla creazione
+  // Il timer si resetta quando il modal di inserimento viene chiuso
+  // Il timer è in pausa mentre il modal è aperto
   useEffect(() => {
     if (!project?.id || bentoBoxes.length === 0) return;
 
-    const TEN_MINUTES = 60 * 1000; // 1 minuto in ms
+    const ONE_MINUTE = 60 * 1000; // 1 minuto in ms
 
     // Funzione per verificare se un box è vuoto
     const isBoxEmpty = (box) => {
@@ -96,10 +122,13 @@ const ProjectPage = ({
       if (box.boxType === "file") {
         return !box.files || box.files.length === 0;
       }
+      if (box.boxType === "checklist") {
+        return !box.checklistItems || box.checklistItems.length === 0;
+      }
       return false; // Non eliminare box di tipo sconosciuto
     };
 
-    // Controlla ogni minuto se ci sono box vuoti da eliminare
+    // Controlla ogni 10 secondi se ci sono box vuoti da eliminare
     const checkAndDeleteEmptyBoxes = async () => {
       const now = Date.now();
 
@@ -107,25 +136,39 @@ const ProjectPage = ({
         // Salta i box pinnati
         if (box.isPinned) continue;
 
+        // Salta i box con modal aperto (timer in pausa)
+        if (boxesWithOpenModal.has(box.id)) continue;
+
         // Verifica se il box è vuoto
         if (!isBoxEmpty(box)) continue;
 
-        // Ottieni il timestamp di creazione
-        const createdAt = box.createdAt?.toDate?.() || box.createdAt;
-        if (!createdAt) continue;
+        // Determina il timestamp di riferimento per il timer
+        // Se il modal è stato chiuso di recente, usa quel timestamp (timer resettato)
+        // Altrimenti usa il timestamp di creazione
+        const modalClosedAt = boxModalClosedAtRef.current.get(box.id);
 
-        const createdTime =
-          createdAt instanceof Date
-            ? createdAt.getTime()
-            : new Date(createdAt).getTime();
-        const elapsed = now - createdTime;
+        let referenceTime;
+        if (modalClosedAt) {
+          referenceTime = modalClosedAt;
+        } else {
+          const createdAt = box.createdAt?.toDate?.() || box.createdAt;
+          if (!createdAt) continue;
+          referenceTime =
+            createdAt instanceof Date
+              ? createdAt.getTime()
+              : new Date(createdAt).getTime();
+        }
 
-        // Se sono passati più di 10 minuti, elimina il box
-        if (elapsed > TEN_MINUTES) {
+        const elapsed = now - referenceTime;
+
+        // Se è passato più di 1 minuto, elimina il box
+        if (elapsed > ONE_MINUTE) {
           try {
             await deleteBentoBox(project.id, box.id);
+            // Pulisci il riferimento del modal chiuso
+            boxModalClosedAtRef.current.delete(box.id);
             console.log(
-              `Box vuoto "${box.title}" eliminato automaticamente dopo 10 minuti`
+              `Box vuoto "${box.title}" eliminato automaticamente dopo 1 minuto`
             );
           } catch (error) {
             console.error("Errore eliminazione automatica box:", error);
@@ -134,12 +177,12 @@ const ProjectPage = ({
       }
     };
 
-    // Controlla subito e poi ogni minuto
+    // Controlla subito e poi ogni 10 secondi (per essere più reattivi)
     checkAndDeleteEmptyBoxes();
-    const intervalId = setInterval(checkAndDeleteEmptyBoxes, 60 * 1000);
+    const intervalId = setInterval(checkAndDeleteEmptyBoxes, 10 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [project?.id, bentoBoxes]);
+  }, [project?.id, bentoBoxes, boxesWithOpenModal]);
 
   // Funzione per aggiungere una nota (salva nel database)
   // Il listener onSnapshot aggiornerà automaticamente lo stato
@@ -194,6 +237,23 @@ const ProjectPage = ({
     }
   };
 
+  // Funzione per aggiungere un ChecklistBox
+  const handleAddChecklist = async () => {
+    if (!project?.id) return;
+
+    try {
+      const checklistCount =
+        bentoBoxes.filter((b) => b.boxType === "checklist").length + 1;
+      await createBentoBox(project.id, {
+        title: `Checklist ${checklistCount}`,
+        boxType: "checklist",
+        checklistItems: [],
+      });
+    } catch (error) {
+      console.error("Errore creazione checklist box:", error);
+    }
+  };
+
   // Funzione per gestire la foto dalla fotocamera
   // Crea un nuovo PhotoBox con la foto scattata
   const handleCameraCapture = async (file) => {
@@ -235,6 +295,17 @@ const ProjectPage = ({
       await updateBentoBoxFiles(project.id, boxId, newFiles);
     } catch (error) {
       console.error("Errore aggiornamento file:", error);
+    }
+  };
+
+  // Funzione per aggiornare gli items di un ChecklistBox
+  const handleChecklistItemsChange = async (boxId, newItems) => {
+    if (!project?.id) return;
+
+    try {
+      await updateBentoBoxChecklistItems(project.id, boxId, newItems);
+    } catch (error) {
+      console.error("Errore aggiornamento checklist:", error);
     }
   };
 
@@ -554,6 +625,9 @@ const ProjectPage = ({
                             handleBoxContentChange(item.id, newContent)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onModalStateChange={(isOpen) =>
+                            handleBoxModalStateChange(item.id, isOpen)
+                          }
                         />
                       </div>
                     );
@@ -581,6 +655,9 @@ const ProjectPage = ({
                             handlePhotosChange(item.id, newPhotos)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onModalStateChange={(isOpen) =>
+                            handleBoxModalStateChange(item.id, isOpen)
+                          }
                         />
                       </div>
                     );
@@ -608,6 +685,38 @@ const ProjectPage = ({
                             handleFilesChange(item.id, newFiles)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onModalStateChange={(isOpen) =>
+                            handleBoxModalStateChange(item.id, isOpen)
+                          }
+                        />
+                      </div>
+                    );
+                  }
+                  // Render ChecklistBox per box di tipo "checklist"
+                  if (item.boxType === "checklist") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <ChecklistBox
+                          title={item.title}
+                          items={item.checklistItems || []}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
+                          }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onItemsChange={(newItems) =>
+                            handleChecklistItemsChange(item.id, newItems)
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
+                          onModalStateChange={(isOpen) =>
+                            handleBoxModalStateChange(item.id, isOpen)
+                          }
                         />
                       </div>
                     );
@@ -649,6 +758,7 @@ const ProjectPage = ({
             onAddNote={handleAddNote}
             onAddPhoto={handleAddPhoto}
             onAddFile={handleAddFile}
+            onMoreClick={() => setIsMoreBoxesModalOpen(true)}
           />
         )}
 
@@ -658,6 +768,7 @@ const ProjectPage = ({
             onAddNote={handleAddNote}
             onAddPhoto={handleAddPhoto}
             onAddFile={handleAddFile}
+            onMoreClick={() => setIsMoreBoxesModalOpen(true)}
           />
         )}
 
@@ -686,6 +797,13 @@ const ProjectPage = ({
         onClose={() => setIsStatusModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
+      />
+
+      {/* Modale altri box */}
+      <MoreBoxesModal
+        isOpen={isMoreBoxesModalOpen}
+        onClose={() => setIsMoreBoxesModalOpen(false)}
+        onAddChecklist={handleAddChecklist}
       />
     </>
   );

@@ -1,4 +1,10 @@
-import { PlusIcon, FileTextIcon, ImageIcon, FolderIcon } from "../icons";
+import {
+  PlusIcon,
+  FileTextIcon,
+  ImageIcon,
+  FolderIcon,
+  MoreHorizontalIcon,
+} from "../icons";
 import { BOX_WIDTH } from "../../hooks/useColumnCount";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -52,8 +58,14 @@ const AddBentoBoxButton = ({
  * @param {function} onAddNote - Handler per aggiungere una nota
  * @param {function} onAddPhoto - Handler per aggiungere una foto
  * @param {function} onAddFile - Handler per aggiungere un file
+ * @param {function} onMoreClick - Handler per aprire il menu "Altro"
  */
-export const DesktopAddFab = ({ onAddNote, onAddPhoto, onAddFile }) => {
+export const DesktopAddFab = ({
+  onAddNote,
+  onAddPhoto,
+  onAddFile,
+  onMoreClick,
+}) => {
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema del profilo
@@ -172,22 +184,32 @@ export const DesktopAddFab = ({ onAddNote, onAddPhoto, onAddFile }) => {
           <span className="text-xs font-semibold tracking-wide">File</span>
         </button>
 
-        {/* Coming soon */}
-        <div
+        {/* Altro */}
+        <button
+          onClick={onMoreClick}
           className="
             flex flex-col items-center justify-center gap-1.5
             rounded-xl
             py-3 px-2
-            cursor-not-allowed
+            transition-all duration-200
+            hover:scale-[1.02] active:scale-[0.98]
+            shadow-sm
           "
           style={{
-            backgroundColor: disabledBgColor,
-            color: disabledTextColor,
+            backgroundColor: buttonBgColor,
+            color: buttonTextColor,
           }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonHoverBg)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonBgColor)
+          }
+          aria-label="Altri box"
         >
-          <PlusIcon className="w-6 h-6" />
-          <span className="text-xs font-semibold tracking-wide">Soon</span>
-        </div>
+          <MoreHorizontalIcon className="w-6 h-6" />
+          <span className="text-xs font-semibold tracking-wide">Altro</span>
+        </button>
       </div>
     </div>
   );
@@ -200,8 +222,14 @@ export const DesktopAddFab = ({ onAddNote, onAddPhoto, onAddFile }) => {
  * @param {function} onAddNote - Handler per aggiungere una nota
  * @param {function} onAddPhoto - Handler per aggiungere una foto
  * @param {function} onAddFile - Handler per aggiungere un file
+ * @param {function} onMoreClick - Handler per aprire il menu "Altro"
  */
-export const MobileAddFab = ({ onAddNote, onAddPhoto, onAddFile }) => {
+export const MobileAddFab = ({
+  onAddNote,
+  onAddPhoto,
+  onAddFile,
+  onMoreClick,
+}) => {
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema del profilo
@@ -327,22 +355,32 @@ export const MobileAddFab = ({ onAddNote, onAddPhoto, onAddFile }) => {
           <span className="text-xs font-semibold tracking-wide">File</span>
         </button>
 
-        {/* Bottone disabilitato - Coming soon */}
-        <div
+        {/* Altro */}
+        <button
+          onClick={onMoreClick}
           className="
             flex flex-col items-center justify-center gap-1.5
             rounded-xl
             py-3 px-2
-            cursor-not-allowed
+            transition-all duration-200
+            hover:scale-[1.02] active:scale-[0.98]
+            shadow-sm
           "
           style={{
-            backgroundColor: disabledBgColor,
-            color: disabledTextColor,
+            backgroundColor: buttonBgColor,
+            color: buttonTextColor,
           }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonHoverBg)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonBgColor)
+          }
+          aria-label="Altri box"
         >
-          <PlusIcon className="w-6 h-6" />
-          <span className="text-xs font-semibold tracking-wide">Soon</span>
-        </div>
+          <MoreHorizontalIcon className="w-6 h-6" />
+          <span className="text-xs font-semibold tracking-wide">Altro</span>
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { PlusIcon, DownloadIcon, TrashIcon, FolderIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { FileUploadModal } from "../modal";
@@ -123,6 +123,7 @@ const FileRow = ({ file, onDownload, onDelete, primaryColor }) => {
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onFilesChange - Callback quando cambiano i file
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onModalStateChange - Callback quando il modal di upload si apre/chiude
  */
 const FileBox = ({
   projectId,
@@ -133,6 +134,7 @@ const FileBox = ({
   onTitleChange,
   onFilesChange,
   onDelete,
+  onModalStateChange,
 }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadResetKey, setUploadResetKey] = useState(0);
@@ -144,6 +146,11 @@ const FileBox = ({
   const completedFilesRef = useRef([]);
 
   const { colors, accentColor, isDark } = useTheme();
+
+  // Notifica il parent quando il modal di upload si apre/chiude
+  useEffect(() => {
+    onModalStateChange?.(isUploadModalOpen);
+  }, [isUploadModalOpen, onModalStateChange]);
 
   // Ottieni il colore primario del tema
   const themeColors =
