@@ -55,18 +55,17 @@ Ogni Bento Box ha una struttura standard:
 
 ```
 ┌────────────────────────────────────┐
-│  Titolo (centrato)           [⋮]  │  ← Header con titolo e kebab menu
+│ [📌]  Titolo (centrato)    [⋮]  │  ← Header con pin, titolo e kebab menu
 ├────────────────────────────────────┤  ← Divider
 │                                    │
 │         Contenuto                  │  ← Area contenuto (varia per tipo)
 │                                    │
-├────────────────────────────────────┤  ← Divider (opzionale)
-│  [ Azione 1 ]  [ Azione 2 ]        │  ← Azioni rapide (opzionali)
 └────────────────────────────────────┘
 ```
 
 ### Header
 
+- **Pin Button**: A sinistra, colore tema quando attivo
 - **Titolo**: Centrato, testo semibold (max 50 caratteri)
 - **Kebab Menu**: A destra, in cerchietto grigio
   - Items specifici del tipo di box (in cima)
@@ -91,12 +90,14 @@ Ogni Bento Box ha una struttura standard:
 ```
 src/components/bento/
 ├── BENTO_BOX.md           # Questa documentazione
-├── BaseBentoBox.jsx       # Componente base per tutti i box
+├── BaseBentoBox.jsx       # Componente base per tutti i box (include Pin)
 ├── NoteBox.jsx            # Box per note testuali
 ├── PhotoBox.jsx           # Box per foto con carosello
+├── FileBox.jsx            # Box per file generici
 ├── TutorialBox.jsx        # Box tutorial (primo avvio)
-├── AddBentoBoxButton.jsx  # Griglia 2x2 per aggiungere box (desktop)
+├── AddBentoBoxButton.jsx  # Griglia per aggiungere box (desktop)
 │   └── MobileAddFab       # Barra flottante (mobile)
+├── CameraFab.jsx          # FAB per scattare foto (mobile)
 ├── BentoGrid.jsx          # Container griglia principale
 ├── BentoBox.jsx           # Box semplice generico
 ├── bentoConstants.js      # Costanti (altezze preset)
@@ -109,6 +110,7 @@ src/hooks/
 
 src/services/
 ├── photos.js              # Upload/delete foto Firebase Storage
+├── files.js               # Upload/delete file generici Firebase Storage
 └── projects.js            # CRUD bento boxes + eliminazione cascade
 ```
 
@@ -123,6 +125,8 @@ Il componente base che tutti i Bento Box specifici estendono.
 ```jsx
 <BaseBentoBox
   title="Note"
+  isPinned={false}
+  onPinToggle={() => handlePinToggle()}
   onTitleChange={(newTitle) => handleTitleChange(newTitle)}
   onDelete={() => handleDelete()}
   minHeight={120}
@@ -131,14 +135,6 @@ Il componente base che tutti i Bento Box specifici estendono.
       label: "Modifica nota",
       icon: <PencilIcon />,
       onClick: handleEdit,
-    },
-  ]}
-  actions={[
-    {
-      label: "Salva",
-      icon: <CheckIcon />,
-      variant: "primary",
-      onClick: handleSave,
     },
   ]}
 >
@@ -150,12 +146,13 @@ Il componente base che tutti i Bento Box specifici estendono.
 | Prop | Tipo | Default | Descrizione |
 |------|------|---------|-------------|
 | `title` | `string` | `"Box"` | Titolo del box (max 50 char) |
+| `isPinned` | `boolean` | `false` | Se il box è pinnato in alto |
+| `onPinToggle` | `function` | - | Callback toggle pin |
 | `onTitleChange` | `function` | - | Callback cambio titolo |
 | `onDelete` | `function` | - | Callback eliminazione |
 | `minHeight` | `number` | - | Altezza minima in pixel |
 | `children` | `node` | - | Contenuto del box |
 | `menuItems` | `array` | `[]` | Voci specifiche kebab menu |
-| `actions` | `array` | `[]` | Azioni rapide in fondo |
 | `className` | `string` | `""` | Classi CSS aggiuntive |
 
 ### NoteBox
@@ -211,9 +208,67 @@ Box specializzato per foto con carosello.
 | `projectId` | `string` | ID progetto per upload su Storage |
 | `title` | `string` | Titolo del box |
 | `photos` | `array` | Array di `{ id, url, name, storagePath }` |
+| `isPinned` | `boolean` | Se il box è pinnato |
+| `onPinToggle` | `function` | Callback toggle pin |
 | `onTitleChange` | `function` | Callback cambio titolo |
 | `onPhotosChange` | `function` | Callback quando cambiano foto |
 | `onDelete` | `function` | Callback eliminazione box |
+
+### FileBox
+
+Box specializzato per file di qualsiasi tipo.
+
+```jsx
+<FileBox
+  projectId="abc123"
+  title="Documenti"
+  files={[{ id, url, name, size, fileType, storagePath }, ...]}
+  isPinned={false}
+  onPinToggle={handlePinToggle}
+  onTitleChange={handleTitleChange}
+  onFilesChange={handleFilesChange}
+  onDelete={handleDelete}
+/>
+```
+
+**Caratteristiche:**
+
+- **Lista file**: Ogni file mostra nome, tipo e dimensione
+- **Tipi riconosciuti**: PDF, DOC, XLS, PPT, ZIP, AUDIO, VIDEO, CODE, CAD, 3D
+- **Tipi CAD**: DXF, DWG, DWF, DGN
+- **Tipi 3D**: STEP, STP, IGES, STL, OBJ, FBX, 3DS, GLTF, BLEND, SKP, ecc.
+- **Max file size**: 50MB per file
+- **Download**: Tasto colorato col tema
+- **Eliminazione**: Tasto rosso con conferma
+- **Upload multiplo**: Drag & drop o selezione file
+- **Progress individuale**: Ogni file ha la sua barra di progresso
+
+**Props:**
+| Prop | Tipo | Descrizione |
+|------|------|-------------|
+| `projectId` | `string` | ID progetto per upload su Storage |
+| `title` | `string` | Titolo del box |
+| `files` | `array` | Array di `{ id, url, name, size, fileType, storagePath }` |
+| `isPinned` | `boolean` | Se il box è pinnato |
+| `onPinToggle` | `function` | Callback toggle pin |
+| `onTitleChange` | `function` | Callback cambio titolo |
+| `onFilesChange` | `function` | Callback quando cambiano file |
+| `onDelete` | `function` | Callback eliminazione box |
+
+### CameraFab
+
+FAB (Floating Action Button) per scattare foto direttamente da mobile.
+
+```jsx
+<CameraFab onCapture={handleCameraCapture} />
+```
+
+**Caratteristiche:**
+
+- Visibile solo su mobile
+- Apre la fotocamera del dispositivo
+- Crea automaticamente un nuovo PhotoBox con la foto scattata
+- Usa colore tema del profilo
 
 ### TutorialBox
 
@@ -318,21 +373,28 @@ projects/
           └── {boxId}/
               ├── id: string
               ├── title: string
-              ├── boxType: "note" | "photo"
+              ├── boxType: "note" | "photo" | "file"
               ├── content: string         // Solo per NoteBox
               ├── photos: [               // Solo per PhotoBox
               │   { id, url, name, storagePath }
               │ ]
+              ├── files: [                // Solo per FileBox
+              │   { id, url, name, size, fileType, storagePath }
+              │ ]
+              ├── isPinned: boolean       // Se pinnato in alto
+              ├── pinnedAt: number        // Timestamp pin
               └── createdAt: timestamp
 ```
 
-### Struttura Storage (Foto)
+### Struttura Storage (Firebase Storage)
 
 ```
 projects/
   └── {projectId}/
-      └── photos/
-          └── {photoId}.{ext}
+      ├── photos/
+      │   └── {photoId}.{ext}
+      └── files/
+          └── {fileId}.{ext}
 ```
 
 ### Funzioni Service
@@ -348,10 +410,12 @@ createBentoBox(projectId, boxData) → box
 updateBentoBoxTitle(projectId, boxId, newTitle)
 updateBentoBoxContent(projectId, boxId, newContent)
 updateBentoBoxPhotos(projectId, boxId, photos)
+updateBentoBoxFiles(projectId, boxId, files)
+updateBentoBoxPin(projectId, boxId, isPinned, pinnedAt)
 deleteBentoBox(projectId, boxId)
 
 // Eliminazione cascade
-deleteProject(projectId)  // Elimina anche foto da Storage
+deleteProject(projectId)  // Elimina anche foto/file da Storage
 ```
 
 ```javascript
@@ -371,6 +435,28 @@ deletePhotos(photos[])
 validateImageFile(file) → { valid, error? }
 ```
 
+```javascript
+// services/files.js
+
+// Upload singolo con progress
+uploadFile(projectId, file, onProgress) → { id, url, name, size, fileType, storagePath }
+
+// Upload multiplo (in parallelo)
+uploadFiles(projectId, files, onProgress, onFileUploaded) → files[]
+
+// Eliminazione
+deleteFile(storagePath)
+deleteFiles(files[])
+
+// Download
+downloadFile(url, filename)
+
+// Utility
+validateFile(file) → { valid, error? }
+getFileType(filename) → string  // PDF, DOC, CAD, 3D, ecc.
+formatFileSize(bytes) → string  // "1.5 MB"
+```
+
 ---
 
 ## Tipi di Box (Roadmap)
@@ -379,10 +465,10 @@ validateImageFile(file) → { valid, error? }
 | ------------------- | --------- | ------------------------ |
 | 📝 **NoteBox**      | ✅ Attivo | Note testuali            |
 | 🖼️ **PhotoBox**     | ✅ Attivo | Foto con carosello       |
+| 📁 **FileBox**      | ✅ Attivo | File generici (max 50MB) |
 | ✅ **ChecklistBox** | 🔜 Futuro | Liste di task            |
 | 🔗 **LinkBox**      | 🔜 Futuro | Link esterni con preview |
 | 👤 **ContactBox**   | 🔜 Futuro | Anagrafiche persone      |
-| 📄 **FileBox**      | 🔜 Futuro | Documenti generici       |
 
 ---
 
@@ -398,6 +484,16 @@ validateImageFile(file) → { valid, error? }
 ---
 
 ## Changelog
+
+### v1.5.0 (Dicembre 2025)
+
+- 📁 **FileBox**: Nuovo tipo di box per file generici
+- 📌 **Sistema Pin**: Fissa box importanti in alto
+- 📷 **CameraFab**: Scatta foto direttamente da mobile
+- 🗑️ **Auto-delete**: Box vuoti eliminati dopo 10 minuti
+- 🎯 **Empty states uniformi**: UI coerente per tutti i box vuoti
+- 🛠️ Tipi file CAD (DXF, DWG) e 3D (STEP, STL, OBJ, ecc.)
+- 📊 Progress bar individuale per ogni file in upload
 
 ### v1.4.0 (Dicembre 2025)
 

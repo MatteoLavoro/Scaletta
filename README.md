@@ -42,8 +42,12 @@
 - **Algoritmo "shortest column first"**: Distribuzione ottimale
 - **Animazioni FLIP**: Transizioni fluide
 - **Sincronizzazione real-time**: Modifiche istantanee tra dispositivi
+- **Sistema Pin**: Fissa i box importanti in alto
+- **Auto-delete**: Box vuoti eliminati dopo 10 minuti
 - **NoteBox**: Note testuali con editor
 - **PhotoBox**: Carosello foto con upload multiplo e drag & drop
+- **FileBox**: File di qualsiasi tipo (CAD, 3D, documenti, max 50MB)
+- **CameraFab**: Scatta foto direttamente da mobile
 
 ### Personalizzazione
 
@@ -79,11 +83,11 @@ firebase deploy
 src/
 ├── components/
 │   ├── auth/        # Autenticazione
-│   ├── bento/       # Sistema Bento Box (NoteBox, PhotoBox, ecc.)
+│   ├── bento/       # Sistema Bento Box (NoteBox, PhotoBox, FileBox, ecc.)
 │   ├── form/        # Componenti form
 │   ├── groups/      # Sistema gruppi
 │   ├── icons/       # Wrapper icone Lucide
-│   ├── modal/       # Sistema modale
+│   ├── modal/       # Sistema modale (Modal, InputModal, UploadModal, FileUploadModal)
 │   ├── profile/     # Profilo utente
 │   ├── projects/    # Sistema progetti
 │   ├── pwa/         # Installazione PWA
@@ -91,7 +95,7 @@ src/
 ├── contexts/        # React contexts (Auth, Modal, Theme)
 ├── hooks/           # Custom hooks (useBentoAnimation, useColumnCount, ecc.)
 ├── pages/           # Pagine app (Dashboard, ProjectPage, ecc.)
-├── services/        # Firebase services (auth, groups, projects, photos)
+├── services/        # Firebase services (auth, groups, projects, photos, files)
 └── utils/           # Utility functions (validation, colors, statuses)
 ```
 

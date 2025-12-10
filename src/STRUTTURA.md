@@ -26,8 +26,10 @@
 | `BaseBentoBox.jsx`      | Componente base per tutti i tipi di box       |
 | `NoteBox.jsx`           | Box per note testuali                         |
 | `PhotoBox.jsx`          | Box per foto con carosello                    |
+| `FileBox.jsx`           | Box per file di qualsiasi tipo                |
 | `TutorialBox.jsx`       | Box tutorial (primo avvio)                    |
 | `AddBentoBoxButton.jsx` | Griglia 2x2 per aggiungere box + MobileAddFab |
+| `CameraFab.jsx`         | FAB per scattare foto da mobile               |
 | `BentoGrid.jsx`         | Container griglia principale                  |
 | `BentoBox.jsx`          | Box semplice generico                         |
 | `bentoConstants.js`     | Costanti (altezze preset)                     |
@@ -75,16 +77,17 @@
 
 ### `modal/` - Sistema Modale
 
-| File               | Descrizione                                             |
-| ------------------ | ------------------------------------------------------- |
-| `Modal.jsx`        | Modale principale (mobile fullscreen, desktop centrato) |
-| `ModalHeader.jsx`  | Header con titolo e tasto chiudi                        |
-| `ModalFooter.jsx`  | Footer con bottone conferma (desktop)                   |
-| `ModalFab.jsx`     | FAB conferma fluttuante (mobile)                        |
-| `ConfirmModal.jsx` | Modale di conferma con box colorata                     |
-| `InputModal.jsx`   | Modale di input con validazione e exactLength           |
-| `UploadModal.jsx`  | Modale upload file con drag & drop e preview            |
-| `index.js`         | Export pubblici                                         |
+| File                   | Descrizione                                             |
+| ---------------------- | ------------------------------------------------------- |
+| `Modal.jsx`            | Modale principale (mobile fullscreen, desktop centrato) |
+| `ModalHeader.jsx`      | Header con titolo e tasto chiudi                        |
+| `ModalFooter.jsx`      | Footer con bottone conferma (desktop)                   |
+| `ModalFab.jsx`         | FAB conferma fluttuante (mobile)                        |
+| `ConfirmModal.jsx`     | Modale di conferma con box colorata                     |
+| `InputModal.jsx`       | Modale di input con validazione e exactLength           |
+| `UploadModal.jsx`      | Modale upload foto con drag & drop e preview            |
+| `FileUploadModal.jsx`  | Modale upload file generici con drag & drop             |
+| `index.js`             | Export pubblici                                         |
 
 ### `profile/` - Componenti Profilo
 
@@ -132,6 +135,7 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 | `AlertTriangleIcon.jsx` | Icona alert triangolo          |
 | `ArchiveIcon.jsx`       | Archivio                       |
 | `ArrowLeftIcon.jsx`     | Freccia indietro               |
+| `CameraIcon.jsx`        | Fotocamera                     |
 | `CheckIcon.jsx`         | Spunta                         |
 | `CheckCircleIcon.jsx`   | Spunta in cerchio (completato) |
 | `ChevronDownIcon.jsx`   | Freccia giù                    |
@@ -144,6 +148,7 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 | `EyeIcon.jsx`           | Occhio (mostra)                |
 | `EyeOffIcon.jsx`        | Occhio barrato (nascondi)      |
 | `FileTextIcon.jsx`      | File documento                 |
+| `FolderIcon.jsx`        | Cartella (file)                |
 | `ImageIcon.jsx`         | Immagine                       |
 | `InfoIcon.jsx`          | Info cerchio                   |
 | `ListChecksIcon.jsx`    | Lista checklist                |
@@ -151,6 +156,7 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 | `MoonIcon.jsx`          | Luna (tema scuro)              |
 | `MoreVerticalIcon.jsx`  | Tre puntini verticali (kebab)  |
 | `PencilIcon.jsx`        | Matita (modifica)              |
+| `PinIcon.jsx`           | Puntina (pin)                  |
 | `PlayIcon.jsx`          | Play (in corso)                |
 | `PlusIcon.jsx`          | Più                            |
 | `SettingsIcon.jsx`      | Ingranaggio                    |
@@ -206,8 +212,9 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 | `config.js`   | Configurazione Firebase                                                 |
 | `auth.js`     | Funzioni auth (login, register, logout, updateUsername)                 |
 | `groups.js`   | Funzioni CRUD gruppi (crea, unisciti, esci, elimina con cascade)        |
-| `projects.js` | Funzioni CRUD progetti + bento boxes (con eliminazione foto automatica) |
+| `projects.js` | Funzioni CRUD progetti + bento boxes (con eliminazione foto/file automatica) |
 | `photos.js`   | Upload/delete foto Firebase Storage con progress                        |
+| `files.js`    | Upload/delete file generici Firebase Storage (CAD, 3D, documenti, ecc.) |
 
 ---
 
