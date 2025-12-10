@@ -1,4 +1,4 @@
-import { PlusIcon, FileTextIcon, ImageIcon } from "../icons";
+import { PlusIcon, FileTextIcon, ImageIcon, FolderIcon } from "../icons";
 import { BOX_WIDTH } from "../../hooks/useColumnCount";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -89,9 +89,15 @@ const DesktopBoxTypeButton = ({
  *
  * @param {function} onAddNote - Handler per aggiungere una nota
  * @param {function} onAddPhoto - Handler per aggiungere una foto
+ * @param {function} onAddFile - Handler per aggiungere un file
  * @param {string} className - Classi CSS aggiuntive
  */
-const AddBentoBoxButton = ({ onAddNote, onAddPhoto, className = "" }) => {
+const AddBentoBoxButton = ({
+  onAddNote,
+  onAddPhoto,
+  onAddFile,
+  className = "",
+}) => {
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema
@@ -127,7 +133,12 @@ const AddBentoBoxButton = ({ onAddNote, onAddPhoto, className = "" }) => {
         onClick={onAddPhoto}
         isDark={isDark}
       />
-      <DesktopBoxTypeButton disabled isDark={isDark} />
+      <DesktopBoxTypeButton
+        icon={FolderIcon}
+        label="File"
+        onClick={onAddFile}
+        isDark={isDark}
+      />
       <DesktopBoxTypeButton disabled isDark={isDark} />
     </div>
   );
@@ -162,8 +173,9 @@ const isLightColor = (hexColor) => {
  *
  * @param {function} onAddNote - Handler per aggiungere una nota
  * @param {function} onAddPhoto - Handler per aggiungere una foto
+ * @param {function} onAddFile - Handler per aggiungere un file
  */
-export const MobileAddFab = ({ onAddNote, onAddPhoto }) => {
+export const MobileAddFab = ({ onAddNote, onAddPhoto, onAddFile }) => {
   const { colors, accentColor, isDark } = useTheme();
 
   // Ottieni il colore primario del tema del profilo
@@ -262,25 +274,49 @@ export const MobileAddFab = ({ onAddNote, onAddPhoto }) => {
           <span className="text-xs font-semibold tracking-wide">Foto</span>
         </button>
 
-        {/* Bottoni disabilitati - Coming soon */}
-        {[1, 2].map((i) => (
-          <div
-            key={i}
-            className="
-              flex flex-col items-center justify-center gap-1.5
-              rounded-xl
-              py-3 px-2
-              cursor-not-allowed
-            "
-            style={{
-              backgroundColor: disabledBgColor,
-              color: disabledTextColor,
-            }}
-          >
-            <PlusIcon className="w-6 h-6" />
-            <span className="text-xs font-semibold tracking-wide">Soon</span>
-          </div>
-        ))}
+        {/* File - attivo */}
+        <button
+          onClick={onAddFile}
+          className="
+            flex flex-col items-center justify-center gap-1.5
+            rounded-xl
+            py-3 px-2
+            transition-all duration-200
+            hover:scale-[1.02] active:scale-[0.98]
+            shadow-sm
+          "
+          style={{
+            backgroundColor: buttonBgColor,
+            color: buttonTextColor,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonHoverBg)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonBgColor)
+          }
+          aria-label="Aggiungi File"
+        >
+          <FolderIcon className="w-6 h-6" />
+          <span className="text-xs font-semibold tracking-wide">File</span>
+        </button>
+
+        {/* Bottone disabilitato - Coming soon */}
+        <div
+          className="
+            flex flex-col items-center justify-center gap-1.5
+            rounded-xl
+            py-3 px-2
+            cursor-not-allowed
+          "
+          style={{
+            backgroundColor: disabledBgColor,
+            color: disabledTextColor,
+          }}
+        >
+          <PlusIcon className="w-6 h-6" />
+          <span className="text-xs font-semibold tracking-wide">Soon</span>
+        </div>
       </div>
     </div>
   );

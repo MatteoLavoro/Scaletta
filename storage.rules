@@ -18,6 +18,11 @@ service firebase.storage {
       return request.resource.size < 10 * 1024 * 1024;
     }
     
+    // Funzione helper: verifica dimensione massima file (50MB)
+    function isUnderFileMaxSize() {
+      return request.resource.size < 50 * 1024 * 1024;
+    }
+    
     // ==========================================
     // FOTO DEI PROGETTI
     // Struttura: projects/{projectId}/photos/{photoId}
@@ -31,6 +36,22 @@ service firebase.storage {
       allow write: if isAuthenticated() 
         && isImage() 
         && isUnderMaxSize();
+      
+      // Eliminazione: utente autenticato
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // FILES DEI PROGETTI
+    // Struttura: projects/{projectId}/files/{fileId}
+    // ==========================================
+    match /projects/{projectId}/files/{fileId} {
+      // Lettura: utente autenticato
+      allow read: if isAuthenticated();
+      
+      // Scrittura: utente autenticato + dimensione ok (qualsiasi tipo di file)
+      allow write: if isAuthenticated() 
+        && isUnderFileMaxSize();
       
       // Eliminazione: utente autenticato
       allow delete: if isAuthenticated();

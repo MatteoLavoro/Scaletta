@@ -11,6 +11,7 @@ import {
   MobileAddFab,
   NoteBox,
   PhotoBox,
+  FileBox,
   BaseBentoBox,
   TutorialBox,
   CameraFab,
@@ -21,11 +22,13 @@ import {
   updateBentoBoxTitle,
   updateBentoBoxContent,
   updateBentoBoxPhotos,
+  updateBentoBoxFiles,
   updateBentoBoxPin,
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
 import { deletePhotos, uploadPhoto } from "../services/photos";
+import { deleteFiles } from "../services/files";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -112,6 +115,23 @@ const ProjectPage = ({
     }
   };
 
+  // Funzione per aggiungere un FileBox
+  const handleAddFile = async () => {
+    if (!project?.id) return;
+
+    try {
+      const fileCount =
+        bentoBoxes.filter((b) => b.boxType === "file").length + 1;
+      await createBentoBox(project.id, {
+        title: `File ${fileCount}`,
+        boxType: "file",
+        files: [],
+      });
+    } catch (error) {
+      console.error("Errore creazione file box:", error);
+    }
+  };
+
   // Funzione per gestire la foto dalla fotocamera
   // Crea un nuovo PhotoBox con la foto scattata
   const handleCameraCapture = async (file) => {
@@ -145,16 +165,31 @@ const ProjectPage = ({
     }
   };
 
-  // Funzione per eliminare un box (include eliminazione foto dallo storage)
+  // Funzione per aggiornare i file di un FileBox
+  const handleFilesChange = async (boxId, newFiles) => {
+    if (!project?.id) return;
+
+    try {
+      await updateBentoBoxFiles(project.id, boxId, newFiles);
+    } catch (error) {
+      console.error("Errore aggiornamento file:", error);
+    }
+  };
+
+  // Funzione per eliminare un box (include eliminazione foto/file dallo storage)
   const handleDeleteBox = async (boxId) => {
     if (!project?.id) return;
 
     try {
-      // Trova il box per verificare se ha foto da eliminare
+      // Trova il box per verificare se ha foto/file da eliminare
       const box = bentoBoxes.find((b) => b.id === boxId);
       if (box?.boxType === "photo" && box.photos?.length > 0) {
         // Elimina tutte le foto dallo storage
         await deletePhotos(box.photos.map((p) => p.storagePath));
+      }
+      if (box?.boxType === "file" && box.files?.length > 0) {
+        // Elimina tutti i file dallo storage
+        await deleteFiles(box.files);
       }
       await deleteBentoBox(project.id, boxId);
     } catch (error) {
@@ -438,6 +473,7 @@ const ProjectPage = ({
                             <AddBentoBoxButton
                               onAddNote={handleAddNote}
                               onAddPhoto={handleAddPhoto}
+                              onAddFile={handleAddFile}
                             />
                           </div>
                         );
@@ -495,6 +531,33 @@ const ProjectPage = ({
                           </div>
                         );
                       }
+                      // Render FileBox per box di tipo "file"
+                      if (item.boxType === "file") {
+                        return (
+                          <div
+                            key={item.id}
+                            data-bento-id={item.id}
+                            style={getItemStyle(item.id)}
+                          >
+                            <FileBox
+                              projectId={project.id}
+                              title={item.title}
+                              files={item.files || []}
+                              isPinned={item.isPinned || false}
+                              onPinToggle={() =>
+                                handleBoxPinToggle(item.id, item.isPinned)
+                              }
+                              onTitleChange={(newTitle) =>
+                                handleBoxTitleChange(item.id, newTitle)
+                              }
+                              onFilesChange={(newFiles) =>
+                                handleFilesChange(item.id, newFiles)
+                              }
+                              onDelete={() => handleDeleteBox(item.id)}
+                            />
+                          </div>
+                        );
+                      }
                       // Render BaseBentoBox per box generici (fallback)
                       return (
                         <div
@@ -532,7 +595,11 @@ const ProjectPage = ({
 
         {/* FAB aggiunta box - solo mobile */}
         {columnCount === 1 && !isLoading && (
-          <MobileAddFab onAddNote={handleAddNote} onAddPhoto={handleAddPhoto} />
+          <MobileAddFab
+            onAddNote={handleAddNote}
+            onAddPhoto={handleAddPhoto}
+            onAddFile={handleAddFile}
+          />
         )}
 
         {/* FAB fotocamera rapida - solo mobile */}

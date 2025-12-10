@@ -425,6 +425,17 @@ export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
 };
 
 /**
+ * Aggiorna i file di un bento box (FileBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {array} files - Array di file { id, url, name, size, type, fileType, storagePath }
+ */
+export const updateBentoBoxFiles = async (projectId, boxId, files) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { files });
+};
+
+/**
  * Aggiorna lo stato pin di un bento box
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
