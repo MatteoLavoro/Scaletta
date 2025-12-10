@@ -5,6 +5,7 @@ export { default as BaseBentoBox, BentoAction } from "./BaseBentoBox";
 export {
   default as AddBentoBoxButton,
   MobileAddFab,
+  DesktopAddFab,
 } from "./AddBentoBoxButton";
 export { default as NoteBox } from "./NoteBox";
 export { default as PhotoBox } from "./PhotoBox";

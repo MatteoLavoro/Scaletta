@@ -70,12 +70,28 @@ const GroupInfoModal = ({
   // Formatta la data di creazione
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/D";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString("it-IT", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    // serverTimestamp() può essere un FieldValue (oggetto con _methodName) prima della sincronizzazione
+    // oppure null/undefined finché Firebase non risponde
+    if (typeof timestamp === "object" && timestamp._methodName) {
+      // È un FieldValue (serverTimestamp non ancora risolto), usa la data corrente
+      return new Date().toLocaleDateString("it-IT", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    }
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      // Verifica che la data sia valida
+      if (isNaN(date.getTime())) return "N/D";
+      return date.toLocaleDateString("it-IT", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return "N/D";
+    }
   };
 
   return (

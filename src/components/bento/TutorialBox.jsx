@@ -17,8 +17,6 @@ const TutorialBox = ({ isMobile = false }) => {
         p-5
         flex flex-col items-center justify-center
         text-center
-        shadow-md
-        dark:shadow-lg dark:shadow-black/20
         ${isMobile ? "" : "aspect-square w-full"}
       `}
     >

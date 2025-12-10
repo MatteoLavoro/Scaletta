@@ -16,10 +16,6 @@
 - **Sistema Bento Box** (layout a griglia dinamico con animazioni FLIP)
 - **NoteBox** (box per note testuali con editor)
 - **PhotoBox** (box per foto con carosello, upload multiplo, drag & drop)
-- **FileBox** (box per file di qualsiasi tipo con download/delete)
-- **Sistema Pin** (fissa box in alto con priorità)
-- **CameraFab** (pulsante mobile per scattare foto direttamente)
-- **Auto-delete** (eliminazione automatica box vuoti dopo 10 minuti)
 - **Sistema Tema** (chiaro/scuro + 6 colori accent)
 - **PWA** (installabile su dispositivi)
 - **UI/UX responsive** (mobile fullscreen, desktop centrato)
@@ -32,6 +28,7 @@
 
 ### 📋 Pianificato
 
+- Gestione file e documenti
 - Notifiche
 - Ricerca avanzata
 
@@ -166,7 +163,6 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
 | ------------- | --------- | ---------------------------------- |
 | 📝 NoteBox    | ✅ Attivo | Note testuali (max 2000 caratteri) |
 | 🖼️ PhotoBox   | ✅ Attivo | Foto con carosello e upload        |
-| 📁 FileBox    | ✅ Attivo | File di qualsiasi tipo (max 50MB)  |
 | ✅ Checklist  | 🔜 Futuro | Liste di task                      |
 | 🔗 LinkBox    | 🔜 Futuro | Link esterni con preview           |
 | 👤 ContactBox | 🔜 Futuro | Anagrafiche persone                |
@@ -175,21 +171,13 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
 
 ```
 ┌────────────────────────────────────┐
-│ [📌]  Titolo (centrato)      [⋮]  │  ← Header con pin, titolo e kebab menu
+│  Titolo (centrato)           [⋮]  │  ← Header con kebab menu
 ├────────────────────────────────────┤
 │                                    │
 │         Contenuto                  │  ← Area contenuto (varia per tipo)
 │                                    │
 └────────────────────────────────────┘
 ```
-
-#### Sistema Pin:
-
-- Ogni box può essere "pinnato" (fissato in alto)
-- I box pinnati hanno un bottone 📌 colorato col tema
-- I box pinnati vengono mostrati prima degli altri
-- I box pinnati NON vengono eliminati automaticamente
-- Ordinamento: pinnati (per data pin) → non pinnati (per data creazione)
 
 #### NoteBox - Box Note
 
@@ -207,23 +195,6 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
 - **Formati supportati**: JPG, PNG, GIF, WebP (max 10MB)
 - **Eliminazione singola**: Conferma prima di eliminare una foto
 
-#### FileBox - Box File
-
-- **Lista file**: Ogni file mostra nome, tipo e dimensione
-- **Tipi supportati**: Qualsiasi tipo di file (max 50MB)
-- **Tipi riconosciuti**: PDF, DOC, XLS, PPT, ZIP, AUDIO, VIDEO, CODE, CAD, 3D
-- **Download**: Tasto colorato col tema per scaricare
-- **Eliminazione**: Tasto rosso con conferma
-- **Upload multiplo**: Drag & drop o selezione file
-- **Progress individuale**: Ogni file ha la sua barra di progresso
-
-#### Auto-Delete Box Vuoti
-
-- I box vuoti (senza contenuto/foto/file) vengono eliminati automaticamente
-- Tempo: **10 minuti** dalla creazione
-- I box **pinnati** non vengono mai eliminati automaticamente
-- Controllo eseguito ogni minuto
-
 #### Struttura Dati Bento Box (Firestore):
 
 ```javascript
@@ -231,7 +202,7 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
 {
   id: string,              // ID documento
   title: string,           // Titolo box (max 50 caratteri)
-  boxType: string,         // "note" | "photo" | "file"
+  boxType: string,         // "note" | "photo"
   content: string,         // Contenuto testuale (per NoteBox)
   photos: [                // Array foto (per PhotoBox)
     {
@@ -241,31 +212,17 @@ Ogni progetto contiene **Bento Box**, riquadri dinamici organizzati in una grigl
       storagePath: string  // Path completo nello storage
     }
   ],
-  files: [                 // Array file (per FileBox)
-    {
-      id: string,
-      url: string,         // URL Firebase Storage
-      name: string,        // Nome file originale
-      size: number,        // Dimensione in bytes
-      fileType: string,    // Tipo file (PDF, DOC, ecc.)
-      storagePath: string  // Path completo nello storage
-    }
-  ],
-  isPinned: boolean,       // Se il box è fissato in alto
-  pinnedAt: number,        // Timestamp di quando è stato pinnato
   createdAt: Timestamp
 }
 ```
 
-#### Storage (Firebase Storage):
+#### Storage Foto (Firebase Storage):
 
 ```
 projects/
   └── {projectId}/
-      ├── photos/
-      │   └── {photoId}.{ext}
-      └── files/
-          └── {fileId}.{ext}
+      └── photos/
+          └── {photoId}.{ext}
 ```
 
 ---
@@ -449,23 +406,14 @@ delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 - [x] Preload immagini per scrolling fluido
 - [x] Eliminazione automatica foto su delete box/progetto/gruppo
 
-### Fase 4 - File e Funzionalità Avanzate ✅ COMPLETATA
-
-- [x] FileBox per documenti generici (qualsiasi tipo, max 50MB)
-- [x] Riconoscimento tipi file (CAD, 3D, documenti, media, codice)
-- [x] Progress bar individuale per ogni file in upload
-- [x] Sistema Pin per fissare box in alto
-- [x] CameraFab per scattare foto da mobile
-- [x] Auto-delete box vuoti dopo 10 minuti
-- [x] Empty states uniformi per tutti i tipi di box
-
-### Fase 5 - Altri Bento Box (Prossima)
+### Fase 4 - Altri Bento Box (Prossima)
 
 - [ ] ChecklistBox per liste di task
 - [ ] LinkBox per link esterni con preview
 - [ ] ContactBox per anagrafiche
+- [ ] FileBox per documenti generici
 
-### Fase 6 - Miglioramenti
+### Fase 5 - Miglioramenti
 
 - [ ] Ricerca avanzata
 - [ ] Notifiche

@@ -121,8 +121,6 @@ const BaseBentoBox = ({
           border border-border 
           rounded-xl
           flex flex-col
-          shadow-md
-          dark:shadow-lg dark:shadow-black/20
           ${className}
         `}
         style={minHeight ? { minHeight: `${minHeight}px` } : undefined}

@@ -7,8 +7,8 @@ import { useModal } from "../contexts/ModalContext";
 import { ProjectInfoModal, StatusModal } from "../components/projects";
 import { DropdownMenu } from "../components/ui";
 import {
-  AddBentoBoxButton,
   MobileAddFab,
+  DesktopAddFab,
   NoteBox,
   PhotoBox,
   FileBox,
@@ -83,7 +83,7 @@ const ProjectPage = ({
   useEffect(() => {
     if (!project?.id || bentoBoxes.length === 0) return;
 
-    const TEN_MINUTES = 10 * 60 * 1000; // 10 minuti in ms
+    const TEN_MINUTES = 60 * 1000; // 1 minuto in ms
 
     // Funzione per verificare se un box è vuoto
     const isBoxEmpty = (box) => {
@@ -329,18 +329,16 @@ const ProjectPage = ({
       items.push({ id: "tutorial", type: "tutorial" });
     }
 
-    // 2. Box utente (in mezzo)
+    // 2. Box utente
     sortedBoxes.forEach((box) => {
       items.push({ ...box, type: "box" });
     });
 
-    // 3. Add button (ultimo) - solo su desktop (su mobile è il FAB flottante)
-    if (columnCount > 1) {
-      items.push({ id: "add-button", type: "add" });
-    }
+    // Il FAB flottante è ora usato sia su mobile che desktop,
+    // quindi non aggiungiamo più l'add-button alla griglia
 
     return items;
-  }, [sortedBoxes, hasBoxes, columnCount]);
+  }, [sortedBoxes, hasBoxes]);
 
   // Hook per layout "shortest column first" + animazioni FLIP
   const { containerRef, columns, getItemStyle } = useBentoAnimation(
@@ -480,12 +478,12 @@ const ProjectPage = ({
 
         {/* Contenuto principale - Bento Grid */}
         <main className={`flex-1 ${columnCount === 1 ? "px-2" : "p-4"}`}>
-          {/* Padding extra in basso su mobile per il FAB flottante */}
+          {/* Padding extra in basso per il FAB flottante (mobile e desktop) */}
           <div
             className="flex justify-center"
             style={{
               paddingTop: columnCount === 1 ? `${GAP}px` : "0",
-              paddingBottom: columnCount === 1 ? "120px" : "0",
+              paddingBottom: "120px", // Spazio per il FAB flottante
             }}
           >
             {/* Loading */}
@@ -521,22 +519,6 @@ const ProjectPage = ({
                             style={getItemStyle(item.id)}
                           >
                             <TutorialBox isMobile={columnCount === 1} />
-                          </div>
-                        );
-                      }
-                      // Add button box (solo desktop)
-                      if (item.type === "add") {
-                        return (
-                          <div
-                            key={item.id}
-                            data-bento-id={item.id}
-                            style={getItemStyle(item.id)}
-                          >
-                            <AddBentoBoxButton
-                              onAddNote={handleAddNote}
-                              onAddPhoto={handleAddPhoto}
-                              onAddFile={handleAddFile}
-                            />
                           </div>
                         );
                       }
@@ -655,9 +637,18 @@ const ProjectPage = ({
           </div>
         </main>
 
-        {/* FAB aggiunta box - solo mobile */}
+        {/* FAB aggiunta box - mobile */}
         {columnCount === 1 && !isLoading && (
           <MobileAddFab
+            onAddNote={handleAddNote}
+            onAddPhoto={handleAddPhoto}
+            onAddFile={handleAddFile}
+          />
+        )}
+
+        {/* FAB aggiunta box - desktop */}
+        {columnCount > 1 && !isLoading && (
+          <DesktopAddFab
             onAddNote={handleAddNote}
             onAddPhoto={handleAddPhoto}
             onAddFile={handleAddFile}
