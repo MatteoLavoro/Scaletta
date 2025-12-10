@@ -29,8 +29,38 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
   const animatingRef = useRef(new Set());
   const resizeObserverRef = useRef(null);
   const [heights, setHeights] = useState(new Map());
+  
+  // Ref per tracciare gli ID conosciuti (sincronamente)
+  const knownIdsRef = useRef(new Set());
   // Set di ID degli elementi che devono fare fade-in (nascosti inizialmente)
   const [newItemIds, setNewItemIds] = useState(() => new Set());
+  // Set di ID che stanno facendo fade-in (per gestire animazione)
+  const fadingInRef = useRef(new Set());
+  
+  // Identifica i nuovi elementi PRIMA del render confrontando con gli ID conosciuti
+  // Questo è sincrono e avviene durante il render, così getItemStyle può nasconderli subito
+  const currentIds = useMemo(() => new Set(items.map(item => item.id)), [items]);
+  
+  // Trova i nuovi ID (quelli presenti ora ma non conosciuti prima)
+  const newlyAddedIds = useMemo(() => {
+    const newIds = new Set();
+    currentIds.forEach(id => {
+      if (!knownIdsRef.current.has(id)) {
+        newIds.add(id);
+      }
+    });
+    return newIds;
+  }, [currentIds]);
+  
+  // Pulisci gli ID non più presenti dal knownIdsRef
+  useEffect(() => {
+    // Rimuovi da knownIds gli elementi che non esistono più
+    knownIdsRef.current.forEach(id => {
+      if (!currentIds.has(id)) {
+        knownIdsRef.current.delete(id);
+      }
+    });
+  }, [currentIds]);
 
   // Crea una chiave unica basata sugli items per rilevare cambiamenti nel contenuto
   const itemsKey = useMemo(() => {
@@ -208,6 +238,8 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       isFirstRenderRef.current = false;
       containerRef.current.offsetHeight;
       positionsRef.current = capturePositions();
+      // Segna tutti gli items iniziali come conosciuti
+      items.forEach(item => knownIdsRef.current.add(item.id));
       return;
     }
 
@@ -224,7 +256,6 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     positionsRef.current = newPositions;
 
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
-    const newIds = new Set();
 
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
@@ -237,11 +268,13 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         el.style.transform = "";
       }
 
-      if (!oldPos) {
-        // Nuovo elemento - traccia per nasconderlo via getItemStyle
-        newIds.add(id);
+      // Nuovo elemento - era già nascosto da getItemStyle, ora fai fade-in
+      if (newlyAddedIds.has(id) && !fadingInRef.current.has(id)) {
+        fadingInRef.current.add(id);
+        // Aggiungi agli ID conosciuti
+        knownIdsRef.current.add(id);
 
-        // Fade-in semplice dalla posizione corretta (già nella griglia)
+        // Fade-in dalla posizione corretta (già nella griglia, nascosto con opacity:0)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             el.style.transition = "opacity 250ms ease-out";
@@ -250,6 +283,7 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
             const cleanup = () => {
               el.style.transition = "";
               el.style.opacity = "";
+              fadingInRef.current.delete(id);
               // Rimuovi dall'elenco dei nuovi dopo l'animazione
               setNewItemIds((prev) => {
                 const next = new Set(prev);
@@ -264,7 +298,7 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         return;
       }
 
-      if (!newPos) return;
+      if (!oldPos || !newPos) return;
 
       const deltaX = oldPos.left - newPos.left;
       const deltaY = oldPos.top - newPos.top;
@@ -298,24 +332,24 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       });
     });
 
-    // Aggiorna lo stato dei nuovi elementi da nascondere (asincrono per evitare cascading renders)
-    if (newIds.size > 0) {
-      queueMicrotask(() => {
-        setNewItemIds((prev) => new Set([...prev, ...newIds]));
-      });
+    // Sincronizza newItemIds con i nuovi elementi identificati
+    if (newlyAddedIds.size > 0) {
+      setNewItemIds(newlyAddedIds);
     }
-  }, [columns, columnCount, capturePositions, itemsKey]);
+  }, [columns, columnCount, capturePositions, itemsKey, newlyAddedIds]);
 
   // Funzione helper per ottenere lo stile iniziale di un elemento
   // I nuovi elementi devono essere nascosti finché non sono nella posizione corretta
   const getItemStyle = useCallback(
     (itemId) => {
-      if (newItemIds.has(itemId)) {
+      // Nascondi se è un nuovo elemento appena aggiunto (identificato sincronamente)
+      // oppure se è nell'elenco degli elementi che stanno facendo fade-in
+      if (newlyAddedIds.has(itemId) || newItemIds.has(itemId)) {
         return { opacity: 0 };
       }
       return {};
     },
-    [newItemIds]
+    [newlyAddedIds, newItemIds]
   );
 
   return { containerRef, columns, getItemStyle };
