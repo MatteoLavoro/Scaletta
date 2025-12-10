@@ -55,6 +55,8 @@ const useImagePreload = (photos) => {
  * @param {string} projectId - ID del progetto (per upload)
  * @param {string} title - Titolo del box
  * @param {array} photos - Array di foto { id, url, name, storagePath }
+ * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPhotosChange - Callback quando cambiano le foto
  * @param {function} onDelete - Callback per eliminare il box
@@ -63,6 +65,8 @@ const PhotoBox = ({
   projectId,
   title = "Foto",
   photos = [],
+  isPinned = false,
+  onPinToggle,
   onTitleChange,
   onPhotosChange,
   onDelete,
@@ -214,6 +218,8 @@ const PhotoBox = ({
     <>
       <BaseBentoBox
         title={title}
+        isPinned={isPinned}
+        onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
         menuItems={photoMenuItems}

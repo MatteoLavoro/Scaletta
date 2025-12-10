@@ -335,7 +335,7 @@ export const projectNameExists = async (
 /**
  * Ottiene tutti i bento box di un progetto
  * @param {string} projectId - ID del progetto
- * @returns {array} - Lista di bento box ordinati per createdAt
+ * @returns {array} - Lista di bento box ordinati: pinnati prima (per pinnedAt), poi gli altri (per createdAt)
  */
 export const getBentoBoxes = async (projectId) => {
   const boxesRef = collection(db, PROJECTS_COLLECTION, projectId, "bentoBoxes");
@@ -346,8 +346,18 @@ export const getBentoBoxes = async (projectId) => {
     boxes.push({ id: doc.id, ...doc.data() });
   });
 
-  // Ordina per data di creazione (più vecchi prima)
+  // Ordina: pinnati prima (per pinnedAt crescente), poi non-pinnati (per createdAt crescente)
   boxes.sort((a, b) => {
+    // Se entrambi pinnati, ordina per pinnedAt (prima chi è stato pinnato prima)
+    if (a.isPinned && b.isPinned) {
+      const pinA = a.pinnedAt?.toDate?.() || new Date(a.pinnedAt || 0);
+      const pinB = b.pinnedAt?.toDate?.() || new Date(b.pinnedAt || 0);
+      return pinA - pinB;
+    }
+    // Pinnati prima dei non-pinnati
+    if (a.isPinned) return -1;
+    if (b.isPinned) return 1;
+    // Non-pinnati ordinati per createdAt
     const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
     const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
     return dateA - dateB;
@@ -415,6 +425,26 @@ export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
 };
 
 /**
+ * Aggiorna lo stato pin di un bento box
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {boolean} isPinned - Se il box è pinnato
+ * @param {number|null} pinnedAt - Timestamp di quando è stato pinnato (null se unpinned)
+ */
+export const updateBentoBoxPin = async (
+  projectId,
+  boxId,
+  isPinned,
+  pinnedAt
+) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, {
+    isPinned,
+    pinnedAt: isPinned ? pinnedAt : null,
+  });
+};
+
+/**
  * Elimina un bento box
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
@@ -452,8 +482,18 @@ export const subscribeToBentoBoxes = (projectId, onUpdate) => {
         boxes.push({ id: doc.id, ...doc.data() });
       });
 
-      // Ordina per data di creazione (più vecchi prima)
+      // Ordina: pinnati prima (per pinnedAt crescente), poi non-pinnati (per createdAt crescente)
       boxes.sort((a, b) => {
+        // Se entrambi pinnati, ordina per pinnedAt (prima chi è stato pinnato prima)
+        if (a.isPinned && b.isPinned) {
+          const pinA = a.pinnedAt?.toDate?.() || new Date(a.pinnedAt || 0);
+          const pinB = b.pinnedAt?.toDate?.() || new Date(b.pinnedAt || 0);
+          return pinA - pinB;
+        }
+        // Pinnati prima dei non-pinnati
+        if (a.isPinned) return -1;
+        if (b.isPinned) return 1;
+        // Non-pinnati ordinati per createdAt
         const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
         const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
         return dateA - dateB;

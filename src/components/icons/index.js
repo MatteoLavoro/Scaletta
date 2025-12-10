@@ -22,6 +22,7 @@ export { default as LogOutIcon } from "./LogOutIcon";
 export { default as MoonIcon } from "./MoonIcon";
 export { default as MoreVerticalIcon } from "./MoreVerticalIcon";
 export { default as PencilIcon } from "./PencilIcon";
+export { default as PinIcon } from "./PinIcon";
 export { default as PlusIcon } from "./PlusIcon";
 export { default as SettingsIcon } from "./SettingsIcon";
 export { default as SunIcon } from "./SunIcon";

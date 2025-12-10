@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { PencilIcon, TrashIcon } from "../icons";
+import { PencilIcon, TrashIcon, PinIcon } from "../icons";
 import { DropdownMenu, Divider } from "../ui";
 import { InputModal, ConfirmModal } from "../modal";
+import { useTheme } from "../../contexts/ThemeContext";
 
 /**
  * BaseBentoBox - Componente base per tutti i Bento Box
  *
  * Struttura standard:
  * ┌────────────────────────────────────┐
- * │  Titolo (centrato)           [⋮]  │  ← Header con titolo e kebab menu
+ * │ [📌] Titolo (centrato)       [⋮]  │  ← Header con pin, titolo e kebab menu
  * ├────────────────────────────────────┤  ← Divider
  * │                                    │
  * │         Contenuto                  │  ← Area contenuto (children)
@@ -19,6 +20,8 @@ import { InputModal, ConfirmModal } from "../modal";
  *
  * @param {Object} props
  * @param {string} props.title - Titolo del box
+ * @param {boolean} props.isPinned - Se il box è fissato in alto
+ * @param {function} props.onPinToggle - Callback quando si clicca sul pin
  * @param {function} props.onTitleChange - Callback quando il titolo cambia
  * @param {function} props.onDelete - Callback per eliminare il box
  * @param {number} props.minHeight - Altezza minima del box in pixel (opzionale)
@@ -29,6 +32,8 @@ import { InputModal, ConfirmModal } from "../modal";
  */
 const BaseBentoBox = ({
   title = "Box",
+  isPinned = false,
+  onPinToggle,
   onTitleChange,
   onDelete,
   minHeight,
@@ -39,6 +44,13 @@ const BaseBentoBox = ({
 }) => {
   const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const { colors, accentColor, isDark } = useTheme();
+
+  // Ottieni il colore primario del tema per il pin attivo
+  const themeColors =
+    colors[accentColor]?.[isDark ? "dark" : "light"] ||
+    colors.teal[isDark ? "dark" : "light"];
+  const primaryColor = themeColors.primary;
 
   // Costruisci il menu kebab
   // Ordine: items specifici -> separatore -> universali (cambia titolo, elimina)
@@ -113,10 +125,37 @@ const BaseBentoBox = ({
         `}
         style={minHeight ? { minHeight: `${minHeight}px` } : undefined}
       >
-        {/* Header - Titolo centrato con kebab menu a destra */}
+        {/* Header - Pin a sinistra, titolo centrato, kebab menu a destra */}
         <div className="flex items-center justify-between px-2 py-1.5">
-          {/* Spacer sinistro per centrare il titolo */}
-          <div className="w-7" />
+          {/* Tasto Pin */}
+          {onPinToggle ? (
+            <button
+              onClick={onPinToggle}
+              className={`
+                w-7 h-7 flex items-center justify-center rounded-full 
+                transition-all duration-200
+                ${
+                  isPinned
+                    ? "hover:opacity-80"
+                    : "bg-bg-tertiary hover:bg-divider text-text-muted hover:text-text-primary"
+                }
+              `}
+              style={
+                isPinned
+                  ? {
+                      backgroundColor: primaryColor,
+                      color: "#ffffff",
+                    }
+                  : undefined
+              }
+              aria-label={isPinned ? "Rimuovi dai fissati" : "Fissa in alto"}
+              title={isPinned ? "Rimuovi dai fissati" : "Fissa in alto"}
+            >
+              <PinIcon className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="w-7" />
+          )}
 
           {/* Titolo centrato */}
           <h3 className="text-xs font-semibold text-text-primary truncate flex-1 text-center">

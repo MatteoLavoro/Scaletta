@@ -3,82 +3,132 @@ import { BOX_WIDTH } from "../../hooks/useColumnCount";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
- * BoxTypeButton - Singolo tasto per tipo di box
- * @param {boolean} large - Se true usa icone più grandi (desktop)
+ * DesktopBoxTypeButton - Singolo tasto per tipo di box (versione desktop)
+ * Design moderno con sfondo solido grigio/bianco
  */
-const BoxTypeButton = ({
+const DesktopBoxTypeButton = ({
   icon: Icon,
   label,
   onClick,
   disabled = false,
-  large = false,
-}) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`
-      flex flex-col items-center justify-center gap-1
-      border-2 border-dashed border-border rounded-lg
-      ${large ? "p-3" : "p-2"}
-      transition-all duration-200
-      ${
-        disabled
-          ? "opacity-30 cursor-not-allowed"
-          : "text-text-muted hover:border-primary hover:text-primary hover:bg-primary/5 active:bg-primary/10"
-      }
-    `}
-    aria-label={disabled ? `${label} (non disponibile)` : `Aggiungi ${label}`}
-  >
-    {Icon ? (
-      <Icon className={large ? "w-10 h-10" : "w-6 h-6"} />
-    ) : (
-      <PlusIcon className={`${large ? "w-10 h-10" : "w-6 h-6"} opacity-30`} />
-    )}
-    {label && (
-      <span
-        className={`${
-          large ? "text-sm" : "text-xs"
-        } font-medium truncate w-full text-center`}
+  isDark,
+}) => {
+  // Colori per i tasti - stesso design del mobile
+  const buttonBgColor = isDark
+    ? "rgba(38, 38, 38, 0.95)"
+    : "rgba(255, 255, 255, 0.95)";
+
+  const buttonTextColor = isDark ? "#e5e5e5" : "#404040";
+
+  const buttonHoverBg = isDark
+    ? "rgba(50, 50, 50, 1)"
+    : "rgba(245, 245, 245, 1)";
+
+  const disabledBgColor = isDark
+    ? "rgba(38, 38, 38, 0.4)"
+    : "rgba(255, 255, 255, 0.4)";
+
+  const disabledTextColor = isDark
+    ? "rgba(229, 229, 229, 0.3)"
+    : "rgba(64, 64, 64, 0.3)";
+
+  if (disabled) {
+    return (
+      <div
+        className="
+          flex flex-col items-center justify-center gap-2
+          rounded-xl
+          p-3
+          cursor-not-allowed
+        "
+        style={{
+          backgroundColor: disabledBgColor,
+          color: disabledTextColor,
+        }}
       >
-        {label}
-      </span>
-    )}
-  </button>
-);
+        <PlusIcon className="w-8 h-8" />
+        <span className="text-sm font-semibold tracking-wide">Soon</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className="
+        flex flex-col items-center justify-center gap-2
+        rounded-xl
+        p-3
+        transition-all duration-200
+        hover:scale-[1.02] active:scale-[0.98]
+        shadow-sm
+      "
+      style={{
+        backgroundColor: buttonBgColor,
+        color: buttonTextColor,
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.backgroundColor = buttonHoverBg)
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.backgroundColor = buttonBgColor)
+      }
+      aria-label={`Aggiungi ${label}`}
+    >
+      <Icon className="w-8 h-8" />
+      <span className="text-sm font-semibold tracking-wide">{label}</span>
+    </button>
+  );
+};
 
 /**
  * AddBentoBoxButton - Tasto per aggiungere un nuovo Bento Box
  *
  * Griglia 2x2 con tipi di box disponibili
- * (Su mobile viene usato MobileAddFab invece di questo componente)
+ * Design con sfondo colorato (tema) e tasti grigi/bianchi
  *
  * @param {function} onAddNote - Handler per aggiungere una nota
  * @param {function} onAddPhoto - Handler per aggiungere una foto
  * @param {string} className - Classi CSS aggiuntive
  */
 const AddBentoBoxButton = ({ onAddNote, onAddPhoto, className = "" }) => {
+  const { colors, accentColor, isDark } = useTheme();
+
+  // Ottieni il colore primario del tema
+  const themeColors =
+    colors[accentColor]?.[isDark ? "dark" : "light"] ||
+    colors.teal[isDark ? "dark" : "light"];
+  const primaryColor = themeColors.primary;
+
   return (
     <div
       className={`
         aspect-square
         w-full
-        bg-bg-secondary
-        border border-border
         rounded-xl
-        p-3
+        p-2
         grid grid-cols-2 gap-2
         ${className}
       `}
+      style={{
+        backgroundColor: primaryColor,
+        boxShadow: `0 4px 16px ${primaryColor}30, 0 2px 8px rgba(0,0,0,0.1)`,
+      }}
     >
-      <BoxTypeButton
+      <DesktopBoxTypeButton
         icon={FileTextIcon}
         label="Nota"
         onClick={onAddNote}
-        large
+        isDark={isDark}
       />
-      <BoxTypeButton icon={ImageIcon} label="Foto" onClick={onAddPhoto} large />
-      <BoxTypeButton icon={null} label="" disabled large />
-      <BoxTypeButton icon={null} label="" disabled large />
+      <DesktopBoxTypeButton
+        icon={ImageIcon}
+        label="Foto"
+        onClick={onAddPhoto}
+        isDark={isDark}
+      />
+      <DesktopBoxTypeButton disabled isDark={isDark} />
+      <DesktopBoxTypeButton disabled isDark={isDark} />
     </div>
   );
 };
@@ -108,9 +158,7 @@ const isLightColor = (hexColor) => {
 
 /**
  * MobileAddFab - Barra flottante per mobile
- * Larga quanto la colonna dei box (BOX_WIDTH)
- * Usa il colore del tema del profilo (accent color)
- * Il colore del testo si adatta automaticamente in base alla luminosità dello sfondo
+ * Design raffinato con tasti ben distinguibili
  *
  * @param {function} onAddNote - Handler per aggiungere una nota
  * @param {function} onAddPhoto - Handler per aggiungere una foto
@@ -124,69 +172,113 @@ export const MobileAddFab = ({ onAddNote, onAddPhoto }) => {
     colors.teal[isDark ? "dark" : "light"];
   const primaryColor = themeColors.primary;
 
-  // Colore di sfondo
+  // Colore di sfondo della barra
   const bgColor = primaryColor;
 
   // Determina il colore del testo in base alla luminosità dello sfondo
-  // Se lo sfondo è chiaro -> testo scuro, se lo sfondo è scuro -> testo chiaro
   const isLight = isLightColor(primaryColor);
-  const textColor = isLight ? "#1a1a1a" : "#ffffff";
+
+  // Colori per i tasti - design moderno con contrasto elevato
+  const buttonBgColor = isDark
+    ? "rgba(38, 38, 38, 0.95)" // Grigio scuro per tema dark
+    : "rgba(255, 255, 255, 0.95)"; // Bianco per tema light
+
+  const buttonTextColor = isDark
+    ? "#e5e5e5" // Testo chiaro per tema dark
+    : "#404040"; // Testo scuro per tema light
+
+  const buttonHoverBg = isDark
+    ? "rgba(50, 50, 50, 1)"
+    : "rgba(245, 245, 245, 1)";
+
+  const disabledBgColor = isDark
+    ? "rgba(38, 38, 38, 0.4)"
+    : "rgba(255, 255, 255, 0.4)";
+
+  const disabledTextColor = isDark
+    ? "rgba(229, 229, 229, 0.3)"
+    : "rgba(64, 64, 64, 0.3)";
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-2">
+    <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-3">
       <div
-        className="rounded-2xl p-3 shadow-lg grid grid-cols-4 gap-2 w-full"
+        className="rounded-2xl p-2 shadow-xl grid grid-cols-4 gap-2 w-full max-w-md"
         style={{
           backgroundColor: bgColor,
+          boxShadow: `0 8px 32px ${primaryColor}40, 0 4px 12px rgba(0,0,0,0.15)`,
         }}
       >
         {/* Nota - attivo */}
         <button
           onClick={onAddNote}
           className="
-            flex flex-col items-center justify-center gap-1
-            border-2 border-dashed rounded-lg
-            p-2
+            flex flex-col items-center justify-center gap-1.5
+            rounded-xl
+            py-3 px-2
             transition-all duration-200
-            hover:opacity-80 active:opacity-60
+            hover:scale-[1.02] active:scale-[0.98]
+            shadow-sm
           "
-          style={{ borderColor: `${textColor}50`, color: textColor }}
+          style={{
+            backgroundColor: buttonBgColor,
+            color: buttonTextColor,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonHoverBg)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonBgColor)
+          }
           aria-label="Aggiungi Nota"
         >
           <FileTextIcon className="w-6 h-6" />
-          <span className="text-xs font-medium">Nota</span>
+          <span className="text-xs font-semibold tracking-wide">Nota</span>
         </button>
 
         {/* Foto - attivo */}
         <button
           onClick={onAddPhoto}
           className="
-            flex flex-col items-center justify-center gap-1
-            border-2 border-dashed rounded-lg
-            p-2
+            flex flex-col items-center justify-center gap-1.5
+            rounded-xl
+            py-3 px-2
             transition-all duration-200
-            hover:opacity-80 active:opacity-60
+            hover:scale-[1.02] active:scale-[0.98]
+            shadow-sm
           "
-          style={{ borderColor: `${textColor}50`, color: textColor }}
+          style={{
+            backgroundColor: buttonBgColor,
+            color: buttonTextColor,
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonHoverBg)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = buttonBgColor)
+          }
           aria-label="Aggiungi Foto"
         >
           <ImageIcon className="w-6 h-6" />
-          <span className="text-xs font-medium">Foto</span>
+          <span className="text-xs font-semibold tracking-wide">Foto</span>
         </button>
 
-        {/* Bottoni disabilitati */}
+        {/* Bottoni disabilitati - Coming soon */}
         {[1, 2].map((i) => (
           <div
             key={i}
             className="
-              flex flex-col items-center justify-center gap-1
-              border-2 border-dashed rounded-lg
-              p-2
-              opacity-30 cursor-not-allowed
+              flex flex-col items-center justify-center gap-1.5
+              rounded-xl
+              py-3 px-2
+              cursor-not-allowed
             "
-            style={{ borderColor: `${textColor}30`, color: textColor }}
+            style={{
+              backgroundColor: disabledBgColor,
+              color: disabledTextColor,
+            }}
           >
             <PlusIcon className="w-6 h-6" />
+            <span className="text-xs font-semibold tracking-wide">Soon</span>
           </div>
         ))}
       </div>

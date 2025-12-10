@@ -12,6 +12,8 @@ import { InputModal } from "../modal";
  *
  * @param {string} title - Titolo del box
  * @param {string} content - Contenuto della nota
+ * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onContentChange - Callback per cambiare il contenuto
  * @param {function} onDelete - Callback per eliminare il box
@@ -19,6 +21,8 @@ import { InputModal } from "../modal";
 const NoteBox = ({
   title = "Nota",
   content = "",
+  isPinned = false,
+  onPinToggle,
   onTitleChange,
   onContentChange,
   onDelete,
@@ -55,6 +59,8 @@ const NoteBox = ({
     <>
       <BaseBentoBox
         title={title}
+        isPinned={isPinned}
+        onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
         menuItems={noteMenuItems}

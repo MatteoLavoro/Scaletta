@@ -21,6 +21,7 @@ import {
   updateBentoBoxTitle,
   updateBentoBoxContent,
   updateBentoBoxPhotos,
+  updateBentoBoxPin,
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
@@ -185,8 +186,32 @@ const ProjectPage = ({
     }
   };
 
-  // I box ordinati per data di creazione (più vecchi prima)
+  // Funzione per pinnare/unpinnare un box
+  const handleBoxPinToggle = async (boxId, currentPinned) => {
+    if (!project?.id) return;
+
+    try {
+      const isPinned = !currentPinned;
+      const pinnedAt = isPinned ? Date.now() : null;
+      await updateBentoBoxPin(project.id, boxId, isPinned, pinnedAt);
+      // Il listener onSnapshot aggiornerà automaticamente
+    } catch (error) {
+      console.error("Errore toggle pin box:", error);
+    }
+  };
+
+  // I box ordinati: pinnati prima (per pinnedAt), poi gli altri (per createdAt)
   const sortedBoxes = [...bentoBoxes].sort((a, b) => {
+    // Se entrambi pinnati, ordina per pinnedAt (prima chi è stato pinnato prima)
+    if (a.isPinned && b.isPinned) {
+      const pinA = a.pinnedAt?.toDate?.() || new Date(a.pinnedAt || 0);
+      const pinB = b.pinnedAt?.toDate?.() || new Date(b.pinnedAt || 0);
+      return pinA - pinB;
+    }
+    // Pinnati prima dei non-pinnati
+    if (a.isPinned) return -1;
+    if (b.isPinned) return 1;
+    // Non-pinnati ordinati per createdAt
     const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
     const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
     return dateA - dateB;
@@ -428,6 +453,10 @@ const ProjectPage = ({
                             <NoteBox
                               title={item.title}
                               content={item.content || ""}
+                              isPinned={item.isPinned || false}
+                              onPinToggle={() =>
+                                handleBoxPinToggle(item.id, item.isPinned)
+                              }
                               onTitleChange={(newTitle) =>
                                 handleBoxTitleChange(item.id, newTitle)
                               }
@@ -451,6 +480,10 @@ const ProjectPage = ({
                               projectId={project.id}
                               title={item.title}
                               photos={item.photos || []}
+                              isPinned={item.isPinned || false}
+                              onPinToggle={() =>
+                                handleBoxPinToggle(item.id, item.isPinned)
+                              }
                               onTitleChange={(newTitle) =>
                                 handleBoxTitleChange(item.id, newTitle)
                               }
@@ -471,6 +504,10 @@ const ProjectPage = ({
                         >
                           <BaseBentoBox
                             title={item.title}
+                            isPinned={item.isPinned || false}
+                            onPinToggle={() =>
+                              handleBoxPinToggle(item.id, item.isPinned)
+                            }
                             onTitleChange={(newTitle) =>
                               handleBoxTitleChange(item.id, newTitle)
                             }
