@@ -41,7 +41,7 @@ export const getRandomAvailableColor = async (groupId) => {
 
     // Trova i colori non usati
     const availableColors = ALL_PROJECT_COLORS.filter(
-      (c) => !usedColors.has(c)
+      (c) => !usedColors.has(c),
     );
 
     if (availableColors.length > 0) {
@@ -99,7 +99,7 @@ export const createProject = async (name, groupId, creator, color = null) => {
 export const getProjectsByGroup = async (groupId) => {
   const q = query(
     collection(db, PROJECTS_COLLECTION),
-    where("groupId", "==", groupId)
+    where("groupId", "==", groupId),
   );
   const snapshot = await getDocs(q);
   const projects = [];
@@ -184,7 +184,7 @@ const sortProjects = (projects) => {
 export const subscribeToGroupProjects = (groupId, onUpdate) => {
   const q = query(
     collection(db, PROJECTS_COLLECTION),
-    where("groupId", "==", groupId)
+    where("groupId", "==", groupId),
   );
 
   return onSnapshot(
@@ -199,7 +199,7 @@ export const subscribeToGroupProjects = (groupId, onUpdate) => {
     },
     (error) => {
       console.error("Errore sincronizzazione progetti gruppo:", error);
-    }
+    },
   );
 };
 
@@ -249,7 +249,7 @@ const deleteProjectPhotos = async (projectId) => {
     const deletePromises = photosList.items.map((item) =>
       deleteObject(item).catch((err) => {
         console.error(`Errore eliminazione foto ${item.fullPath}:`, err);
-      })
+      }),
     );
 
     await Promise.all(deletePromises);
@@ -304,7 +304,7 @@ export const deleteProjectWithContents = deleteProject;
 export const countProjectsByGroup = async (groupId) => {
   const q = query(
     collection(db, PROJECTS_COLLECTION),
-    where("groupId", "==", groupId)
+    where("groupId", "==", groupId),
   );
   const snapshot = await getDocs(q);
   return snapshot.size;
@@ -320,13 +320,13 @@ export const countProjectsByGroup = async (groupId) => {
 export const projectNameExists = async (
   groupId,
   name,
-  excludeProjectId = null
+  excludeProjectId = null,
 ) => {
   const projects = await getProjectsByGroup(groupId);
   const normalizedName = name.trim().toLowerCase();
 
   return projects.some(
-    (p) => p.name.toLowerCase() === normalizedName && p.id !== excludeProjectId
+    (p) => p.name.toLowerCase() === normalizedName && p.id !== excludeProjectId,
   );
 };
 
@@ -380,9 +380,19 @@ export const createBentoBox = async (projectId, boxData) => {
     id: boxId,
     title: boxData.title || "Box",
     height: boxData.height || 200,
-    boxType: boxData.boxType || "generic", // "generic", "note", "photo", etc.
+    boxType: boxData.boxType || "generic", // "generic", "note", "photo", "file", "pdf", "checklist", "anagrafica"
     content: boxData.content || "", // Contenuto per le note
     photos: boxData.photos || [], // Array foto per PhotoBox
+    pdfs: boxData.pdfs || [], // Array PDF per PdfBox
+    files: boxData.files || [], // Array file per FileBox
+    checklistItems: boxData.checklistItems || [], // Array items per ChecklistBox
+    anagraficaFields: boxData.anagraficaFields || {}, // Campi per AnagraficaBox
+    anagraficaCustomFields: boxData.anagraficaCustomFields || [], // Campi custom per AnagraficaBox
+    isPinned: boxData.isPinned || false,
+    pinnedAt: boxData.pinnedAt || null,
+    isUploading: boxData.isUploading || false, // Flag per stato upload
+    uploadProgress: boxData.uploadProgress || 0, // Progresso upload (0-100)
+    uploadTotal: boxData.uploadTotal || 0, // Numero totale file da caricare
     createdAt: serverTimestamp(),
   };
 
@@ -421,7 +431,13 @@ export const updateBentoBoxContent = async (projectId, boxId, newContent) => {
  */
 export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { photos });
+  await updateDoc(boxRef, {
+    photos,
+    isUploading: false,
+    uploadProgress: 0,
+    uploadTotal: 0,
+    content: "", // Pulisce anche il content usato per il progresso
+  });
 };
 
 /**
@@ -432,7 +448,13 @@ export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
  */
 export const updateBentoBoxPdfs = async (projectId, boxId, pdfs) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { pdfs });
+  await updateDoc(boxRef, {
+    pdfs,
+    isUploading: false,
+    uploadProgress: 0,
+    uploadTotal: 0,
+    content: "", // Pulisce anche il content usato per il progresso
+  });
 };
 
 /**
@@ -443,7 +465,13 @@ export const updateBentoBoxPdfs = async (projectId, boxId, pdfs) => {
  */
 export const updateBentoBoxFiles = async (projectId, boxId, files) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { files });
+  await updateDoc(boxRef, {
+    files,
+    isUploading: false,
+    uploadProgress: 0,
+    uploadTotal: 0,
+    content: "", // Pulisce anche il content usato per il progresso
+  });
 };
 
 /**
@@ -466,7 +494,7 @@ export const updateBentoBoxChecklistItems = async (projectId, boxId, items) => {
 export const updateBentoBoxAnagraficaFields = async (
   projectId,
   boxId,
-  fields
+  fields,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { anagraficaFields: fields });
@@ -481,7 +509,7 @@ export const updateBentoBoxAnagraficaFields = async (
 export const updateBentoBoxAnagraficaCustomFields = async (
   projectId,
   boxId,
-  customFields
+  customFields,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { anagraficaCustomFields: customFields });
@@ -498,7 +526,7 @@ export const updateBentoBoxPin = async (
   projectId,
   boxId,
   isPinned,
-  pinnedAt
+  pinnedAt,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, {
@@ -566,7 +594,7 @@ export const subscribeToBentoBoxes = (projectId, onUpdate) => {
     },
     (error) => {
       console.error("Errore sincronizzazione bento boxes:", error);
-    }
+    },
   );
 };
 

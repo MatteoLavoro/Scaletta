@@ -58,6 +58,9 @@ const useImagePreload = (photos) => {
  * @param {string} title - Titolo del box
  * @param {array} photos - Array di foto { id, url, name, storagePath }
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {boolean} isUploading - Se il box è in fase di caricamento (da drag&drop)
+ * @param {number} uploadProgress - Progresso caricamento (0-100)
+ * @param {number} uploadTotal - Numero totale foto da caricare
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPhotosChange - Callback quando cambiano le foto
@@ -68,6 +71,9 @@ const PhotoBox = ({
   title = "Foto",
   photos = [],
   isPinned = false,
+  isUploading: isUploadingExternal = false,
+  uploadProgress: uploadProgressExternal = 0,
+  uploadTotal: uploadTotalExternal = 0,
   onPinToggle,
   onTitleChange,
   onPhotosChange,
@@ -76,9 +82,16 @@ const PhotoBox = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadResetKey, setUploadResetKey] = useState(0);
-  // Upload in background direttamente nel box
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Upload in background direttamente nel box (da modale)
+  const [isUploadingInternal, setIsUploadingInternal] = useState(false);
+  const [uploadProgressInternal, setUploadProgressInternal] = useState(0);
+
+  // Combina stati upload interno ed esterno
+  const isUploading = isUploadingExternal || isUploadingInternal;
+  const uploadProgress = isUploadingExternal
+    ? uploadProgressExternal
+    : uploadProgressInternal;
+  const uploadTotal = uploadTotalExternal;
   const [isDeletePhotoConfirmOpen, setIsDeletePhotoConfirmOpen] =
     useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
@@ -142,16 +155,16 @@ const PhotoBox = ({
     setUploadResetKey((k) => k + 1);
 
     // Inizia upload in background nel box
-    setIsUploading(true);
-    setUploadProgress(0);
+    setIsUploadingInternal(true);
+    setUploadProgressInternal(0);
 
     try {
       const currentPhotosLength = photos.length;
       const uploadedPhotos = await uploadPhotos(
         projectId,
         files,
-        (progress) => setUploadProgress(progress),
-        () => {} // onPhotoUploaded
+        (progress) => setUploadProgressInternal(progress),
+        () => {}, // onPhotoUploaded
       );
 
       if (uploadedPhotos.length > 0 && onPhotosChange) {
@@ -162,8 +175,8 @@ const PhotoBox = ({
     } catch (error) {
       console.error("Errore upload foto:", error);
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+      setIsUploadingInternal(false);
+      setUploadProgressInternal(0);
     }
   };
 
@@ -269,7 +282,7 @@ const PhotoBox = ({
                       className="hidden"
                       aria-hidden="true"
                     />
-                  )
+                  ),
               )}
 
               {/* Immagine corrente - transizione fluida */}
@@ -357,20 +370,23 @@ const PhotoBox = ({
         ) : // Stato vuoto - tasto per aggiungere foto oppure upload in corso
         isUploading ? (
           <div className="w-full py-6 flex flex-col items-center justify-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-bg-tertiary flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-            <div className="w-full max-w-[200px]">
-              <div className="flex items-center justify-between text-xs text-text-muted mb-1">
-                <span>Caricamento...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-text-primary mb-2">
+                Caricamento foto in corso...
+              </p>
+              {uploadTotal > 0 && (
+                <p className="text-xs text-text-muted mb-3">
+                  {uploadTotal} {uploadTotal === 1 ? "foto" : "foto"}
+                </p>
+              )}
+              <div className="w-48 h-2 bg-bg-tertiary rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-primary rounded-full transition-all duration-200"
+                  className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
+              <p className="text-xs text-text-muted mt-2">{uploadProgress}%</p>
             </div>
           </div>
         ) : (

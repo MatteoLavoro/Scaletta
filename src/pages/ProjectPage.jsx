@@ -35,9 +35,9 @@ import {
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
-import { deletePhotos, uploadPhoto } from "../services/photos";
-import { deleteFiles } from "../services/files";
-import { deletePdfs } from "../services/pdfs";
+import { deletePhotos, uploadPhoto, uploadPhotos } from "../services/photos";
+import { deleteFiles, uploadFiles } from "../services/files";
+import { deletePdfs, uploadPdfs } from "../services/pdfs";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -67,6 +67,8 @@ const ProjectPage = ({
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isMoreBoxesModalOpen, setIsMoreBoxesModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragCounterRef = useRef(0);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
 
@@ -255,7 +257,235 @@ const ProjectPage = ({
     }
   };
 
-  // Funzione per gestire la foto dalla fotocamera
+  // Funzione per classificare i file per tipo
+  const classifyFiles = (files) => {
+    const photos = [];
+    const pdfs = [];
+    const others = [];
+
+    files.forEach((file) => {
+      // Foto (immagini)
+      if (file.type.startsWith("image/")) {
+        photos.push(file);
+      }
+      // PDF
+      else if (file.type === "application/pdf") {
+        pdfs.push(file);
+      }
+      // Altri file
+      else {
+        others.push(file);
+      }
+    });
+
+    return { photos, pdfs, others };
+  };
+
+  // Gestisce il drop dei file - crea automaticamente le box per tipo
+  const handleFileDrop = async (files) => {
+    if (!project?.id || files.length === 0) return;
+
+    // Classifica i file per tipo
+    const { photos, pdfs, others } = classifyFiles(files);
+
+    // Upload in background - non blocca l'interfaccia
+    // Upload foto e crea PhotoBox
+    if (photos.length > 0) {
+      // Crea subito il box vuoto con stato caricamento
+      const photoCount =
+        bentoBoxes.filter((b) => b.boxType === "photo").length + 1;
+      createBentoBox(project.id, {
+        title: `Foto ${photoCount}`,
+        boxType: "photo",
+        photos: [],
+        isUploading: true,
+        uploadProgress: 0,
+        uploadTotal: photos.length,
+      })
+        .then((box) => {
+          if (box?.id) {
+            modifiedBoxesRef.current.add(box.id);
+            // Avvia upload con callback per progresso
+            return uploadPhotos(project.id, photos, (progress) => {
+              // Aggiorna progresso nel box
+              updateBentoBoxContent(
+                project.id,
+                box.id,
+                `uploading:${progress}`,
+              );
+            }).then((uploadedPhotos) => ({ boxId: box.id, uploadedPhotos }));
+          }
+        })
+        .then((result) => {
+          if (result?.uploadedPhotos && result.uploadedPhotos.length > 0) {
+            // Aggiorna il box con le foto caricate
+            return updateBentoBoxPhotos(
+              project.id,
+              result.boxId,
+              result.uploadedPhotos,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Errore upload foto tramite drag & drop:", error);
+        });
+    }
+
+    // Upload PDF e crea PdfBox
+    if (pdfs.length > 0) {
+      // Crea subito il box vuoto con stato caricamento
+      const pdfCount = bentoBoxes.filter((b) => b.boxType === "pdf").length + 1;
+      createBentoBox(project.id, {
+        title: `PDF ${pdfCount}`,
+        boxType: "pdf",
+        pdfs: [],
+        isUploading: true,
+        uploadProgress: 0,
+        uploadTotal: pdfs.length,
+      })
+        .then((box) => {
+          if (box?.id) {
+            modifiedBoxesRef.current.add(box.id);
+            // Avvia upload con callback per progresso
+            return uploadPdfs(project.id, pdfs, (progress) => {
+              // Aggiorna progresso nel box
+              updateBentoBoxContent(
+                project.id,
+                box.id,
+                `uploading:${progress}`,
+              );
+            }).then((uploadedPdfs) => ({ boxId: box.id, uploadedPdfs }));
+          }
+        })
+        .then((result) => {
+          if (result?.uploadedPdfs && result.uploadedPdfs.length > 0) {
+            // Aggiorna il box con i PDF caricati
+            return updateBentoBoxPdfs(
+              project.id,
+              result.boxId,
+              result.uploadedPdfs,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Errore upload PDF tramite drag & drop:", error);
+        });
+    }
+
+    // Upload altri file e crea FileBox
+    if (others.length > 0) {
+      // Crea subito il box vuoto con stato caricamento
+      const fileCount =
+        bentoBoxes.filter((b) => b.boxType === "file").length + 1;
+      createBentoBox(project.id, {
+        title: `File ${fileCount}`,
+        boxType: "file",
+        files: [],
+        isUploading: true,
+        uploadProgress: 0,
+        uploadTotal: others.length,
+      })
+        .then((box) => {
+          if (box?.id) {
+            modifiedBoxesRef.current.add(box.id);
+            // Avvia upload con callback per progresso
+            return uploadFiles(project.id, others, (progress) => {
+              // Aggiorna progresso nel box
+              updateBentoBoxContent(
+                project.id,
+                box.id,
+                `uploading:${progress}`,
+              );
+            }).then((uploadedFiles) => ({ boxId: box.id, uploadedFiles }));
+          }
+        })
+        .then((result) => {
+          if (result?.uploadedFiles && result.uploadedFiles.length > 0) {
+            // Aggiorna il box con i file caricati
+            return updateBentoBoxFiles(
+              project.id,
+              result.boxId,
+              result.uploadedFiles,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Errore upload file tramite drag & drop:", error);
+        });
+    }
+  };
+
+  // Gestisce l'evento dragenter
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Ignora il drag se ci sono modali aperti
+    if (
+      hasNestedModals() ||
+      isInfoModalOpen ||
+      isStatusModalOpen ||
+      isMoreBoxesModalOpen
+    ) {
+      return;
+    }
+
+    dragCounterRef.current++;
+
+    // Verifica che ci siano file nel drag
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      const hasFiles = Array.from(e.dataTransfer.items).some(
+        (item) => item.kind === "file",
+      );
+      if (hasFiles) {
+        setIsDraggingFiles(true);
+      }
+    }
+  };
+
+  // Gestisce l'evento dragleave
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    dragCounterRef.current--;
+
+    if (dragCounterRef.current === 0) {
+      setIsDraggingFiles(false);
+    }
+  };
+
+  // Gestisce l'evento dragover
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // Gestisce l'evento drop
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsDraggingFiles(false);
+    dragCounterRef.current = 0;
+
+    // Ignora il drop se ci sono modali aperti
+    if (
+      hasNestedModals() ||
+      isInfoModalOpen ||
+      isStatusModalOpen ||
+      isMoreBoxesModalOpen
+    ) {
+      return;
+    }
+
+    // Estrai i file dal drop
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await handleFileDrop(files);
+    }
+  };
+
   // Crea un nuovo PhotoBox con la foto scattata
   const handleCameraCapture = async (file) => {
     if (!project?.id || !file) return;
@@ -365,7 +595,7 @@ const ProjectPage = ({
       await updateBentoBoxAnagraficaCustomFields(
         project.id,
         boxId,
-        newCustomFields
+        newCustomFields,
       );
     } catch (error) {
       console.error("Errore aggiornamento campi custom anagrafica:", error);
@@ -491,7 +721,7 @@ const ProjectPage = ({
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
     project?.color || DEFAULT_PROJECT_COLOR,
-    isDark
+    isDark,
   );
 
   // Chiusura tramite history.back() per mantenere sincronizzazione
@@ -507,7 +737,7 @@ const ProjectPage = ({
     if (!hasAddedHistoryRef.current) {
       window.history.pushState(
         { projectPage: true, projectId: project.id },
-        ""
+        "",
       );
       hasAddedHistoryRef.current = true;
     }
@@ -622,7 +852,42 @@ const ProjectPage = ({
         </header>
 
         {/* Contenuto principale - Bento Grid */}
-        <main className={`flex-1 ${columnCount === 1 ? "px-2" : "p-4"}`}>
+        <main
+          className={`flex-1 ${columnCount === 1 ? "px-2" : "p-4"} relative`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Overlay drag & drop - occupa tutto lo spazio con margini */}
+          {isDraggingFiles && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center p-4">
+              <div className="w-full h-full border-4 border-dashed border-primary rounded-2xl flex flex-col items-center justify-center gap-4 bg-bg-primary/95 backdrop-blur-sm pointer-events-none">
+                <svg
+                  className="w-16 h-16 text-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                <div className="text-center">
+                  <p className="text-xl font-semibold text-text-primary mb-1">
+                    Rilascia i file qui
+                  </p>
+                  <p className="text-sm text-text-muted">
+                    Verranno automaticamente divisi per tipo
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Padding extra in basso per il FAB flottante (mobile e desktop) */}
           <div
             className="flex justify-center"
@@ -707,6 +972,13 @@ const ProjectPage = ({
                   }
                   // Render PhotoBox per box di tipo "photo"
                   if (item.boxType === "photo") {
+                    // Estrai progresso da content se sta caricando
+                    const uploadProgressMatch =
+                      item.content?.match(/^uploading:(\d+)$/);
+                    const uploadProgress = uploadProgressMatch
+                      ? parseInt(uploadProgressMatch[1])
+                      : 0;
+
                     return (
                       <div
                         key={item.id}
@@ -718,6 +990,9 @@ const ProjectPage = ({
                           title={item.title}
                           photos={item.photos || []}
                           isPinned={item.isPinned || false}
+                          isUploading={item.isUploading || false}
+                          uploadProgress={uploadProgress}
+                          uploadTotal={item.uploadTotal || 0}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -734,6 +1009,13 @@ const ProjectPage = ({
                   }
                   // Render PdfBox per box di tipo "pdf"
                   if (item.boxType === "pdf") {
+                    // Estrai progresso da content se sta caricando
+                    const uploadProgressMatch =
+                      item.content?.match(/^uploading:(\d+)$/);
+                    const uploadProgress = uploadProgressMatch
+                      ? parseInt(uploadProgressMatch[1])
+                      : 0;
+
                     return (
                       <div
                         key={item.id}
@@ -745,6 +1027,9 @@ const ProjectPage = ({
                           title={item.title}
                           pdfs={item.pdfs || []}
                           isPinned={item.isPinned || false}
+                          isUploading={item.isUploading || false}
+                          uploadProgress={uploadProgress}
+                          uploadTotal={item.uploadTotal || 0}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -761,6 +1046,13 @@ const ProjectPage = ({
                   }
                   // Render FileBox per box di tipo "file"
                   if (item.boxType === "file") {
+                    // Estrai progresso da content se sta caricando
+                    const uploadProgressMatch =
+                      item.content?.match(/^uploading:(\d+)$/);
+                    const uploadProgress = uploadProgressMatch
+                      ? parseInt(uploadProgressMatch[1])
+                      : 0;
+
                     return (
                       <div
                         key={item.id}
@@ -772,6 +1064,9 @@ const ProjectPage = ({
                           title={item.title}
                           files={item.files || []}
                           isPinned={item.isPinned || false}
+                          isUploading={item.isUploading || false}
+                          uploadProgress={uploadProgress}
+                          uploadTotal={item.uploadTotal || 0}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -837,7 +1132,7 @@ const ProjectPage = ({
                           onCustomFieldsChange={(newCustomFields) =>
                             handleAnagraficaCustomFieldsChange(
                               item.id,
-                              newCustomFields
+                              newCustomFields,
                             )
                           }
                           onDelete={() => handleDeleteBox(item.id)}
@@ -878,27 +1173,33 @@ const ProjectPage = ({
 
         {/* FAB aggiunta box - mobile */}
         {columnCount === 1 && !isLoading && (
-          <MobileAddFab
-            onAddNote={handleAddNote}
-            onAddPhoto={handleAddPhoto}
-            onAddFile={handleAddFile}
-            onMoreClick={() => setIsMoreBoxesModalOpen(true)}
-          />
+          <div className={isDraggingFiles ? "-z-10" : ""}>
+            <MobileAddFab
+              onAddNote={handleAddNote}
+              onAddPhoto={handleAddPhoto}
+              onAddFile={handleAddFile}
+              onMoreClick={() => setIsMoreBoxesModalOpen(true)}
+            />
+          </div>
         )}
 
         {/* FAB aggiunta box - desktop */}
         {columnCount > 1 && !isLoading && (
-          <DesktopAddFab
-            onAddNote={handleAddNote}
-            onAddPhoto={handleAddPhoto}
-            onAddFile={handleAddFile}
-            onMoreClick={() => setIsMoreBoxesModalOpen(true)}
-          />
+          <div className={isDraggingFiles ? "-z-10" : ""}>
+            <DesktopAddFab
+              onAddNote={handleAddNote}
+              onAddPhoto={handleAddPhoto}
+              onAddFile={handleAddFile}
+              onMoreClick={() => setIsMoreBoxesModalOpen(true)}
+            />
+          </div>
         )}
 
         {/* FAB fotocamera rapida - solo mobile */}
         {columnCount === 1 && !isLoading && (
-          <CameraFab onCapture={handleCameraCapture} />
+          <div className={isDraggingFiles ? "-z-10" : ""}>
+            <CameraFab onCapture={handleCameraCapture} />
+          </div>
         )}
       </div>
 

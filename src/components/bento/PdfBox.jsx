@@ -17,7 +17,7 @@ import { uploadPdfs, deletePdf } from "../../services/pdfs";
 // Configura il worker per react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
+  import.meta.url,
 ).toString();
 
 // Altezza fissa del carosello (stessa del PhotoBox)
@@ -183,6 +183,9 @@ const PdfThumbnail = ({ pdf, containerWidth }) => {
  * @param {string} title - Titolo del box
  * @param {array} pdfs - Array di PDF { id, url, name, storagePath, pageCount }
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {boolean} isUploading - Se il box è in fase di caricamento (da drag&drop)
+ * @param {number} uploadProgress - Progresso caricamento (0-100)
+ * @param {number} uploadTotal - Numero totale PDF da caricare
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPdfsChange - Callback quando cambiano i PDF
@@ -193,6 +196,9 @@ const PdfBox = ({
   title = "PDF",
   pdfs = [],
   isPinned = false,
+  isUploading: isUploadingExternal = false,
+  uploadProgress: uploadProgressExternal = 0,
+  uploadTotal: uploadTotalExternal = 0,
   onPinToggle,
   onTitleChange,
   onPdfsChange,
@@ -203,9 +209,16 @@ const PdfBox = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadResetKey, setUploadResetKey] = useState(0);
-  // Upload in background direttamente nel box
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Upload in background direttamente nel box (da modale)
+  const [isUploadingInternal, setIsUploadingInternal] = useState(false);
+  const [uploadProgressInternal, setUploadProgressInternal] = useState(0);
+
+  // Combina stati upload interno ed esterno
+  const isUploading = isUploadingExternal || isUploadingInternal;
+  const uploadProgress = isUploadingExternal
+    ? uploadProgressExternal
+    : uploadProgressInternal;
+  const uploadTotal = uploadTotalExternal;
 
   // Sincronizza stato locale con props
   useEffect(() => {
@@ -282,16 +295,16 @@ const PdfBox = ({
     setUploadResetKey((k) => k + 1);
 
     // Inizia upload in background nel box
-    setIsUploading(true);
-    setUploadProgress(0);
+    setIsUploadingInternal(true);
+    setUploadProgressInternal(0);
 
     try {
       const currentPdfsLength = localPdfs.length;
       const uploadedPdfs = await uploadPdfs(
         projectId,
         files,
-        (progress) => setUploadProgress(progress),
-        () => {} // onPdfUploaded
+        (progress) => setUploadProgressInternal(progress),
+        () => {}, // onPdfUploaded
       );
 
       if (uploadedPdfs.length > 0 && onPdfsChange) {
@@ -306,8 +319,8 @@ const PdfBox = ({
     } catch (error) {
       console.error("Errore upload PDF:", error);
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+      setIsUploadingInternal(false);
+      setUploadProgressInternal(0);
     }
   };
 
@@ -462,20 +475,23 @@ const PdfBox = ({
         ) : // Stato vuoto - tasto per aggiungere PDF oppure upload in corso
         isUploading ? (
           <div className="w-full py-6 flex flex-col items-center justify-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-bg-tertiary flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-            <div className="w-full max-w-[200px]">
-              <div className="flex items-center justify-between text-xs text-text-muted mb-1">
-                <span>Caricamento...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-text-primary mb-2">
+                Caricamento PDF in corso...
+              </p>
+              {uploadTotal > 0 && (
+                <p className="text-xs text-text-muted mb-3">
+                  {uploadTotal} {uploadTotal === 1 ? "PDF" : "PDF"}
+                </p>
+              )}
+              <div className="w-48 h-2 bg-bg-tertiary rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-primary rounded-full transition-all duration-200"
+                  className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
+              <p className="text-xs text-text-muted mt-2">{uploadProgress}%</p>
             </div>
           </div>
         ) : (

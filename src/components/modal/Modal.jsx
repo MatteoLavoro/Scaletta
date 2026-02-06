@@ -63,6 +63,16 @@ const Modal = ({
   // Calcola z-index basato su profondità o valore personalizzato
   const computedZIndex = zIndex ?? 1000 + modalDepth * 10;
 
+  // Blocca scroll del body quando il modale è aperto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen]);
+
   // Focus trap and restore focus on close
   useEffect(() => {
     if (isOpen) {
@@ -92,7 +102,7 @@ const Modal = ({
       if (!modal) return;
 
       const focusableElements = modal.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
 
       if (focusableElements.length === 0) return;

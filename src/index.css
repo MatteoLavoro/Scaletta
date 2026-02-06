@@ -220,7 +220,6 @@ body.modal-open {
 .prose strong,
 .prose b {
   font-weight: 600;
-  color: var(--color-text-primary);
 }
 
 .prose em,

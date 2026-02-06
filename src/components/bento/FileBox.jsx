@@ -253,6 +253,9 @@ const FileRow = ({ file, onDownload, onDelete, primaryColor }) => {
  * @param {string} title - Titolo del box
  * @param {array} files - Array di file { id, url, name, size, type, fileType, storagePath }
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {boolean} isUploading - Se il box è in fase di caricamento (da drag&drop)
+ * @param {number} uploadProgress - Progresso caricamento (0-100)
+ * @param {number} uploadTotal - Numero totale file da caricare
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onFilesChange - Callback quando cambiano i file
@@ -263,6 +266,9 @@ const FileBox = ({
   title = "File",
   files = [],
   isPinned = false,
+  isUploading = false,
+  uploadProgress = 0,
+  uploadTotal = 0,
   onPinToggle,
   onTitleChange,
   onFilesChange,
@@ -322,7 +328,7 @@ const FileBox = ({
         const uploadedFile = await uploadFile(projectId, file, (progress) => {
           // Aggiorna il progress per questo file specifico
           setUploadingFiles((prev) =>
-            prev.map((item, i) => (i === index ? { ...item, progress } : item))
+            prev.map((item, i) => (i === index ? { ...item, progress } : item)),
           );
         });
 
@@ -395,9 +401,33 @@ const FileBox = ({
         onTitleChange={onTitleChange}
         onDelete={onDelete}
         menuItems={fileMenuItems}
-        minHeight={hasFiles || hasUploadingFiles ? undefined : 150}
+        minHeight={
+          hasFiles || hasUploadingFiles || isUploading ? undefined : 150
+        }
       >
-        {hasFiles || hasUploadingFiles ? (
+        {/* Stato caricamento da drag & drop */}
+        {isUploading && files.length === 0 && uploadingFiles.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-text-primary mb-2">
+                Caricamento file in corso...
+              </p>
+              {uploadTotal > 0 && (
+                <p className="text-xs text-text-muted mb-3">
+                  {uploadTotal} {uploadTotal === 1 ? "file" : "file"}
+                </p>
+              )}
+              <div className="w-48 h-2 bg-bg-tertiary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-text-muted mt-2">{uploadProgress}%</p>
+            </div>
+          </div>
+        ) : hasFiles || hasUploadingFiles ? (
           // Lista file
           <div className="space-y-2">
             {/* File completati */}
