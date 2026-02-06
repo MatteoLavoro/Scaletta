@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PencilIcon, FileTextIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { InputModal } from "../modal";
+import { RichTextModal } from "../modal";
 
 /**
  * NoteBox - Bento Box per le note
@@ -38,12 +38,6 @@ const NoteBox = ({
     },
   ];
 
-  // Validazione nota
-  const validateNote = (value) => {
-    if (value.length > 2000) return "La nota non può superare 2000 caratteri";
-    return null;
-  };
-
   // Gestione salvataggio nota
   const handleNoteConfirm = async (newContent) => {
     if (onContentChange) {
@@ -67,11 +61,16 @@ const NoteBox = ({
         minHeight={hasContent ? undefined : 150}
       >
         {hasContent ? (
-          // Riquadro contenente la nota
+          // Riquadro contenente la nota con HTML formattato
           <div className="bg-bg-tertiary/50 border border-border/50 rounded-lg p-3">
-            <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed text-center">
-              {content}
-            </p>
+            <div
+              className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: content }}
+              style={{
+                wordWrap: "break-word",
+                whiteSpace: "pre-wrap",
+              }}
+            />
           </div>
         ) : (
           // Stato vuoto - uniforme
@@ -99,21 +98,12 @@ const NoteBox = ({
         )}
       </BaseBentoBox>
 
-      {/* Modale modifica nota */}
-      <InputModal
+      {/* Modale modifica nota con editor rich text */}
+      <RichTextModal
         isOpen={isEditNoteOpen}
-        title={hasContent ? "Modifica nota" : "Nuova nota"}
-        label="Contenuto"
-        placeholder="Scrivi la tua nota..."
-        initialValue={content}
-        confirmText="Salva"
-        onConfirm={handleNoteConfirm}
         onClose={() => setIsEditNoteOpen(false)}
-        validate={validateNote}
-        maxLength={2000}
-        multiline
-        rows={6}
-        zIndex={1020}
+        onConfirm={handleNoteConfirm}
+        initialContent={content}
       />
     </>
   );

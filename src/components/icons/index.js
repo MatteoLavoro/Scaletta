@@ -2,6 +2,7 @@
 export { default as AlertCircleIcon } from "./AlertCircleIcon";
 export { default as AlertTriangleIcon } from "./AlertTriangleIcon";
 export { default as ArrowLeftIcon } from "./ArrowLeftIcon";
+export { default as BoldIcon } from "./BoldIcon";
 export { default as CameraIcon } from "./CameraIcon";
 export { default as CheckIcon } from "./CheckIcon";
 export { default as CheckCircleIcon } from "./CheckCircleIcon";
@@ -23,6 +24,7 @@ export { default as FolderIcon } from "./FolderIcon";
 export { default as IdCardIcon } from "./IdCardIcon";
 export { default as ImageIcon } from "./ImageIcon";
 export { default as InfoIcon } from "./InfoIcon";
+export { default as ItalicIcon } from "./ItalicIcon";
 export { default as ListChecksIcon } from "./ListChecksIcon";
 export { default as LogOutIcon } from "./LogOutIcon";
 export { default as MailIcon } from "./MailIcon";

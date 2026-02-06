@@ -32,8 +32,9 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
@@ -195,4 +196,47 @@ body.modal-open {
 /* Bento Box Shuffle - Transizione fluida per riposizionamento */
 .bento-transition {
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Rich Text Editor Styles ===== */
+
+/* Reset stili di base per contenuto HTML formattato */
+.prose {
+  max-width: 100%;
+}
+
+.prose p {
+  margin: 0.5em 0;
+}
+
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose strong,
+.prose b {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.prose em,
+.prose i {
+  font-style: italic;
+}
+
+/* Stile kbd per i tasti */
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 0.875em;
+  font-family: monospace;
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: var(--color-text-secondary);
 }
