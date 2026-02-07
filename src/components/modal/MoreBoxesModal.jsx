@@ -1,5 +1,5 @@
 import Modal from "./Modal";
-import { ListChecksIcon, UserIcon, FileTextIcon } from "../icons";
+import { ListChecksIcon, UserIcon, FileTextIcon, ClockIcon } from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
@@ -52,6 +52,7 @@ const BoxOptionCard = ({ icon, title, description, onClick, primaryColor }) => {
  * @param {function} onAddChecklist - Callback per aggiungere una checklist
  * @param {function} onAddAnagrafica - Callback per aggiungere una anagrafica
  * @param {function} onAddPdf - Callback per aggiungere un PDF box
+ * @param {function} onAddVersion - Callback per aggiungere un version box
  * @param {number} zIndex - z-index per modali annidati
  */
 const MoreBoxesModal = ({
@@ -60,6 +61,7 @@ const MoreBoxesModal = ({
   onAddChecklist,
   onAddAnagrafica,
   onAddPdf,
+  onAddVersion,
   zIndex,
 }) => {
   const { colors, accentColor, isDark } = useTheme();
@@ -88,6 +90,12 @@ const MoreBoxesModal = ({
     onClose?.();
   };
 
+  // Handler per aggiungere version
+  const handleAddVersion = () => {
+    onAddVersion?.();
+    onClose?.();
+  };
+
   // Lista di opzioni box disponibili
   const boxOptions = [
     {
@@ -110,6 +118,13 @@ const MoreBoxesModal = ({
       title: "PDF",
       description: "Documenti PDF con anteprima prima pagina",
       onClick: handleAddPdf,
+    },
+    {
+      id: "version",
+      icon: <ClockIcon className="w-6 h-6" />,
+      title: "Controllo Versioni File",
+      description: "Traccia versioni di un file con descrizione modifiche",
+      onClick: handleAddVersion,
     },
   ];
 

@@ -15,6 +15,7 @@ import {
   FileBox,
   ChecklistBox,
   AnagraficaBox,
+  VersionBox,
   BaseBentoBox,
   TutorialBox,
   CameraFab,
@@ -31,6 +32,7 @@ import {
   updateBentoBoxChecklistItems,
   updateBentoBoxAnagraficaFields,
   updateBentoBoxAnagraficaCustomFields,
+  updateBentoBoxVersions,
   updateBentoBoxPin,
   deleteBentoBox,
   subscribeToBentoBoxes,
@@ -112,6 +114,9 @@ const ProjectPage = ({
     if (box.boxType === "pdf") {
       return !box.pdfs || box.pdfs.length === 0;
     }
+    if (box.boxType === "version") {
+      return !box.versions || box.versions.length === 0;
+    }
     if (box.boxType === "anagrafica") {
       // Non considerare mai vuoto un box anagrafica
       return false;
@@ -144,6 +149,9 @@ const ProjectPage = ({
         }
         if (box.boxType === "pdf" && box.pdfs?.length > 0) {
           await deletePdfs(box.pdfs);
+        }
+        if (box.boxType === "version" && box.versions?.length > 0) {
+          await deleteFiles(box.versions);
         }
         await deleteBentoBox(project.id, box.id);
         console.log(`Box vuoto "${box.title}" eliminato automaticamente`);
@@ -238,6 +246,23 @@ const ProjectPage = ({
       });
     } catch (error) {
       console.error("Errore creazione anagrafica box:", error);
+    }
+  };
+
+  // Funzione per aggiungere un VersionBox
+  const handleAddVersion = async () => {
+    if (!project?.id) return;
+
+    try {
+      const versionCount =
+        bentoBoxes.filter((b) => b.boxType === "version").length + 1;
+      await createBentoBox(project.id, {
+        title: `Controllo Versioni File ${versionCount}`,
+        boxType: "version",
+        versions: [],
+      });
+    } catch (error) {
+      console.error("Errore creazione version box:", error);
     }
   };
 
@@ -552,6 +577,21 @@ const ProjectPage = ({
     }
   };
 
+  // Funzione per aggiornare le versioni di un VersionBox
+  const handleVersionsChange = async (boxId, newVersions) => {
+    if (!project?.id) return;
+
+    try {
+      // Segna il box come modificato (se ha versioni)
+      if (newVersions.length > 0) {
+        modifiedBoxesRef.current.add(boxId);
+      }
+      await updateBentoBoxVersions(project.id, boxId, newVersions);
+    } catch (error) {
+      console.error("Errore aggiornamento versioni:", error);
+    }
+  };
+
   // Funzione per aggiornare gli items di un ChecklistBox
   const handleChecklistItemsChange = async (boxId, newItems) => {
     if (!project?.id) return;
@@ -620,6 +660,10 @@ const ProjectPage = ({
       if (box?.boxType === "file" && box.files?.length > 0) {
         // Elimina tutti i file dallo storage
         await deleteFiles(box.files);
+      }
+      if (box?.boxType === "version" && box.versions?.length > 0) {
+        // Elimina tutte le versioni dallo storage
+        await deleteFiles(box.versions);
       }
       await deleteBentoBox(project.id, boxId);
     } catch (error) {
@@ -1140,6 +1184,33 @@ const ProjectPage = ({
                       </div>
                     );
                   }
+                  // Render VersionBox per box di tipo "version"
+                  if (item.boxType === "version") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <VersionBox
+                          projectId={project.id}
+                          title={item.title}
+                          versions={item.versions || []}
+                          isPinned={item.isPinned || false}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
+                          }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onVersionsChange={(newVersions) =>
+                            handleVersionsChange(item.id, newVersions)
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
+                        />
+                      </div>
+                    );
+                  }
                   // Render BaseBentoBox per box generici (fallback)
                   return (
                     <div
@@ -1231,6 +1302,7 @@ const ProjectPage = ({
         onAddChecklist={handleAddChecklist}
         onAddAnagrafica={handleAddAnagrafica}
         onAddPdf={handleAddPdf}
+        onAddVersion={handleAddVersion}
       />
     </>
   );

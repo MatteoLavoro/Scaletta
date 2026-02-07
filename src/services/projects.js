@@ -516,6 +516,17 @@ export const updateBentoBoxAnagraficaCustomFields = async (
 };
 
 /**
+ * Aggiorna le versioni di un bento box versioni (VersionBox)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {array} versions - Array di versioni con metadati
+ */
+export const updateBentoBoxVersions = async (projectId, boxId, versions) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { versions });
+};
+
+/**
  * Aggiorna lo stato pin di un bento box
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box

@@ -13,6 +13,7 @@ export { default as PdfBox } from "./PdfBox";
 export { default as FileBox } from "./FileBox";
 export { default as ChecklistBox } from "./ChecklistBox";
 export { default as AnagraficaBox } from "./AnagraficaBox";
+export { default as VersionBox } from "./VersionBox";
 export { default as TutorialBox } from "./TutorialBox";
 export { default as CameraFab } from "./CameraFab";
 
