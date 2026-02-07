@@ -26,7 +26,7 @@ const CURRENT_GROUP_KEY = "scaletta_current_group";
 const AppContent = () => {
   const { isAuthenticated, loading, user } = useAuth();
   const { openModal, currentModal, closeAllModals } = useModal();
-  const { isInstallable, isInstalled, install } = usePWAInstall();
+  const { isInstallable, isInstalled, install, deviceInfo } = usePWAInstall();
   const [authMode, setAuthMode] = useState("login");
   const [showInstallPopup, setShowInstallPopup] = useState(false);
 
@@ -59,7 +59,7 @@ const AppContent = () => {
     if (currentProject) {
       sessionStorage.setItem(
         CURRENT_PROJECT_KEY,
-        JSON.stringify(currentProject)
+        JSON.stringify(currentProject),
       );
     } else {
       sessionStorage.removeItem(CURRENT_PROJECT_KEY);
@@ -82,8 +82,11 @@ const AppContent = () => {
     // Mostra il popup solo se:
     // - Non è stato ancora mostrato in questa sessione
     // - L'app non è già installata
-    // - L'installazione diretta è disponibile (isInstallable)
-    if (!alreadyShown && !isInstalled && isInstallable) {
+    // - L'installazione diretta è disponibile (isInstallable) O è iOS/iPadOS
+    const shouldShow =
+      !alreadyShown && !isInstalled && (isInstallable || deviceInfo.isIOS);
+
+    if (shouldShow) {
       // Piccolo ritardo per permettere alla pagina di caricarsi
       const timer = setTimeout(() => {
         setShowInstallPopup(true);
@@ -92,7 +95,7 @@ const AppContent = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [isInstallable, isInstalled]);
+  }, [isInstallable, isInstalled, deviceInfo]);
 
   // Gestione navigazione progetto
   const handleProjectClick = ({ project, group }) => {
