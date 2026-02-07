@@ -12,6 +12,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
 import { getStorage, ref, listAll, deleteObject } from "firebase/storage";
 import app from "./config";
@@ -525,7 +526,52 @@ export const updateBentoBoxVersions = async (projectId, boxId, versions) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { versions });
 };
+/**
+ * Aggiunge atomicamente una nuova versione usando transaction (previene race conditions)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {object} versionData - Dati della versione (senza versionNumber che verrà calcolato atomicamente)
+ * @returns {Promise<number>} - Il numero di versione assegnato
+ */
+export const addBentoBoxVersionAtomic = async (
+  projectId,
+  boxId,
+  versionData,
+) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
 
+  // Usa transaction per garantire atomicità
+  const versionNumber = await runTransaction(db, async (transaction) => {
+    const boxDoc = await transaction.get(boxRef);
+
+    if (!boxDoc.exists()) {
+      throw new Error("Box non trovato");
+    }
+
+    const boxData = boxDoc.data();
+    const currentVersions = boxData.versions || [];
+
+    // Calcola il prossimo numero di versione atomicamente
+    const nextVersionNumber =
+      currentVersions.length === 0
+        ? 1
+        : Math.max(...currentVersions.map((v) => v.versionNumber || 0)) + 1;
+
+    // Crea la nuova versione con il numero assegnato
+    const newVersion = {
+      ...versionData,
+      versionNumber: nextVersionNumber,
+    };
+
+    // Aggiorna l'array atomicamente
+    const updatedVersions = [...currentVersions, newVersion];
+    transaction.update(boxRef, { versions: updatedVersions });
+
+    return nextVersionNumber;
+  });
+
+  return versionNumber;
+};
 /**
  * Aggiorna lo stato pin di un bento box
  * @param {string} projectId - ID del progetto

@@ -1194,6 +1194,7 @@ const ProjectPage = ({
                       >
                         <VersionBox
                           projectId={project.id}
+                          boxId={item.id}
                           title={item.title}
                           versions={item.versions || []}
                           isPinned={item.isPinned || false}

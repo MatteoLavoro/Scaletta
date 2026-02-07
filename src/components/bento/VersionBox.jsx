@@ -25,6 +25,7 @@ import {
   getFileType,
   getFileExtension,
 } from "../../services/files";
+import { addBentoBoxVersionAtomic } from "../../services/projects";
 
 /**
  * Renderizza l'icona appropriata per un tipo di file
@@ -417,6 +418,7 @@ const VersionRow = ({ version, onDownload, onDelete }) => {
  * con descrizione delle modifiche e tag per ogni versione.
  *
  * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box (necessario per transaction atomica)
  * @param {string} title - Titolo del box
  * @param {array} versions - Array di versioni: { id, url, name, size, storagePath, versionNumber, description, tags, uploadedAt }
  * @param {function} onTitleChange - Callback cambio titolo
@@ -425,6 +427,7 @@ const VersionRow = ({ version, onDownload, onDelete }) => {
  */
 const VersionBox = ({
   projectId,
+  boxId,
   title,
   versions = [],
   onTitleChange,
@@ -440,13 +443,6 @@ const VersionBox = ({
     return b.versionNumber - a.versionNumber;
   });
 
-  // Ottieni il numero della prossima versione
-  const getNextVersionNumber = () => {
-    if (versions.length === 0) return 1;
-    const maxVersion = Math.max(...versions.map((v) => v.versionNumber || 0));
-    return maxVersion + 1;
-  };
-
   // Handlers
   const handleAddVersionClick = () => {
     setIsUploadModalOpen(true);
@@ -454,10 +450,10 @@ const VersionBox = ({
 
   const handleUploadConfirm = async (data) => {
     const { file, description, tags } = data;
-    const versionNumber = getNextVersionNumber();
 
+    // Mostra upload in corso (senza versionNumber perché verrà assegnato atomicamente)
     setUploadingVersion({
-      versionNumber,
+      versionNumber: "...",
       description,
       tags,
     });
@@ -465,24 +461,21 @@ const VersionBox = ({
     setIsUploadModalOpen(false);
 
     try {
-      // Upload file
+      // 1. Upload file su Storage (con progress tracking)
       const uploadedFile = await uploadFile(projectId, file, (progress) => {
         setUploadProgress(progress);
       });
 
-      // Aggiungi metadati versione
-      const newVersion = {
+      // 2. Aggiungi versione atomicamente usando transaction
+      // Questo previene race conditions quando più utenti caricano contemporaneamente
+      await addBentoBoxVersionAtomic(projectId, boxId, {
         ...uploadedFile,
-        versionNumber,
         description,
         tags,
         uploadedAt: new Date(),
-      };
+      });
 
-      // Aggiorna lista versioni
-      const updatedVersions = [...versions, newVersion];
-      onVersionsChange(updatedVersions);
-
+      // 3. Reset stato upload (Firestore onSnapshot aggiornerà automaticamente la UI)
       setUploadingVersion(null);
       setUploadProgress(0);
     } catch (error) {
