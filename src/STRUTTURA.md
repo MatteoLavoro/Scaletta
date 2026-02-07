@@ -194,61 +194,311 @@ Wrapper React per icone lucide-react che garantiscono consistenza nell'utilizzo.
 
 ## `contexts/`
 
-| File               | Descrizione                         |
-| ------------------ | ----------------------------------- |
-| `AuthContext.jsx`  | Stato autenticazione utente         |
-| `ModalContext.jsx` | Stack modali + gestione history     |
-| `ThemeContext.jsx` | Tema (chiaro/scuro) + colore accent |
+| File               | Descrizione                                                                 |
+| ------------------ | --------------------------------------------------------------------------- |
+| `AuthContext.jsx`  | Stato autenticazione utente con Firebase Auth                               |
+| `ModalContext.jsx` | Stack modali + gestione history + modali annidati (nested callbacks)        |
+| `ThemeContext.jsx` | Tema (chiaro/scuro) + colore accent + aggiornamento variabili CSS dinamiche |
+
+### AuthContext
+
+**Stato fornito:**
+
+```javascript
+{
+  user: object | null,           // Utente Firebase corrente
+  isAuthenticated: boolean,      // true se user esiste
+  loading: boolean,              // true durante verifica iniziale
+  updateUsername: (name) => {}   // Funzione per aggiornare displayName
+}
+```
+
+### ModalContext
+
+**Funzioni principali:**
+
+```javascript
+{
+  modalStack: array,                        // Stack modali aperti
+  currentModal: object | null,              // Modale in cima allo stack
+  openModal: (id, props) => {},             // Apre modale e aggiunge a history
+  closeModal: () => {},                     // Chiude modale in cima
+  closeAllModals: () => {},                 // Chiude tutti i modali
+  registerNestedClose: (callback) => {},    // Registra callback per modali annidati
+  closeTopModal: () => {}                   // Chiude modale annidato o normale
+}
+```
+
+**Gestione History:**
+
+- Ogni `openModal()` esegue `history.pushState()`
+- Evento `popstate` chiama automaticamente la callback appropriata
+- Supporta tasto indietro browser e Android
+- Gestisce ESC su desktop
+
+**Modali Annidati:**
+
+- Usa `nestedCloseCallbacksRef` per stack locale
+- Modali annidati non entrano in `modalStack`
+- `closeTopModal()` chiude prima annidati, poi normali
+
+### ThemeContext
+
+**Stato fornito:**
+
+```javascript
+{
+  theme: 'light' | 'dark',                  // Tema corrente
+  accentColor: string,                      // ID colore accent ('teal', 'blue', ...)
+  isDark: boolean,                          // true se tema scuro
+  toggleTheme: () => {},                    // Cambia tra light e dark
+  setAccentColor: (color) => {}             // Imposta colore accent
+}
+```
+
+**Persistenza:**
+
+- `localStorage.getItem('scaletta-theme-mode')`
+- `localStorage.getItem('scaletta-accent-color')`
+
+**Variabili CSS:**
+
+- Aggiorna `document.documentElement.style` quando cambia tema/colore
+- Es: `--theme-primary`, `--theme-bg-primary`, `--theme-text-primary`
 
 ---
 
 ## `hooks/`
 
-| File                   | Descrizione                                    |
-| ---------------------- | ---------------------------------------------- |
-| `useBentoAnimation.js` | Layout Bento + animazioni FLIP + distribuzione |
-| `useColumnCount.js`    | Calcola colonne responsive (1-4)               |
-| `useIsMobile.js`       | Rileva viewport mobile (<768px)                |
-| `useKeyboardHeight.js` | Altezza tastiera virtuale                      |
-| `usePWAInstall.js`     | Gestione installazione PWA                     |
+| File                   | Descrizione                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `useBentoAnimation.js` | Layout Bento + animazioni FLIP + distribuzione "shortest column first" + fade-in |
+| `useColumnCount.js`    | Calcola colonne responsive (1-4) in base a larghezza viewport                    |
+| `useIsMobile.js`       | Rileva viewport mobile (<768px) con debounce                                     |
+| `useKeyboardHeight.js` | Altezza tastiera virtuale (mobile) usando visualViewport API                     |
+| `usePWAInstall.js`     | Gestione installazione PWA (beforeinstallprompt, isInstalled, device detection)  |
+
+### useBentoAnimation
+
+**Parametri:**
+
+```javascript
+useBentoAnimation(items, columnCount, (gap = 16));
+```
+
+- `items`: Array con `.id` univoco
+- `columnCount`: Numero colonne (1-4)
+- `gap`: Gap tra box in px
+
+**Return:**
+
+```javascript
+{
+  containerRef: ref,          // Ref da applicare al container
+  columns: array[],           // Array di colonne (ogni colonna = array di items)
+  getItemStyle: (id) => {}    // Funzione per ottenere stile item (opacity per fade-in)
+}
+```
+
+**Algoritmo:**
+
+1. **ResizeObserver**: Monitora altezze di ogni box (threshold 2px)
+2. **Distribuzione**: "Shortest column first" - ogni box va nella colonna più corta
+3. **FLIP Animation**: First-Last-Invert-Play per transizioni fluide
+4. **Fade-in**: Nuovi box iniziano con `opacity: 0`, poi fade-in 300ms
+
+### useColumnCount
+
+**Breakpoints:**
+
+```javascript
+< 640px:   1 colonna   // Mobile
+640-1023:  2 colonne   // Tablet
+1024-1343: 3 colonne   // Desktop
+≥ 1344px:  4 colonne   // Large desktop
+```
+
+### usePWAInstall
+
+**Return:**
+
+```javascript
+{
+  isInstallable: boolean,     // beforeinstallprompt disponibile
+  isInstalled: boolean,       // display-mode = standalone
+  install: () => {},          // Triggera prompt installazione
+  deviceInfo: {               // Info dispositivo
+    isIOS: boolean,
+    isAndroid: boolean,
+    isDesktop: boolean
+  }
+}
+```
 
 ---
 
 ## `pages/`
 
-| File              | Descrizione                        |
-| ----------------- | ---------------------------------- |
-| `WelcomePage.jsx` | Pagina iniziale (non autenticato)  |
-| `Dashboard.jsx`   | Pagina principale (autenticato)    |
-| `ProjectPage.jsx` | Pagina singolo progetto con header |
-| `LoadingPage.jsx` | Schermata caricamento              |
-| `index.js`        | Export pubblici                    |
+| File              | Descrizione                                                       |
+| ----------------- | ----------------------------------------------------------------- |
+| `WelcomePage.jsx` | Pagina iniziale (non autenticato) con logo e tasti login/register |
+| `Dashboard.jsx`   | Pagina principale (autenticato) con lista gruppi e progetti       |
+| `ProjectPage.jsx` | Pagina singolo progetto con header colorato e BentoGrid           |
+| `LoadingPage.jsx` | Schermata caricamento con spinner                                 |
+| `index.js`        | Export pubblici                                                   |
 
 ---
 
 ## `services/`
 
-| File          | Descrizione                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| `config.js`   | Configurazione Firebase                                                 |
-| `auth.js`     | Funzioni auth (login, register, logout, updateUsername)                 |
-| `groups.js`   | Funzioni CRUD gruppi (crea, unisciti, esci, elimina con cascade)        |
-| `projects.js` | Funzioni CRUD progetti + bento boxes (con eliminazione foto automatica) |
-| `photos.js`   | Upload/delete foto Firebase Storage con progress                        |
-| `pdfs.js`     | Upload/delete PDF Firebase Storage con progress                         |
-| `files.js`    | Upload/delete file generici Firebase Storage                            |
+| File          | Descrizione                                                            |
+| ------------- | ---------------------------------------------------------------------- |
+| `config.js`   | Configurazione Firebase (initializeApp)                                |
+| `auth.js`     | Funzioni auth: login, register, logout, updateUsername                 |
+| `groups.js`   | CRUD gruppi: create, join, leave, delete (con cascade progetti e foto) |
+| `projects.js` | CRUD progetti + bento boxes + eliminazione foto automatica             |
+| `photos.js`   | Upload/delete foto Firebase Storage con progress callback              |
+| `pdfs.js`     | Upload/delete PDF Firebase Storage con progress callback               |
+| `files.js`    | Upload/delete file generici Firebase Storage                           |
+
+### groups.js
+
+**Funzioni principali:**
+
+```javascript
+createGroup(name, creator); // Crea gruppo con codice 8 char univoco
+getGroupByCode(code); // Trova gruppo tramite codice
+joinGroup(code, user); // Unisciti a gruppo
+getUserGroups(userId); // Ottieni gruppi utente (filtra membri)
+subscribeToUserGroups(userId, callback); // Real-time listener
+updateGroupName(groupId, newName); // Modifica nome
+leaveGroup(groupId, userId); // Esci da gruppo
+deleteGroup(groupId); // Elimina gruppo + progetti + foto (cascade)
+```
+
+**Codice gruppo:**
+
+- 8 caratteri alfanumerici (A-Z, 0-9)
+- Generato random
+- Univoco (verifica esistenza)
+- Max 10 tentativi
+
+**Eliminazione cascade:**
+
+1. Trova tutti i progetti del gruppo
+2. Per ogni progetto: elimina foto da Storage + documento Firestore
+3. Elimina documento gruppo
+
+### projects.js
+
+**Funzioni principali:**
+
+```javascript
+getRandomAvailableColor(groupId); // Colore random non usato
+createProject(name, groupId, creator); // Crea progetto con colore auto
+getProjectsByGroup(groupId); // Lista progetti ordinati
+getProjectById(projectId); // Singolo progetto
+subscribeToProject(projectId, callback); // Real-time listener
+updateProjectName(projectId, newName); // Modifica nome
+updateProjectColor(projectId, color); // Modifica colore
+updateProjectStatus(projectId, status); // Modifica stato
+deleteProject(projectId); // Elimina con foto Storage
+
+// Bento Boxes
+subscribeToBentoBoxes(projectId, callback); // Real-time listener
+createBentoBox(projectId, boxData); // Crea box
+updateBentoBoxTitle(projectId, boxId, title);
+updateBentoBoxContent(projectId, boxId, content);
+updateBentoBoxPhotos(projectId, boxId, photos);
+deleteBentoBox(projectId, boxId); // Elimina box
+deleteProjectWithContents(projectId); // Elimina tutto (usata da groups.js)
+```
+
+**Ordinamento progetti:**
+
+1. Per stato: in-corso (0) → completato (1) → archiviato (2) → cestinato (3)
+2. Per data: più recenti prima
+
+### photos.js
+
+**Funzioni:**
+
+```javascript
+uploadPhoto(projectId, file, onProgress); // Upload singolo con callback progress
+uploadPhotos(projectId, files, onProgress, onPhotoUploaded); // Upload multiplo
+deletePhoto(storagePath); // Elimina singola
+deletePhotos(photos); // Elimina multiple
+validateImageFile(file); // Valida formato/dimensione
+```
+
+**Validazione:**
+
+- Formati: JPG, PNG, GIF, WebP, SVG
+- Max: 10MB
+
+**Progress:**
+
+- Callback chiamata con percentuale 0-100
+- Upload multiplo: progress = media dei singoli upload
+
+### pdfs.js / files.js
+
+Struttura simile a `photos.js` ma per PDF (max 50MB) e file generici (max 50MB).
 
 ---
 
 ## `utils/`
 
-| File                   | Descrizione                                                   |
-| ---------------------- | ------------------------------------------------------------- |
-| `authValidation.js`    | Validazione email/password/username                           |
-| `groupValidation.js`   | Validazione nome gruppo (2-50 char) e codice (8 char alfanum) |
-| `projectValidation.js` | Validazione nome progetto (2-50 char)                         |
-| `projectColors.js`     | Definizione 12 colori progetto (light/dark)                   |
-| `projectStatuses.js`   | Definizione 4 stati progetto con icone e colori               |
+| File                   | Descrizione                                                             |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `authValidation.js`    | Validazione email/password/username                                     |
+| `groupValidation.js`   | Validazione nome gruppo (2-50 char) e codice (8 char alfanum maiuscolo) |
+| `projectValidation.js` | Validazione nome progetto (2-50 char)                                   |
+| `projectColors.js`     | Definizione 12 colori progetto (light/dark) + ordine griglia 4x3        |
+| `projectStatuses.js`   | Definizione 4 stati progetto con icone, colori, priorità                |
+
+### authValidation.js
+
+```javascript
+validateEmail(email); // Verifica formato email
+validatePassword(password); // Min 6 caratteri
+validateUsername(username); // Min 2 caratteri
+validateLoginForm(email, password); // Entrambi non vuoti
+validateRegisterForm(email, password, confirmPassword, username);
+```
+
+### projectColors.js
+
+**12 colori organizzati in griglia 4x3:**
+
+```javascript
+PROJECT_COLOR_ORDER = [
+  ["blue", "purple", "teal", "green"], // Riga 1
+  ["orange", "red", "pink", "indigo"], // Riga 2
+  ["yellow", "cyan", "emerald", "rose"], // Riga 3
+];
+```
+
+Ogni colore ha:
+
+- `id`: stringa identificativa
+- `light`: valore hex per tema chiaro (tone 40 Material Design 3)
+- `dark`: valore hex per tema scuro (tone 80)
+
+### projectStatuses.js
+
+**4 stati con priorità ordinamento:**
+
+```javascript
+{
+  'in-corso': { priority: 0, label: 'In corso', icon: Play, color: 'green' },
+  'completato': { priority: 1, label: 'Completato', icon: CheckCircle, color: 'blue' },
+  'archiviato': { priority: 2, label: 'Archiviato', icon: Archive, color: 'purple' },
+  'cestinato': { priority: 3, label: 'Cestinato', icon: Trash, color: 'red' }
+}
+```
+
+Default: `'in-corso'`
 
 ---
 

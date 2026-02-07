@@ -411,19 +411,23 @@ delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 - **React 19** + **Vite 7** (build tool)
 - **Tailwind CSS 4** con variabili CSS custom per temi
 - **Lucide React** per icone
+- **react-pdf** per rendering PDF
 - **PWA** con Service Worker
 
 ### Backend
 
 - **Firebase Authentication** (email/password)
 - **Cloud Firestore** (database NoSQL)
-- **Firebase Storage** (upload foto)
+- **Firebase Storage** (upload foto, PDF, file)
 - **Firebase Hosting** (deployment)
 
 ### Configurazione
 
-- **ESLint** per linting
+- **ESLint** per linting (configurazione flat con plugins React)
 - **Prettier** (implicito tramite editor)
+- **Vite** con code splitting tramite manualChunks
+
+> 📘 Per dettagli completi sulla configurazione tecnica, vedi [CONFIGURAZIONE.md](./CONFIGURAZIONE.md)
 
 ---
 
@@ -480,6 +484,250 @@ delete: if founder == auth.uid          // Founder gruppo O creatore progetto
 - [ ] Ricerca avanzata
 - [ ] Notifiche
 - [ ] Cronologia attività
+
+---
+
+---
+
+## Build e Deployment
+
+### Ottimizzazione Build
+
+Il progetto utilizza **Vite** con una configurazione ottimizzata per il code splitting:
+
+```javascript
+// vite.config.js
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        'vendor-react': ['react', 'react-dom'],
+        'vendor-firebase-core': ['firebase/app', 'firebase/auth'],
+        'vendor-firebase-db': ['firebase/firestore'],
+        'vendor-firebase-storage': ['firebase/storage'],
+        'vendor-pdf': ['react-pdf', 'pdfjs-dist'],
+        'vendor-icons': ['lucide-react'],
+      }
+    }
+  }
+}
+```
+
+**Vantaggi**:
+
+- Caricamento più veloce: librerie separate dalla logica app
+- Caching efficiente: vendor chunks cambiano raramente
+- Parallel loading: browser scarica chunks in parallelo
+
+### Comandi
+
+```bash
+# Sviluppo
+npm run dev
+
+# Build produzione
+npm run build
+
+# Preview build locale
+npm run preview
+
+# Linting
+npm run lint
+
+# Deploy su Firebase
+firebase deploy
+```
+
+### Firebase Hosting
+
+**Configurazione** (`firebase.json`):
+
+- Public directory: `dist` (output di Vite)
+- SPA routing: tutte le route reindirizzate a `index.html`
+- Ignore: `firebase.json`, file nascosti, `node_modules`
+
+---
+
+## Progressive Web App (PWA)
+
+### Manifest
+
+**File**: `public/manifest.json`
+
+```json
+{
+  "name": "Scaletta",
+  "short_name": "Scaletta",
+  "description": "Organizza i tuoi progetti in team",
+  "display": "standalone",
+  "theme_color": "#00bcd4",
+  "background_color": "#121212",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities"],
+  "lang": "it-IT"
+}
+```
+
+**Icone richieste**:
+
+- `favicon.svg` / `favicon.ico` - Icona browser
+- `favicon-96x96.png` - Icona browser alta risoluzione
+- `apple-touch-icon.png` - Icona iOS (180x180)
+- `web-app-manifest-192x192.png` - Icona PWA (any + maskable)
+- `web-app-manifest-512x512.png` - Icona PWA (any + maskable)
+
+### Service Worker
+
+**File**: `public/sw.js`
+
+**Strategia**: Network-first con fallback a cache
+
+```javascript
+const CACHE_NAME = "scaletta-v4";
+```
+
+**Assets cachati**:
+
+- `/`, `/index.html`
+- Manifest e icone
+- File statici dell'app
+
+**Richieste escluse dal caching**:
+
+- Chiamate Firebase (Firestore, Storage, Auth)
+- Richieste non-GET
+- Protocolli non-HTTP(S)
+
+**Motivo**: La sincronizzazione real-time di Firebase richiede dati sempre aggiornati.
+
+**Lifecycle**:
+
+1. **Install**: Carica assets statici in cache
+2. **Activate**: Pulisce vecchie versioni cache
+3. **Fetch**: Network-first → Cache fallback
+
+### Popup Installazione Automatico
+
+**Comportamento**:
+
+- Si mostra automaticamente dopo **1.5 secondi** al primo accesso
+- Viene mostrato **una sola volta per sessione**
+- Tracciato tramite `sessionStorage.getItem('scaletta_install_popup_shown')`
+- Non si mostra se l'app è già installata
+
+**Condizioni**:
+
+- Desktop/Android: `isInstallable` (evento `beforeinstallprompt`)
+- iOS/iPadOS: Mostra sempre (installazione manuale)
+
+---
+
+## Gestione Stato e Persistenza
+
+### sessionStorage
+
+L'app usa `sessionStorage` per persistere lo stato durante la navigazione:
+
+| Chiave                         | Contenuto         | Scopo                              |
+| ------------------------------ | ----------------- | ---------------------------------- |
+| `scaletta_current_project`     | Progetto corrente | Mantiene progetto aperto al reload |
+| `scaletta_current_group`       | Gruppo corrente   | Mantiene gruppo al reload          |
+| `scaletta_install_popup_shown` | Flag booleano     | Evita di mostrare popup più volte  |
+
+**Esempio**:
+
+```javascript
+// Salvataggio
+sessionStorage.setItem("scaletta_current_project", JSON.stringify(project));
+
+// Caricamento al mount
+const saved = sessionStorage.getItem("scaletta_current_project");
+const project = saved ? JSON.parse(saved) : null;
+```
+
+### localStorage
+
+Usato da `ThemeContext` per persistere preferenze tema:
+
+| Chiave                  | Contenuto     | Valori                                    |
+| ----------------------- | ------------- | ----------------------------------------- |
+| `scaletta-theme-mode`   | Tema UI       | `'light'` \| `'dark'`                     |
+| `scaletta-accent-color` | Colore accent | `'teal'` \| `'blue'` \| `'purple'` \| ... |
+
+---
+
+## Sicurezza Firebase
+
+### Regole Firestore
+
+**File**: `firestore.rules`
+
+```javascript
+match /groups/{groupId} {
+  // Lettura: solo utenti autenticati (filtro membri lato client)
+  allow read: if isAuthenticated();
+
+  // Creazione: solo il founder
+  allow create: if isAuthenticated() &&
+    request.resource.data.founderId == request.auth.uid;
+
+  // Aggiornamento: utenti autenticati (verifica membri lato client)
+  allow update: if isAuthenticated();
+
+  // Eliminazione: solo il founder
+  allow delete: if isAuthenticated() &&
+    resource.data.founderId == request.auth.uid;
+}
+
+match /projects/{projectId} {
+  allow read, write: if isAuthenticated();
+
+  // Subcollection: Bento Boxes
+  match /bentoBoxes/{boxId} {
+    allow read, write: if isAuthenticated();
+  }
+}
+```
+
+**Note**:
+
+- La verifica dell'appartenenza ai gruppi è lato **client** (Firestore non supporta query su array di oggetti nelle rules)
+- Le regole attuali permettono a qualsiasi utente autenticato di leggere qualsiasi gruppo/progetto
+- La sicurezza effettiva si basa sul filtraggio lato client e sulla fiducia tra utenti
+
+### Regole Storage
+
+**File**: `storage.rules`
+
+```javascript
+// Foto progetti (max 10MB)
+match /projects/{projectId}/photos/{photoId} {
+  allow read: if isAuthenticated();
+  allow write: if isAuthenticated() && isImage() && isUnderMaxSize();
+  allow delete: if isAuthenticated();
+}
+
+// PDF progetti (max 50MB)
+match /projects/{projectId}/pdfs/{pdfId} {
+  allow read: if isAuthenticated();
+  allow write: if isAuthenticated() && isPDF() && isUnderFileMaxSize();
+  allow delete: if isAuthenticated();
+}
+
+// File generici progetti (max 50MB)
+match /projects/{projectId}/files/{fileId} {
+  allow read: if isAuthenticated();
+  allow write: if isAuthenticated() && isUnderFileMaxSize();
+  allow delete: if isAuthenticated();
+}
+```
+
+**Funzioni helper**:
+
+- `isImage()`: `contentType.matches('image/.*')`
+- `isPDF()`: `contentType == 'application/pdf'`
+- `isUnderMaxSize()`: `size < 10MB` (foto)
+- `isUnderFileMaxSize()`: `size < 50MB` (PDF/file)
 
 ---
 

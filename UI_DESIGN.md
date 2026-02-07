@@ -21,8 +21,46 @@ L'applicazione offre **supporto completo** per entrambi i temi:
 
 - Il tema di default è **Scuro**
 - L'utente può cambiare tema dalle impostazioni (ProfileModal)
-- La preferenza viene salvata in localStorage
+- La preferenza viene salvata in localStorage (`scaletta-theme-mode`)
 - Transizione fluida tra i temi
+
+### Variabili CSS Dinamiche
+
+Il sistema tema utilizza **variabili CSS custom** che vengono aggiornate dinamicamente da `ThemeContext`:
+
+```css
+/* Definite in index.css usando @theme di Tailwind 4 */
+@theme {
+  /* Colore principale - impostato dinamicamente */
+  --color-primary: var(--theme-primary, #00bcd4);
+  --color-primary-light: var(--theme-primary-light, #4dd0e1);
+  --color-primary-dark: var(--theme-primary-dark, #0097a7);
+
+  /* Sfondi - cambiano con il tema */
+  --color-bg-primary: var(--theme-bg-primary, #121212);
+  --color-bg-secondary: var(--theme-bg-secondary, #1e1e1e);
+  --color-bg-tertiary: var(--theme-bg-tertiary, #2d2d2d);
+
+  /* Testi - cambiano con il tema */
+  --color-text-primary: var(--theme-text-primary, #ffffff);
+  --color-text-secondary: var(--theme-text-secondary, #b3b3b3);
+  --color-text-muted: var(--theme-text-muted, #666666);
+
+  /* Bordi - cambiano con il tema */
+  --color-border: var(--theme-border, #333333);
+  --color-divider: var(--theme-divider, #404040);
+
+  /* Stati - fissi */
+  --color-error: #f44336;
+  --color-success: #4caf50;
+}
+```
+
+**Come funziona:**
+
+1. `ThemeContext` imposta variabili CSS su `document.documentElement.style`
+2. Es: `documentElement.style.setProperty('--theme-primary', '#00bcd4')`
+3. Tutte le componenti che usano `var(--color-primary)` si aggiornano automaticamente
 
 ### Colore Principale Personalizzabile
 
@@ -754,6 +792,256 @@ Tutti ereditano dal modale generico:
 
 15. **InstallModal** - Installazione PWA
 16. **ConfirmModal** - Conferme azioni distruttive generiche
+
+---
+
+---
+
+## Animazioni
+
+L'applicazione include un sistema completo di animazioni CSS per migliorare l'esperienza utente.
+
+### Animazioni Modali
+
+#### Fade In (Overlay Desktop)
+
+```css
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 200ms ease-out forwards;
+}
+```
+
+Usato per lo sfondo oscurato dietro i modali desktop.
+
+#### Scale In (Modale Desktop Centrato)
+
+```css
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.animate-scale-in {
+  animation: scale-in 250ms ease-out forwards;
+}
+```
+
+Usato per modali desktop con posizionamento `top: 50%; left: 50%`.
+
+#### Modal Scale (Modale con inset-0 m-auto)
+
+```css
+@keyframes modal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-modal-scale {
+  animation: modal-scale 250ms ease-out forwards;
+}
+```
+
+Usato per modali desktop centrati con `inset-0 m-auto`.
+
+#### Slide In Right (Modale Mobile)
+
+```css
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 250ms ease-out forwards;
+}
+```
+
+Usato per modali mobile che entrano da destra.
+
+#### Slide In Bottom (Alternativa Mobile)
+
+```css
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 250ms ease-out forwards;
+}
+```
+
+Usato per modali mobile che entrano dal basso.
+
+### Animazioni Dropdown
+
+```css
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-dropdown-in {
+  animation: dropdown-in 150ms ease-out forwards;
+}
+```
+
+Usato per menu dropdown (kebab menu).
+
+### Animazioni Bento Box
+
+#### Bento In (Entrata Box)
+
+```css
+@keyframes bento-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-bento-in {
+  animation: bento-in 300ms ease-out forwards;
+  animation-fill-mode: both;
+}
+```
+
+Usato per nuovi box che vengono aggiunti alla griglia.
+
+#### Bento Transition (Riposizionamento)
+
+```css
+.bento-transition {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+```
+
+Usato per animazioni FLIP quando i box cambiano posizione.
+
+### Animazioni FAB
+
+```css
+@keyframes fab-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 14px 0 rgba(0, 188, 212, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px 0 rgba(0, 188, 212, 0.6);
+  }
+}
+.animate-fab-pulse {
+  animation: fab-pulse 2s ease-in-out infinite;
+}
+```
+
+Usato per il FAB mobile "Aggiungi nota" per attirare l'attenzione.
+
+### Durate Standard
+
+| Animazione   | Durata | Easing      | Uso                        |
+| ------------ | ------ | ----------- | -------------------------- |
+| Dropdown     | 150ms  | ease-out    | Menu rapidi                |
+| Fade/Overlay | 200ms  | ease-out    | Transizioni leggere        |
+| Scale/Slide  | 250ms  | ease-out    | Modali                     |
+| Bento        | 300ms  | ease-out    | Box e riposizionamenti     |
+| FLIP         | 300ms  | custom      | Layout Bento               |
+| FAB Pulse    | 2000ms | ease-in-out | Animazione continua (loop) |
+
+---
+
+## Scrollbar Personalizzata
+
+```css
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-divider);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+```
+
+---
+
+## Focus e Accessibilità
+
+```css
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+```
+
+Tutti gli elementi interattivi mostrano un outline colorato quando ricevono focus da tastiera.
+
+---
+
+## Stili Rich Text
+
+Per contenuto HTML formattato (es. nelle note):
+
+```css
+.prose p {
+  margin: 0.5em 0;
+}
+.prose strong,
+.prose b {
+  font-weight: 600;
+}
+.prose em,
+.prose i {
+  font-style: italic;
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 0.875em;
+  font-family: monospace;
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+```
 
 ---
 

@@ -421,12 +421,198 @@ const { containerRef, columns } = useBentoAnimation(items, columnCount, gap);
 |------|------|-------------|
 | `containerRef` | `ref` | Ref da applicare al container |
 | `columns` | `array[]` | Array di array, ogni sub-array è una colonna |
+| `getItemStyle` | `function` | Funzione per ottenere stile item (opacity fade-in) |
 
-**Funzionamento:**
+### Algoritmo di Distribuzione
 
-1. **ResizeObserver**: Monitora le altezze di ogni box
-2. **Distribuzione**: Ricalcola quando cambiano le altezze
-3. **FLIP Animation**: Anima le transizioni di posizione
+**"Shortest Column First"**:
+
+1. Inizializza array altezze colonne a `[0, 0, 0, ...]`
+2. Per ogni item (in ordine):
+   - Trova indice colonna con altezza minima: `Math.min(...heights)`
+   - Assegna item a quella colonna
+   - Aggiorna altezza: `heights[index] += itemHeight + gap`
+3. Ritorna array di colonne
+
+**Esempio con 3 colonne:**
+
+```
+Item 1 (h:200) → Col 0 [0,0,0]     → [216,0,0]
+Item 2 (h:150) → Col 1 [216,0,0]   → [216,166,0]
+Item 3 (h:180) → Col 2 [216,166,0] → [216,166,196]
+Item 4 (h:120) → Col 1 [216,166,196] → [216,302,196]
+Item 5 (h:100) → Col 2 [216,302,196] → [216,302,312]
+...
+```
+
+### ResizeObserver
+
+**Monitoraggio altezze:**
+
+```javascript
+const resizeObserver = new ResizeObserver((entries) => {
+  entries.forEach((entry) => {
+    const id = entry.target.getAttribute("data-bento-id");
+    const height = entry.target.offsetHeight;
+
+    // Aggiorna solo se cambio > 2px (threshold)
+    if (Math.abs(heightsRef.current.get(id) - height) > 2) {
+      heightsRef.current.set(id, height);
+      setHeights(new Map(heightsRef.current));
+    }
+  });
+});
+
+// Osserva tutti i box
+container.querySelectorAll("[data-bento-id]").forEach((el) => {
+  resizeObserver.observe(el);
+});
+```
+
+**Threshold 2px**: Evita ricalcoli per cambiamenti minimi (rendering sub-pixel, font rendering).
+
+### Animazioni FLIP
+
+**FLIP Technique** (First-Last-Invert-Play):
+
+1. **First**: Registra posizione iniziale di ogni box
+
+   ```javascript
+   const rect = element.getBoundingClientRect();
+   positionsRef.current.set(id, { x: rect.left, y: rect.top });
+   ```
+
+2. **Last**: Cambia il layout (riassegna colonne)
+
+3. **Invert**: Calcola delta e applica transform senza transizione
+
+   ```javascript
+   const deltaX = oldPos.x - newPos.x;
+   const deltaY = oldPos.y - newPos.y;
+   element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+   element.style.transition = "none";
+   ```
+
+4. **Play**: Rimuovi transform con transizione CSS
+   ```javascript
+   requestAnimationFrame(() => {
+     element.style.transition = "transform 300ms cubic-bezier(0.4, 0, 0.2, 1)";
+     element.style.transform = "";
+   });
+   ```
+
+**Vantaggi FLIP:**
+
+- Animazioni fluide 60fps (GPU-accelerate)
+- Nessun layout reflow durante l'animazione
+- Funziona con qualsiasi cambio di posizione
+
+### Gestione Fade-in Nuovi Box
+
+**Problema**: Nuovi box appaiono di colpo, senza transizione.
+
+**Soluzione**: Fade-in con opacity.
+
+1. **Identificazione nuovi box** (PRIMA del render):
+
+   ```javascript
+   const newItemIds = useMemo(() => {
+     const currentIds = new Set(items.map((i) => i.id));
+     const prevIds = prevItemIdsRef.current;
+
+     const newIds = new Set();
+     if (prevIds.size > 0) {
+       // Non al primo render
+       currentIds.forEach((id) => {
+         if (!prevIds.has(id)) newIds.add(id);
+       });
+     }
+
+     prevItemIdsRef.current = currentIds;
+     return newIds;
+   }, [items]);
+   ```
+
+2. **Applicazione stile iniziale**:
+
+   ```javascript
+   const getItemStyle = (id) => {
+     if (newItemIds.has(id)) return { opacity: 0 };
+     return {};
+   };
+   ```
+
+3. **Attivazione fade-in** (dopo mount):
+
+   ```javascript
+   useLayoutEffect(() => {
+     if (newItemIds.size > 0) {
+       // Aggiungi classe animate-bento-in dopo un frame
+       requestAnimationFrame(() => {
+         setFadingInIds(new Set(newItemIds));
+       });
+     }
+   }, [newItemIds]);
+   ```
+
+4. **CSS Animation**:
+   ```css
+   @keyframes bento-in {
+     from {
+       opacity: 0;
+       transform: translateY(20px) scale(0.95);
+     }
+     to {
+       opacity: 1;
+       transform: translateY(0) scale(1);
+     }
+   }
+   .animate-bento-in {
+     animation: bento-in 300ms ease-out forwards;
+   }
+   ```
+
+### Flusso Completo Aggiornamento
+
+```
+1. Item cambia altezza
+   ↓
+2. ResizeObserver triggera
+   ↓
+3. heightsRef.current aggiornato
+   ↓
+4. setHeights() triggera re-render
+   ↓
+5. useMemo ricalcola distribuzione colonne
+   ↓
+6. useLayoutEffect registra posizioni FIRST
+   ↓
+7. DOM aggiornato con nuove posizioni (LAST)
+   ↓
+8. useLayoutEffect calcola delta (INVERT) e applica transform
+   ↓
+9. requestAnimationFrame rimuove transform con transition (PLAY)
+   ↓
+10. Animazione fluida 300ms
+```
+
+### Performance
+
+**Ottimizzazioni implementate:**
+
+1. **useMemo** per distribuzione colonne (evita ricalcolo ad ogni render)
+2. **ResizeObserver** threshold 2px (evita ricalcoli per cambiamenti minimi)
+3. **useLayoutEffect** per FLIP (evita flash di contenuto)
+4. **requestAnimationFrame** per animazioni (sincronizzato con browser)
+5. **GPU-accelerated transforms** (transform invece di top/left)
+6. **Set per tracking animazioni** (O(1) lookup)
+7. **Refs per dati non visuali** (evita re-render inutili)
+
+**Complessità algoritmo:**
+
+- Distribuzione: O(n) dove n = numero item
+- Trova colonna più corta: O(k) dove k = numero colonne (max 4)
+- Totale per distribuzione: O(n \* k) ≈ O(n) con k costante
 
 ---
 
