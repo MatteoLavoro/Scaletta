@@ -1,14 +1,16 @@
 import { CheckIcon } from "../icons";
 
 const ModalFab = ({ onConfirm, disabled, loading, keyboardHeight }) => {
-  const bottomPosition = keyboardHeight > 0 ? keyboardHeight + 20 : 20;
+  const bottomOffset = keyboardHeight > 0 ? keyboardHeight + 20 : 20;
   const isDisabled = disabled || loading;
 
   return (
     <button
       onClick={onConfirm}
       disabled={isDisabled}
-      style={{ bottom: `${bottomPosition}px` }}
+      style={{
+        bottom: `calc(${bottomOffset}px + var(--safe-area-inset-bottom))`,
+      }}
       className={`
         fixed right-5 w-14 h-14 rounded-full z-1001
         flex items-center justify-center

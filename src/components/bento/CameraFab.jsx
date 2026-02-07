@@ -83,8 +83,8 @@ const CameraFab = ({ onCapture }) => {
         style={{
           backgroundColor: primaryColor,
           // Posizionato sopra la barra MobileAddFab (che è alta circa 88px con padding)
-          // e a destra dello schermo
-          bottom: "120px",
+          // e a destra dello schermo, con supporto per safe area iOS
+          bottom: "calc(120px + var(--safe-area-inset-bottom))",
           right: "16px",
         }}
         aria-label="Scatta foto"

@@ -94,7 +94,10 @@ export const DesktopAddFab = ({
     : "rgba(64, 64, 64, 0.3)";
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 z-40 flex justify-center">
+    <div
+      className="fixed left-0 right-0 z-40 flex justify-center"
+      style={{ bottom: "calc(1.5rem + var(--safe-area-inset-bottom))" }}
+    >
       <div
         className="rounded-2xl p-2 shadow-xl grid grid-cols-4 gap-2"
         style={{
@@ -266,7 +269,10 @@ export const MobileAddFab = ({
     : "rgba(64, 64, 64, 0.3)";
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-3">
+    <div
+      className="fixed left-0 right-0 z-40 flex justify-center px-3"
+      style={{ bottom: "calc(1rem + var(--safe-area-inset-bottom))" }}
+    >
       <div
         className="rounded-2xl p-2 shadow-xl grid grid-cols-4 gap-2 w-full max-w-md"
         style={{

@@ -154,6 +154,14 @@ const ImageModalContent = ({
     <div
       className="fixed inset-0 z-2000 bg-black flex flex-col"
       onClick={handleBackdropClick}
+      style={
+        isMobile
+          ? {
+              paddingTop: "var(--safe-area-inset-top)",
+              paddingBottom: "var(--safe-area-inset-bottom)",
+            }
+          : {}
+      }
     >
       {/* Header */}
       <div className="shrink-0 h-16 flex items-center justify-between px-4 z-10">

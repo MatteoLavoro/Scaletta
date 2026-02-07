@@ -856,8 +856,12 @@ const ProjectPage = ({
       <div className="min-h-dvh flex flex-col bg-bg-primary">
         {/* Header - stile standard con colore progetto */}
         <header
-          className="flex items-center justify-between px-4 py-3 min-h-14 border-b border-border sticky top-0 z-50"
-          style={{ backgroundColor: projectColor.bg }}
+          className="flex items-center justify-between px-4 min-h-14 border-b border-border sticky top-0 z-50"
+          style={{
+            backgroundColor: projectColor.bg,
+            paddingTop: `calc(0.75rem + var(--safe-area-inset-top))`,
+            paddingBottom: "0.75rem",
+          }}
         >
           {/* Freccia indietro - Sinistra con cerchietto */}
           <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">

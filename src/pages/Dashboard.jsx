@@ -107,7 +107,13 @@ const Dashboard = ({ onProjectClick }) => {
   return (
     <div className="min-h-dvh flex flex-col bg-bg-primary">
       {/* Header */}
-      <header className="flex items-center justify-between px-5 py-4 bg-bg-secondary border-b border-border sticky top-0 z-50">
+      <header
+        className="flex items-center justify-between px-5 bg-bg-secondary border-b border-border sticky top-0 z-50"
+        style={{
+          paddingTop: "calc(1rem + var(--safe-area-inset-top))",
+          paddingBottom: "1rem",
+        }}
+      >
         {/* Logo - Left */}
         <span className="text-lg font-bold text-primary">Scaletta</span>
 

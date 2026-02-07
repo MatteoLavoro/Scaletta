@@ -2,7 +2,20 @@ import { ArrowLeftIcon, CloseIcon } from "../icons";
 
 const ModalHeader = ({ title, isMobile, onClose }) => {
   return (
-    <header className="flex items-center justify-between px-4 py-3 min-h-14 shrink-0">
+    <header
+      className="flex items-center justify-between px-4 min-h-14 shrink-0"
+      style={
+        isMobile
+          ? {
+              paddingTop: "calc(0.75rem + var(--safe-area-inset-top))",
+              paddingBottom: "0.75rem",
+            }
+          : {
+              paddingTop: "0.75rem",
+              paddingBottom: "0.75rem",
+            }
+      }
+    >
       {/* Mobile: Back arrow left con cerchietto | Desktop: Spacer */}
       {isMobile ? (
         <div className="w-10 h-10 -ml-1 rounded-full bg-bg-tertiary flex items-center justify-center">

@@ -21,7 +21,10 @@ const features = [
 
 const WelcomePage = ({ onLogin, onRegister }) => {
   return (
-    <div className="min-h-dvh flex flex-col bg-bg-primary">
+    <div
+      className="min-h-dvh flex flex-col bg-bg-primary"
+      style={{ paddingTop: "var(--safe-area-inset-top)" }}
+    >
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col items-center px-5 py-8 pb-4">
@@ -100,7 +103,12 @@ const WelcomePage = ({ onLogin, onRegister }) => {
       </div>
 
       {/* Action Buttons - Fixed at bottom */}
-      <div className="shrink-0 p-5 pt-3 pb-6 bg-bg-primary border-t border-divider/30">
+      <div
+        className="shrink-0 p-5 pt-3 bg-bg-primary border-t border-divider/30"
+        style={{
+          paddingBottom: "calc(1.5rem + var(--safe-area-inset-bottom))",
+        }}
+      >
         <div className="w-full max-w-sm mx-auto flex flex-col gap-2.5">
           <Button
             onClick={onRegister}
