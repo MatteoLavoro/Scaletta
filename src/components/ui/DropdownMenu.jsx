@@ -161,14 +161,16 @@ const DropdownMenu = ({
                         pointer-events-none
                       "
                     >
-                      {item.icon && <span className="w-4 h-4 mt-0.5 shrink-0">{item.icon}</span>}
-                      <div className="flex-1 min-w-0">
-                        {item.label}
-                      </div>
+                      {item.icon && (
+                        <span className="w-4 h-4 mt-0.5 shrink-0">
+                          {item.icon}
+                        </span>
+                      )}
+                      <div className="flex-1 min-w-0">{item.label}</div>
                     </div>
                   );
                 }
-                
+
                 // Item cliccabile normale
                 return (
                   <button

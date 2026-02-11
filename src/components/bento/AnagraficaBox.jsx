@@ -284,7 +284,7 @@ const AnagraficaBox = ({
     if (deletingFieldKey) {
       // Rimuovi il campo custom dalla lista
       const newCustomFields = customFields.filter(
-        (f) => f.key !== deletingFieldKey
+        (f) => f.key !== deletingFieldKey,
       );
       onCustomFieldsChange?.(newCustomFields);
 
@@ -328,7 +328,7 @@ const AnagraficaBox = ({
     // Controlla se esiste già un campo con lo stesso nome
     const allFields = getAllFields();
     const exists = allFields.some(
-      (f) => f.label.toLowerCase() === trimmed.toLowerCase()
+      (f) => f.label.toLowerCase() === trimmed.toLowerCase(),
     );
     if (exists) return "Esiste già un campo con questo nome";
     return null;
@@ -342,7 +342,7 @@ const AnagraficaBox = ({
 
   const allFieldsList = getAllFields();
   const filledFieldsCount = allFieldsList.filter(
-    (f) => f.value && f.value.trim().length > 0
+    (f) => f.value && f.value.trim().length > 0,
   ).length;
 
   return (

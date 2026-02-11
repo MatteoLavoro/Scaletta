@@ -157,7 +157,7 @@ const ChecklistBox = ({
     if (editingItem) {
       // Modifica elemento esistente
       const newItems = items.map((item) =>
-        item.id === editingItem.id ? { ...item, text: text.trim() } : item
+        item.id === editingItem.id ? { ...item, text: text.trim() } : item,
       );
       onItemsChange?.(newItems);
     } else {
@@ -182,7 +182,7 @@ const ChecklistBox = ({
   // Toggle completamento di un elemento
   const handleToggleItem = (itemId) => {
     const newItems = items.map((item) =>
-      item.id === itemId ? { ...item, completed: !item.completed } : item
+      item.id === itemId ? { ...item, completed: !item.completed } : item,
     );
     onItemsChange?.(newItems);
   };

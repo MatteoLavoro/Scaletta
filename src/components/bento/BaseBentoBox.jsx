@@ -108,21 +108,25 @@ const BaseBentoBox = ({
       // Formatta la data
       let dateStr = "";
       if (createdAt) {
-        const date = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
-        dateStr = date.toLocaleDateString('it-IT', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
+        const date = createdAt?.toDate
+          ? createdAt.toDate()
+          : new Date(createdAt);
+        dateStr = date.toLocaleDateString("it-IT", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
         });
       }
 
       // Info non cliccabile
-      const creatorLabel = createdByName 
-        ? `Creato da ${createdByName}${dateStr ? ` il ${dateStr}` : ''}`
-        : dateStr ? `Creato il ${dateStr}` : '';
-      
+      const creatorLabel = createdByName
+        ? `Creato da ${createdByName}${dateStr ? ` il ${dateStr}` : ""}`
+        : dateStr
+          ? `Creato il ${dateStr}`
+          : "";
+
       if (creatorLabel) {
         items.push({
           label: creatorLabel,
