@@ -421,6 +421,10 @@ const VersionRow = ({ version, onDownload, onDelete }) => {
  * @param {string} boxId - ID del box (necessario per transaction atomica)
  * @param {string} title - Titolo del box
  * @param {array} versions - Array di versioni: { id, url, name, size, storagePath, versionNumber, description, tags, uploadedAt }
+ * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {string} createdByName - Nome utente che ha creato il box
+ * @param {Date|Timestamp} createdAt - Data creazione box
+ * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback cambio titolo
  * @param {function} onVersionsChange - Callback quando cambiano le versioni
  * @param {function} onDelete - Callback eliminazione box
@@ -430,6 +434,10 @@ const VersionBox = ({
   boxId,
   title,
   versions = [],
+  isPinned = false,
+  createdByName = null,
+  createdAt = null,
+  onPinToggle,
   onTitleChange,
   onVersionsChange,
   onDelete,
@@ -517,6 +525,10 @@ const VersionBox = ({
     <>
       <BaseBentoBox
         title={title}
+        isPinned={isPinned}
+        createdByName={createdByName}
+        createdAt={createdAt}
+        onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
         menuItems={[

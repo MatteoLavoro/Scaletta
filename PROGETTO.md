@@ -26,6 +26,7 @@
 - **UI/UX responsive** (mobile fullscreen, desktop centrato)
 - **Sistema Modali** con gestione history browser (incluso `skipHistory` per modali annidati)
 - **Sincronizzazione real-time** tra dispositivi
+- **Sistema Notifiche Push** (invio notifiche a membri gruppo, Android + iOS 16.4+)
 
 ### 🚧 In Sviluppo
 
@@ -34,7 +35,6 @@
 ### 📋 Pianificato
 
 - LinkBox per link esterni con preview
-- Notifiche
 - Ricerca avanzata
 
 ---

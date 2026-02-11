@@ -149,23 +149,45 @@ const DropdownMenu = ({
               key={`group-${groupIndex}`}
               className="bg-bg-secondary border border-border rounded-xl shadow-lg py-1 overflow-hidden"
             >
-              {group.map((item, itemIndex) => (
-                <button
-                  key={`${groupIndex}-${itemIndex}`}
-                  onClick={() => handleItemClick(item)}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-2.5
-                    text-sm text-left
-                    ${getItemStyle(item)}
-                    hover:bg-bg-tertiary
-                    transition-colors duration-150
-                  `}
-                  role="menuitem"
-                >
-                  {item.icon && <span className="w-5 h-5">{item.icon}</span>}
-                  {item.label}
-                </button>
-              ))}
+              {group.map((item, itemIndex) => {
+                // Item informativo (non cliccabile)
+                if (item.isInfo) {
+                  return (
+                    <div
+                      key={`${groupIndex}-${itemIndex}`}
+                      className="
+                        w-full flex items-start gap-3 px-4 py-2.5
+                        text-xs text-text-muted
+                        pointer-events-none
+                      "
+                    >
+                      {item.icon && <span className="w-4 h-4 mt-0.5 shrink-0">{item.icon}</span>}
+                      <div className="flex-1 min-w-0">
+                        {item.label}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Item cliccabile normale
+                return (
+                  <button
+                    key={`${groupIndex}-${itemIndex}`}
+                    onClick={() => handleItemClick(item)}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-2.5
+                      text-sm text-left
+                      ${getItemStyle(item)}
+                      hover:bg-bg-tertiary
+                      transition-colors duration-150
+                    `}
+                    role="menuitem"
+                  >
+                    {item.icon && <span className="w-5 h-5">{item.icon}</span>}
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
           ))}
         </div>

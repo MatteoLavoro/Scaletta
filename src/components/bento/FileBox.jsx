@@ -256,6 +256,8 @@ const FileRow = ({ file, onDownload, onDelete, primaryColor }) => {
  * @param {boolean} isUploading - Se il box è in fase di caricamento (da drag&drop)
  * @param {number} uploadProgress - Progresso caricamento (0-100)
  * @param {number} uploadTotal - Numero totale file da caricare
+ * @param {string} createdByName - Nome utente che ha creato il box
+ * @param {Date|Timestamp} createdAt - Data creazione box
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onFilesChange - Callback quando cambiano i file
@@ -269,6 +271,8 @@ const FileBox = ({
   isUploading = false,
   uploadProgress = 0,
   uploadTotal = 0,
+  createdByName = null,
+  createdAt = null,
   onPinToggle,
   onTitleChange,
   onFilesChange,
@@ -397,6 +401,8 @@ const FileBox = ({
         title={title}
         badgeCount={hasFiles ? files.length : null}
         isPinned={isPinned}
+        createdByName={createdByName}
+        createdAt={createdAt}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}

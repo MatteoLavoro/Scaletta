@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PencilIcon, TrashIcon, PinIcon } from "../icons";
+import { PencilIcon, TrashIcon, PinIcon, UserIcon } from "../icons";
 import { DropdownMenu, Divider } from "../ui";
 import { InputModal, ConfirmModal } from "../modal";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -30,6 +30,8 @@ import { useTheme } from "../../contexts/ThemeContext";
  * @param {Array} props.menuItems - Voci aggiuntive per il kebab menu
  * @param {Array} props.actions - Array di azioni rapide { label, icon, onClick, variant }
  * @param {string} props.className - Classi CSS aggiuntive
+ * @param {string} props.createdByName - Nome dell'utente che ha creato il box
+ * @param {Date|Timestamp} props.createdAt - Data di creazione del box
  */
 const BaseBentoBox = ({
   title = "Box",
@@ -43,6 +45,8 @@ const BaseBentoBox = ({
   menuItems = [],
   actions = [],
   className = "",
+  createdByName = null,
+  createdAt = null,
 }) => {
   const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -93,6 +97,40 @@ const BaseBentoBox = ({
 
     // Aggiungi items universali
     items.push(...universalItems);
+
+    // Aggiungi info creazione (sempre per ultima, se disponibile)
+    if (createdByName || createdAt) {
+      // Separatore prima dell'info
+      if (items.length > 0) {
+        items.push({ separator: true });
+      }
+
+      // Formatta la data
+      let dateStr = "";
+      if (createdAt) {
+        const date = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+        dateStr = date.toLocaleDateString('it-IT', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
+      // Info non cliccabile
+      const creatorLabel = createdByName 
+        ? `Creato da ${createdByName}${dateStr ? ` il ${dateStr}` : ''}`
+        : dateStr ? `Creato il ${dateStr}` : '';
+      
+      if (creatorLabel) {
+        items.push({
+          label: creatorLabel,
+          icon: <UserIcon className="w-4 h-4" />,
+          isInfo: true,
+        });
+      }
+    }
 
     return items;
   };

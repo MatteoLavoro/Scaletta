@@ -2,6 +2,8 @@
 export { default as AlertCircleIcon } from "./AlertCircleIcon";
 export { default as AlertTriangleIcon } from "./AlertTriangleIcon";
 export { default as ArrowLeftIcon } from "./ArrowLeftIcon";
+export { default as BellIcon } from "./BellIcon";
+export { default as BellOffIcon } from "./BellOffIcon";
 export { default as BoldIcon } from "./BoldIcon";
 export { default as CameraIcon } from "./CameraIcon";
 export { default as CheckIcon } from "./CheckIcon";
@@ -42,6 +44,7 @@ export { default as PlusIcon } from "./PlusIcon";
 export { default as PresentationIcon } from "./PresentationIcon";
 export { default as RotateCwIcon } from "./RotateCwIcon";
 export { default as RulerIcon } from "./RulerIcon";
+export { default as SendIcon } from "./SendIcon";
 export { default as SettingsIcon } from "./SettingsIcon";
 export { default as SunIcon } from "./SunIcon";
 export { default as UploadIcon } from "./UploadIcon";

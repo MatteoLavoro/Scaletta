@@ -9,6 +9,7 @@ export { default as EditableInfoBox } from "./EditableInfoBox";
 export { default as InfoBox } from "./InfoBox";
 export { default as Input } from "./Input";
 export { default as MemberPillList } from "./MemberPillList";
+export { default as NotificationToggle } from "./NotificationToggle";
 export { default as PasswordInput } from "./PasswordInput";
 export { default as ProjectColorPicker } from "./ProjectColorPicker";
 export { default as Spinner } from "./Spinner";

@@ -186,6 +186,8 @@ const PdfThumbnail = ({ pdf, containerWidth }) => {
  * @param {boolean} isUploading - Se il box è in fase di caricamento (da drag&drop)
  * @param {number} uploadProgress - Progresso caricamento (0-100)
  * @param {number} uploadTotal - Numero totale PDF da caricare
+ * @param {string} createdByName - Nome utente che ha creato il box
+ * @param {Date|Timestamp} createdAt - Data creazione box
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPdfsChange - Callback quando cambiano i PDF
@@ -199,6 +201,8 @@ const PdfBox = ({
   isUploading: isUploadingExternal = false,
   uploadProgress: uploadProgressExternal = 0,
   uploadTotal: uploadTotalExternal = 0,
+  createdByName = null,
+  createdAt = null,
   onPinToggle,
   onTitleChange,
   onPdfsChange,
@@ -387,6 +391,8 @@ const PdfBox = ({
         title={title}
         badgeCount={hasPdfs ? localPdfs.length : null}
         isPinned={isPinned}
+        createdByName={createdByName}
+        createdAt={createdAt}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}

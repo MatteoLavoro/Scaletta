@@ -7,6 +7,7 @@ import { AuthModal } from "./components/auth";
 import { ProfileModal } from "./components/profile";
 import InstallPopup from "./components/pwa/InstallModal";
 import { usePWAInstall } from "./hooks/usePWAInstall";
+import { initializeNotifications } from "./utils/notificationInit";
 import {
   updateProjectName,
   updateProjectColor,
@@ -53,6 +54,13 @@ const AppContent = () => {
   useEffect(() => {
     if (isAuthenticated) closeAllModals();
   }, [isAuthenticated, closeAllModals]);
+
+  // Inizializza le notifiche quando l'utente è autenticato
+  useEffect(() => {
+    if (isAuthenticated && user?.uid) {
+      initializeNotifications(user.uid);
+    }
+  }, [isAuthenticated, user?.uid]);
 
   // Salva progetto/gruppo corrente in sessionStorage per persistenza al reload
   useEffect(() => {
@@ -169,8 +177,13 @@ const AppContent = () => {
         {currentProject && (
           <ProjectPage
             project={currentProject}
+            group={currentGroup}
             isFounder={isFounder}
-            currentUserId={user?.uid}
+            currentUser={{
+              uid: user?.uid,
+              displayName: user?.displayName,
+              email: user?.email,
+            }}
             onBack={handleBackFromProject}
             onUpdateName={handleUpdateProjectName}
             onUpdateColor={handleUpdateProjectColor}

@@ -13,6 +13,8 @@ import { RichTextModal } from "../modal";
  * @param {string} title - Titolo del box
  * @param {string} content - Contenuto della nota
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {string} createdByName - Nome utente che ha creato il box
+ * @param {Date|Timestamp} createdAt - Data creazione box
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onContentChange - Callback per cambiare il contenuto
@@ -22,6 +24,8 @@ const NoteBox = ({
   title = "Nota",
   content = "",
   isPinned = false,
+  createdByName = null,
+  createdAt = null,
   onPinToggle,
   onTitleChange,
   onContentChange,
@@ -54,6 +58,8 @@ const NoteBox = ({
       <BaseBentoBox
         title={title}
         isPinned={isPinned}
+        createdByName={createdByName}
+        createdAt={createdAt}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}

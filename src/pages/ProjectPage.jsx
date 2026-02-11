@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ArrowLeftIcon, InfoIcon, SettingsIcon } from "../components/icons";
+import {
+  ArrowLeftIcon,
+  InfoIcon,
+  SettingsIcon,
+  BellIcon,
+} from "../components/icons";
 import useColumnCount, { BOX_WIDTH, GAP } from "../hooks/useColumnCount";
 import useBentoAnimation from "../hooks/useBentoAnimation";
 import { useTheme } from "../contexts/ThemeContext";
@@ -20,7 +25,7 @@ import {
   TutorialBox,
   CameraFab,
 } from "../components/bento";
-import { MoreBoxesModal } from "../components/modal";
+import { MoreBoxesModal, NotificationModal } from "../components/modal";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import {
   createBentoBox,
@@ -40,14 +45,16 @@ import {
 import { deletePhotos, uploadPhoto, uploadPhotos } from "../services/photos";
 import { deleteFiles, uploadFiles } from "../services/files";
 import { deletePdfs, uploadPdfs } from "../services/pdfs";
+import { markProjectNotificationsAsRead } from "../services/notifications";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
  * Gestisce la history del browser come i modali
  *
  * @param {object} project - Dati del progetto
+ * @param {object} group - Dati del gruppo
  * @param {boolean} isFounder - Se l'utente è il founder del gruppo
- * @param {string} currentUserId - ID dell'utente corrente
+ * @param {object} currentUser - Dati dell'utente corrente { uid, displayName, email }
  * @param {function} onBack - Callback per tornare indietro
  * @param {function} onUpdateName - Callback per aggiornare il nome del progetto
  * @param {function} onUpdateColor - Callback per aggiornare il colore del progetto
@@ -56,8 +63,9 @@ import { deletePdfs, uploadPdfs } from "../services/pdfs";
  */
 const ProjectPage = ({
   project,
+  group,
   isFounder,
-  currentUserId,
+  currentUser,
   onBack,
   onUpdateName,
   onUpdateColor,
@@ -66,6 +74,7 @@ const ProjectPage = ({
 }) => {
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isMoreBoxesModalOpen, setIsMoreBoxesModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +105,13 @@ const ProjectPage = ({
     // Cleanup: annulla la sottoscrizione quando il componente si smonta
     return () => unsubscribe();
   }, [project?.id]);
+
+  // Marca le notifiche come lette quando si entra nel progetto
+  useEffect(() => {
+    if (!project?.id || !currentUser?.uid) return;
+
+    markProjectNotificationsAsRead(project.id, currentUser.uid);
+  }, [project?.id, currentUser?.uid]);
 
   // Funzione per verificare se un box è vuoto (nessun contenuto significativo)
   const isBoxEmpty = useCallback((box) => {
@@ -173,6 +189,8 @@ const ProjectPage = ({
         title: `Nota ${noteCount}`,
         boxType: "note",
         content: "",
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
       // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
@@ -191,6 +209,8 @@ const ProjectPage = ({
         title: `Foto ${photoCount}`,
         boxType: "photo",
         photos: [],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore creazione photo box:", error);
@@ -208,6 +228,8 @@ const ProjectPage = ({
         title: `File ${fileCount}`,
         boxType: "file",
         files: [],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore creazione file box:", error);
@@ -225,6 +247,8 @@ const ProjectPage = ({
         title: `Checklist ${checklistCount}`,
         boxType: "checklist",
         checklistItems: [],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore creazione checklist box:", error);
@@ -243,6 +267,8 @@ const ProjectPage = ({
         boxType: "anagrafica",
         anagraficaFields: {},
         anagraficaCustomFields: [],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore creazione anagrafica box:", error);
@@ -260,6 +286,8 @@ const ProjectPage = ({
         title: `Controllo Versioni File ${versionCount}`,
         boxType: "version",
         versions: [],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore creazione version box:", error);
@@ -276,6 +304,8 @@ const ProjectPage = ({
         title: `PDF ${pdfCount}`,
         boxType: "pdf",
         pdfs: [],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore creazione pdf box:", error);
@@ -326,6 +356,8 @@ const ProjectPage = ({
         isUploading: true,
         uploadProgress: 0,
         uploadTotal: photos.length,
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       })
         .then((box) => {
           if (box?.id) {
@@ -367,6 +399,8 @@ const ProjectPage = ({
         isUploading: true,
         uploadProgress: 0,
         uploadTotal: pdfs.length,
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       })
         .then((box) => {
           if (box?.id) {
@@ -409,6 +443,8 @@ const ProjectPage = ({
         isUploading: true,
         uploadProgress: 0,
         uploadTotal: others.length,
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       })
         .then((box) => {
           if (box?.id) {
@@ -526,6 +562,8 @@ const ProjectPage = ({
         title: `Foto ${photoCount}`,
         boxType: "photo",
         photos: [uploadedPhoto],
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
       });
     } catch (error) {
       console.error("Errore salvataggio foto dalla fotocamera:", error);
@@ -841,6 +879,13 @@ const ProjectPage = ({
       onClick: () => setIsInfoModalOpen(true),
     },
     { separator: true },
+    // Invia notifica
+    {
+      label: "Invia notifica",
+      icon: <BellIcon className="w-5 h-5" />,
+      onClick: () => setIsNotificationModalOpen(true),
+    },
+    { separator: true },
     // Gestisci stato
     {
       label: "Gestisci stato",
@@ -1004,6 +1049,8 @@ const ProjectPage = ({
                           title={item.title}
                           content={item.content || ""}
                           isPinned={item.isPinned || false}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1041,6 +1088,8 @@ const ProjectPage = ({
                           isUploading={item.isUploading || false}
                           uploadProgress={uploadProgress}
                           uploadTotal={item.uploadTotal || 0}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1078,6 +1127,8 @@ const ProjectPage = ({
                           isUploading={item.isUploading || false}
                           uploadProgress={uploadProgress}
                           uploadTotal={item.uploadTotal || 0}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1115,6 +1166,8 @@ const ProjectPage = ({
                           isUploading={item.isUploading || false}
                           uploadProgress={uploadProgress}
                           uploadTotal={item.uploadTotal || 0}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1141,6 +1194,8 @@ const ProjectPage = ({
                           title={item.title}
                           items={item.checklistItems || []}
                           isPinned={item.isPinned || false}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1168,6 +1223,8 @@ const ProjectPage = ({
                           fields={item.anagraficaFields || {}}
                           customFields={item.anagraficaCustomFields || []}
                           isPinned={item.isPinned || false}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1202,6 +1259,8 @@ const ProjectPage = ({
                           title={item.title}
                           versions={item.versions || []}
                           isPinned={item.isPinned || false}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
                           onPinToggle={() =>
                             handleBoxPinToggle(item.id, item.isPinned)
                           }
@@ -1226,6 +1285,8 @@ const ProjectPage = ({
                       <BaseBentoBox
                         title={item.title}
                         isPinned={item.isPinned || false}
+                        createdByName={item.createdByName}
+                        createdAt={item.createdAt}
                         onPinToggle={() =>
                           handleBoxPinToggle(item.id, item.isPinned)
                         }
@@ -1294,7 +1355,7 @@ const ProjectPage = ({
         isOpen={isStatusModalOpen}
         project={project}
         isFounder={isFounder}
-        currentUserId={currentUserId}
+        currentUserId={currentUser?.uid}
         onClose={() => setIsStatusModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
@@ -1308,6 +1369,14 @@ const ProjectPage = ({
         onAddAnagrafica={handleAddAnagrafica}
         onAddPdf={handleAddPdf}
         onAddVersion={handleAddVersion}
+      />
+
+      {/* Modale notifiche */}
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+        project={project}
+        group={group}
       />
     </>
   );

@@ -57,5 +57,35 @@ service cloud.firestore {
       // Scrittura: solo il proprietario del documento
       allow write: if isOwner(userId);
     }
+    
+    // ==========================================
+    // TOKEN FCM UTENTI
+    // ==========================================
+    match /userTokens/{userId} {
+      // Lettura: solo l'utente autenticato può leggere il proprio token
+      allow read: if isOwner(userId);
+      
+      // Scrittura: solo l'utente autenticato può scrivere il proprio token
+      allow write: if isOwner(userId);
+    }
+    
+    // ==========================================
+    // NOTIFICHE
+    // ==========================================
+    match /notifications/{notificationId} {
+      // Lettura: tutti gli utenti autenticati (filtrate lato client per gruppo)
+      allow read: if isAuthenticated();
+      
+      // Creazione: utente autenticato, deve essere il sender
+      allow create: if isAuthenticated() && 
+        request.resource.data.senderId == request.auth.uid;
+      
+      // Aggiornamento: solo il destinatario può marcare come letta
+      allow update: if isAuthenticated();
+      
+      // Eliminazione: solo il sender può eliminare
+      allow delete: if isAuthenticated() && 
+        resource.data.senderId == request.auth.uid;
+    }
   }
 }

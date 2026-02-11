@@ -22,7 +22,7 @@ const ChecklistItemRow = ({
   primaryColor,
 }) => {
   return (
-    <div className="flex items-center gap-3 bg-bg-tertiary/50 border border-border/50 rounded-lg p-3">
+    <div className="flex items-center gap-3 bg-bg-tertiary/50 border border-border/50 rounded-lg p-3 py-3.5">
       {/* Checkbox */}
       <button
         onClick={() => onToggle(item.id)}
@@ -49,7 +49,7 @@ const ChecklistItemRow = ({
       <div className="flex-1 min-w-0">
         <p
           className={`
-            text-sm font-medium truncate
+            text-sm font-medium break-words
             ${
               item.completed
                 ? "line-through text-text-muted"
@@ -100,6 +100,8 @@ const ChecklistItemRow = ({
  * @param {string} title - Titolo del box
  * @param {array} items - Array di items { id, text, completed }
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {string} createdByName - Nome utente che ha creato il box
+ * @param {Date|Timestamp} createdAt - Data creazione box
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onItemsChange - Callback quando cambiano gli items
@@ -109,6 +111,8 @@ const ChecklistBox = ({
   title = "Checklist",
   items = [],
   isPinned = false,
+  createdByName = null,
+  createdAt = null,
   onPinToggle,
   onTitleChange,
   onItemsChange,
@@ -225,6 +229,8 @@ const ChecklistBox = ({
         title={title}
         badgeCount={hasItems ? `${completedCount}/${totalCount}` : null}
         isPinned={isPinned}
+        createdByName={createdByName}
+        createdAt={createdAt}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}

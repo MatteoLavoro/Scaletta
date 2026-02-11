@@ -4,6 +4,7 @@ import { Modal, InputModal } from "../modal";
 import InfoBox from "../ui/InfoBox";
 import EditableInfoBox from "../ui/EditableInfoBox";
 import ThemeSelector from "../ui/ThemeSelector";
+import NotificationToggle from "../ui/NotificationToggle";
 import DangerButton from "../ui/DangerButton";
 import Divider from "../ui/Divider";
 import { useAuth } from "../../contexts/AuthContext";
@@ -78,6 +79,11 @@ const ProfileModal = ({ isOpen }) => {
           {/* Tema e colore */}
           <InfoBox title="Aspetto" color="teal">
             <ThemeSelector />
+          </InfoBox>
+
+          {/* Notifiche */}
+          <InfoBox title="Notifiche" color="amber">
+            <NotificationToggle />
           </InfoBox>
 
           {/* Divisore */}

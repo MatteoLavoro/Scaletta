@@ -16,7 +16,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache);
-    })
+    }),
   );
   self.skipWaiting();
 });
@@ -30,9 +30,9 @@ self.addEventListener("activate", (event) => {
           if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
-        })
+        }),
       );
-    })
+    }),
   );
   self.clients.claim();
 });
@@ -77,6 +77,62 @@ self.addEventListener("fetch", (event) => {
       .catch(() => {
         // Fallback to cache
         return caches.match(request);
-      })
+      }),
+  );
+});
+
+// Push event - gestisce le notifiche push in background
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const { title, body, icon, badge, data: notificationData } = data;
+
+    const options = {
+      body: body || "",
+      icon: icon || "/web-app-manifest-192x192.png",
+      badge: badge || "/favicon-96x96.png",
+      data: notificationData || {},
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      tag: notificationData?.projectId || "general",
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(title || "Scaletta", options),
+    );
+  } catch (error) {
+    console.error("Errore gestione notifica push:", error);
+  }
+});
+
+// Notification click - gestisce il click sulle notifiche
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // Cerca una finestra già aperta con l'app
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            return client.focus().then(() => {
+              // Naviga alla URL desiderata se disponibile
+              if (urlToOpen !== "/" && "navigate" in client) {
+                return client.navigate(urlToOpen);
+              }
+              return client;
+            });
+          }
+        }
+        // Se non c'è una finestra aperta, aprine una nuova
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      }),
   );
 });

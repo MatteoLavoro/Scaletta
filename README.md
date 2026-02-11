@@ -51,6 +51,14 @@
 - 6 colori accent: Teal, Blue, Purple, Red, Orange, Green
 - Preferenze salvate in localStorage
 
+### Notifiche Push
+
+- Invio notifiche ai membri del gruppo
+- Supporto Android e iOS 16.4+
+- Notifiche in background e foreground
+- Storico notifiche per progetto
+- Firebase Cloud Messaging (FCM)
+
 ### PWA
 
 - Installabile su dispositivi
@@ -153,21 +161,29 @@ src/
 │   ├── projects.js          # CRUD progetti + bento boxes
 │   ├── photos.js            # Upload/delete foto Storage
 │   ├── pdfs.js              # Upload/delete PDF Storage
-│   └── files.js             # Upload/delete file Storage
+│   ├── files.js             # Upload/delete file Storage
+│   └── notifications.js     # Firebase Cloud Messaging + notifiche push
 ├── utils/           # Utility functions
 │   ├── authValidation.js    # Validazione auth
 │   ├── groupValidation.js   # Validazione gruppi
 │   ├── projectValidation.js # Validazione progetti
 │   ├── projectColors.js     # 12 colori progetti
-│   └── projectStatuses.js   # 4 stati progetti
+│   ├── projectStatuses.js   # 4 stati progetti
+│   └── notificationInit.js  # Inizializzazione notifiche
 ├── App.jsx          # Componente root + routing interno
 ├── main.jsx         # Entry point React
 └── index.css        # Tailwind + variabili tema + animazioni
 
 public/
-├── manifest.json    # PWA manifest
-├── sw.js            # Service Worker
-└── *.png            # Icone PWA (192x192, 512x512, apple-touch, favicon)
+├── manifest.json            # PWA manifest
+├── sw.js                    # Service Worker principale
+├── firebase-messaging-sw.js # Service Worker Firebase Messaging
+└── *.png                    # Icone PWA (192x192, 512x512, apple-touch, favicon)
+
+functions/                   # Firebase Cloud Functions
+├── index.js                 # Cloud Function per invio notifiche push
+├── package.json             # Dipendenze functions
+└── .eslintrc.json           # ESLint config
 ```
 
 ## 📚 Documentazione
@@ -180,6 +196,16 @@ public/
   - Build e deployment
   - PWA e Service Worker
   - Gestione stato e persistenza
+- **[NOTIFICHE_QUICKSTART.md](./NOTIFICHE_QUICKSTART.md)** - Setup rapido notifiche (5 min)
+  - Guida passo-passo veloce
+  - Configurazione VAPID e Cloud Function
+  - Test immediato
+- **[NOTIFICHE_SETUP.md](./NOTIFICHE_SETUP.md)** - Documentazione completa notifiche
+  - Configurazione Firebase dettagliata
+  - Cloud Functions setup
+  - Testare notifiche Android/iOS
+  - Troubleshooting
+  - Struttura dati e API
 - **[UI_DESIGN.md](./UI_DESIGN.md)** - Specifiche UI/UX
   - Sistema temi e colori
   - Layout responsive

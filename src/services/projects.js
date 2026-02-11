@@ -370,7 +370,7 @@ export const getBentoBoxes = async (projectId) => {
 /**
  * Crea un nuovo bento box
  * @param {string} projectId - ID del progetto
- * @param {object} boxData - Dati del box { title, height, boxType, content, photos }
+ * @param {object} boxData - Dati del box { title, height, boxType, content, photos, createdBy, createdByName }
  * @returns {object} - Box creato
  */
 export const createBentoBox = async (projectId, boxData) => {
@@ -394,6 +394,8 @@ export const createBentoBox = async (projectId, boxData) => {
     isUploading: boxData.isUploading || false, // Flag per stato upload
     uploadProgress: boxData.uploadProgress || 0, // Progresso upload (0-100)
     uploadTotal: boxData.uploadTotal || 0, // Numero totale file da caricare
+    createdBy: boxData.createdBy || null, // UID dell'utente che ha creato il box
+    createdByName: boxData.createdByName || null, // Nome dell'utente che ha creato il box
     createdAt: serverTimestamp(),
   };
 

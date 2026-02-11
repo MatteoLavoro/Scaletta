@@ -60,7 +60,7 @@ const ProjectGrid = ({
 
       return null;
     },
-    [groupId]
+    [groupId],
   );
 
   // Crea un nuovo progetto
@@ -94,6 +94,7 @@ const ProjectGrid = ({
           <ProjectCard
             key={project.id}
             project={project}
+            currentUserId={currentUser?.uid}
             onClick={() => onProjectClick({ project, group })}
           />
         ))}

@@ -19,6 +19,7 @@ const Modal = ({
   variant = "default", // "default" | "info" (informativo senza tasto conferma)
   zIndex, // z-index personalizzato per modali annidati
   skipHistory = false, // Skip history management (per modali sopra altri modali)
+  maxWidth = "max-w-[440px]", // Larghezza massima desktop (default: 440px)
 }) => {
   const isMobile = useIsMobile();
   const keyboardHeight = useKeyboardHeight();
@@ -146,7 +147,7 @@ const Modal = ({
           ${
             isMobile
               ? "inset-0 animate-slide-in-bottom"
-              : "inset-0 m-auto w-[90%] max-w-[440px] h-fit max-h-[85vh] rounded-2xl shadow-2xl animate-modal-scale"
+              : `inset-0 m-auto w-[90%] ${maxWidth} h-fit max-h-[85vh] rounded-2xl shadow-2xl animate-modal-scale`
           }
         `}
         role="dialog"

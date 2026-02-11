@@ -4,6 +4,7 @@ export { default as FormDivider } from "./FormDivider";
 export { default as TextField } from "./TextField";
 export { default as PasswordField } from "./PasswordField";
 export { default as TextArea } from "./TextArea";
+export { default as DateTimePicker } from "./DateTimePicker";
 export { default as FormLabel } from "./FormLabel";
 export { default as FormHint } from "./FormHint";
 export { default as FormError } from "./FormError";

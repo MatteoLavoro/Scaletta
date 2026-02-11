@@ -145,6 +145,8 @@ const AnagraficaFieldRow = ({
  * @param {object} fields - Oggetto con i valori dei campi { cliente, luogo, iva, email, telefono, ...custom }
  * @param {array} customFields - Array di campi custom [{ key, label }]
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {string} createdByName - Nome utente che ha creato il box
+ * @param {Date|Timestamp} createdAt - Data creazione box
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onFieldsChange - Callback quando cambiano i campi
@@ -156,6 +158,8 @@ const AnagraficaBox = ({
   fields = {},
   customFields = [],
   isPinned = false,
+  createdByName = null,
+  createdAt = null,
   onPinToggle,
   onTitleChange,
   onFieldsChange,
@@ -351,6 +355,8 @@ const AnagraficaBox = ({
             : null
         }
         isPinned={isPinned}
+        createdByName={createdByName}
+        createdAt={createdAt}
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
