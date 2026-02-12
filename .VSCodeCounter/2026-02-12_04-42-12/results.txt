@@ -1,0 +1,245 @@
+Date : 2026-02-12 04:42:12
+Directory : d:\Matteo\Desktop\Progetti\scaletta
+Total : 192 files,  29733 codes, 2453 comments, 2872 blanks, all 35058 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| JSON               |          8 |     12,822 |          0 |          8 |     12,830 |
+| JavaScript JSX     |        135 |     10,526 |      1,543 |      1,339 |     13,408 |
+| Markdown           |          6 |      3,181 |          0 |        941 |      4,122 |
+| JavaScript         |         37 |      2,934 |        880 |        532 |      4,346 |
+| PostCSS            |          2 |        205 |         26 |         45 |        276 |
+| HTML               |          1 |         36 |          4 |          6 |         46 |
+| JSON with Comments |          1 |         27 |          0 |          1 |         28 |
+| XML                |          2 |          2 |          0 |          0 |          2 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                   |        192 |     29,733 |      2,453 |      2,872 |     35,058 |
+| . (Files)                                                                           |         12 |      6,939 |          6 |        626 |      7,571 |
+| functions                                                                           |          4 |      8,195 |         68 |         31 |      8,294 |
+| public                                                                              |          4 |        309 |         43 |         44 |        396 |
+| src                                                                                 |        172 |     14,290 |      2,336 |      2,171 |     18,797 |
+| src (Files)                                                                         |          5 |        940 |         47 |        232 |      1,219 |
+| src\assets                                                                          |          1 |          1 |          0 |          0 |          1 |
+| src\components                                                                      |        139 |      9,415 |      1,362 |      1,334 |     12,111 |
+| src\components\auth                                                                 |          2 |        132 |          8 |         21 |        161 |
+| src\components\bento                                                                |         17 |      3,802 |        639 |        552 |      4,993 |
+| src\components\form                                                                 |         12 |        366 |         75 |         47 |        488 |
+| src\components\groups                                                               |          6 |        385 |         54 |         45 |        484 |
+| src\components\icons                                                                |         58 |        449 |          6 |        161 |        616 |
+| src\components\modal                                                                |         15 |      2,420 |        317 |        281 |      3,018 |
+| src\components\profile                                                              |          2 |         99 |         14 |         15 |        128 |
+| src\components\projects                                                             |          6 |        441 |         92 |         64 |        597 |
+| src\components\pwa                                                                  |          2 |        100 |          8 |          9 |        117 |
+| src\components\ui                                                                   |         19 |      1,221 |        149 |        139 |      1,509 |
+| src\contexts                                                                        |          3 |        317 |         37 |         40 |        394 |
+| src\hooks                                                                           |          5 |        420 |        101 |        105 |        626 |
+| src\pages                                                                           |          5 |      1,421 |        181 |        144 |      1,746 |
+| src\services                                                                        |          8 |      1,461 |        529 |        269 |      2,259 |
+| src\utils                                                                           |          6 |        315 |         79 |         47 |        441 |
++-------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                            | language           | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| d:\Matteo\Desktop\Progetti\scaletta\CONFIGURAZIONE.md                               | Markdown           |        431 |          0 |        132 |        563 |
+| d:\Matteo\Desktop\Progetti\scaletta\PROGETTO.md                                     | Markdown           |        548 |          0 |        189 |        737 |
+| d:\Matteo\Desktop\Progetti\scaletta\README.md                                       | Markdown           |        230 |          0 |         60 |        290 |
+| d:\Matteo\Desktop\Progetti\scaletta\UI_DESIGN.md                                    | Markdown           |        833 |          0 |        230 |      1,063 |
+| d:\Matteo\Desktop\Progetti\scaletta\cors.json                                       | JSON               |          7 |          0 |          1 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\eslint.config.js                                | JavaScript         |         41 |          0 |          2 |         43 |
+| d:\Matteo\Desktop\Progetti\scaletta\firebase.json                                   | JSON               |         39 |          0 |          1 |         40 |
+| d:\Matteo\Desktop\Progetti\scaletta\firestore.indexes.json                          | JSON               |         23 |          0 |          1 |         24 |
+| d:\Matteo\Desktop\Progetti\scaletta\functions\.eslintrc.json                        | JSON with Comments |         27 |          0 |          1 |         28 |
+| d:\Matteo\Desktop\Progetti\scaletta\functions\index.js                              | JavaScript         |        190 |         68 |         28 |        286 |
+| d:\Matteo\Desktop\Progetti\scaletta\functions\package-lock.json                     | JSON               |      7,952 |          0 |          1 |      7,953 |
+| d:\Matteo\Desktop\Progetti\scaletta\functions\package.json                          | JSON               |         26 |          0 |          1 |         27 |
+| d:\Matteo\Desktop\Progetti\scaletta\index.html                                      | HTML               |         36 |          4 |          6 |         46 |
+| d:\Matteo\Desktop\Progetti\scaletta\package-lock.json                               | JSON               |      4,698 |          0 |          1 |      4,699 |
+| d:\Matteo\Desktop\Progetti\scaletta\package.json                                    | JSON               |         33 |          0 |          1 |         34 |
+| d:\Matteo\Desktop\Progetti\scaletta\public\favicon.svg                              | XML                |          1 |          0 |          0 |          1 |
+| d:\Matteo\Desktop\Progetti\scaletta\public\firebase-messaging-sw.js                 | JavaScript         |        153 |         30 |         28 |        211 |
+| d:\Matteo\Desktop\Progetti\scaletta\public\manifest.json                            | JSON               |         44 |          0 |          1 |         45 |
+| d:\Matteo\Desktop\Progetti\scaletta\public\sw.js                                    | JavaScript         |        111 |         13 |         15 |        139 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\App.css                                     | PostCSS            |         21 |          1 |          3 |         25 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\App.jsx                                     | JavaScript JSX     |        192 |         21 |         28 |        241 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\STRUTTURA.md                                | Markdown           |        534 |          0 |        157 |        691 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\assets\react.svg                            | XML                |          1 |          0 |          0 |          1 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\auth\AuthModal.jsx               | JavaScript JSX     |        131 |          8 |         20 |        159 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\auth\index.js                    | JavaScript         |          1 |          0 |          1 |          2 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\AddBentoBoxButton.jsx      | JavaScript JSX     |        317 |         48 |         31 |        396 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\AnagraficaBox.jsx          | JavaScript JSX     |        338 |         65 |         40 |        443 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BENTO_BOX.md               | Markdown           |        605 |          0 |        173 |        778 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BaseBentoBox.jsx           | JavaScript JSX     |        235 |         61 |         29 |        325 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BentoBox.jsx               | JavaScript JSX     |         61 |         15 |          6 |         82 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BentoGrid.jsx              | JavaScript JSX     |         27 |         13 |          5 |         45 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\CameraFab.jsx              | JavaScript JSX     |         65 |         24 |         10 |         99 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\ChecklistBox.jsx           | JavaScript JSX     |        244 |         43 |         24 |        311 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\FileBox.jsx                | JavaScript JSX     |        392 |         75 |         50 |        517 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\NoteBox.jsx                | JavaScript JSX     |         88 |         23 |          8 |        119 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\PdfBox.jsx                 | JavaScript JSX     |        439 |         67 |         51 |        557 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\PhotoBox.jsx               | JavaScript JSX     |        367 |         63 |         42 |        472 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\TutorialBox.jsx            | JavaScript JSX     |         40 |         11 |          6 |         57 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\VersionBox.jsx             | JavaScript JSX     |        478 |         75 |         52 |        605 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\bentoConstants.js          | JavaScript         |         13 |         10 |          3 |         26 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\index.js                   | JavaScript         |         19 |          3 |          3 |         25 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\useBentoLayout.js          | JavaScript         |         74 |         43 |         19 |        136 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\DateTimePicker.jsx          | JavaScript JSX     |         61 |         12 |          8 |         81 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormDivider.jsx             | JavaScript JSX     |          4 |          3 |          2 |          9 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormError.jsx               | JavaScript JSX     |         25 |          6 |          5 |         36 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormField.jsx               | JavaScript JSX     |          4 |          4 |          2 |         10 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormHint.jsx                | JavaScript JSX     |          7 |          4 |          3 |         14 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormLabel.jsx               | JavaScript JSX     |         12 |          4 |          2 |         18 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormSection.jsx             | JavaScript JSX     |         20 |          4 |          2 |         26 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\InfoField.jsx               | JavaScript JSX     |         12 |          4 |          3 |         19 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\PasswordField.jsx           | JavaScript JSX     |         77 |         10 |          6 |         93 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\TextArea.jsx                | JavaScript JSX     |         63 |         12 |          6 |         81 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\TextField.jsx               | JavaScript JSX     |         70 |         12 |          7 |         89 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\form\index.js                    | JavaScript         |         11 |          0 |          1 |         12 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\CreateGroupButton.jsx     | JavaScript JSX     |         21 |          3 |          3 |         27 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\EmptyGroupsCard.jsx       | JavaScript JSX     |         55 |          6 |          5 |         66 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\GroupCard.jsx             | JavaScript JSX     |        122 |         22 |         17 |        161 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\GroupInfoModal.jsx        | JavaScript JSX     |        161 |         20 |         16 |        197 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\JoinGroupButton.jsx       | JavaScript JSX     |         21 |          3 |          3 |         27 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\index.js                  | JavaScript         |          5 |          0 |          1 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\AlertCircleIcon.jsx        | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\AlertTriangleIcon.jsx      | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ArchiveIcon.jsx            | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ArrowLeftIcon.jsx          | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\BellIcon.jsx               | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\BellOffIcon.jsx            | JavaScript JSX     |         21 |          0 |          2 |         23 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\BoldIcon.jsx               | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CameraIcon.jsx             | JavaScript JSX     |         17 |          0 |          2 |         19 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CheckCircleIcon.jsx        | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CheckIcon.jsx              | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ChevronDownIcon.jsx        | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ChevronLeftIcon.jsx        | JavaScript JSX     |         16 |          0 |          2 |         18 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ChevronRightIcon.jsx       | JavaScript JSX     |         16 |          0 |          2 |         18 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ClockIcon.jsx              | JavaScript JSX     |         17 |          0 |          2 |         19 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CloseIcon.jsx              | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CodeIcon.jsx               | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CopyIcon.jsx               | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CrownIcon.jsx              | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\DownloadIcon.jsx           | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\EyeIcon.jsx                | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\EyeOffIcon.jsx             | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileArchiveIcon.jsx        | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileSpreadsheetIcon.jsx    | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileTextIcon.jsx           | JavaScript JSX     |         20 |          4 |          2 |         26 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileTypeIcon.jsx           | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FolderIcon.jsx             | JavaScript JSX     |         16 |          0 |          2 |         18 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\IdCardIcon.jsx             | JavaScript JSX     |         20 |          0 |          2 |         22 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ImageIcon.jsx              | JavaScript JSX     |         18 |          0 |          2 |         20 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\InfoIcon.jsx               | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ItalicIcon.jsx             | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ListChecksIcon.jsx         | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\LogOutIcon.jsx             | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MailIcon.jsx               | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MapPinIcon.jsx             | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MoonIcon.jsx               | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MoreHorizontalIcon.jsx     | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MoreVerticalIcon.jsx       | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MusicIcon.jsx              | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PencilIcon.jsx             | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PercentIcon.jsx            | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PhoneIcon.jsx              | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PinIcon.jsx                | JavaScript JSX     |         17 |          0 |          2 |         19 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PlayIcon.jsx               | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PlusIcon.jsx               | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PresentationIcon.jsx       | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\RotateCwIcon.jsx           | JavaScript JSX     |         17 |          0 |          2 |         19 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\RulerIcon.jsx              | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\SendIcon.jsx               | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\SettingsIcon.jsx           | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\SunIcon.jsx                | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\TrashIcon.jsx              | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UploadIcon.jsx             | JavaScript JSX     |         18 |          0 |          2 |         20 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UserIcon.jsx               | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UserPlusIcon.jsx           | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UsersIcon.jsx              | JavaScript JSX     |          5 |          0 |          3 |          8 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\VideoIcon.jsx              | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ZapIcon.jsx                | JavaScript JSX     |          3 |          0 |          3 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\index.js                   | JavaScript         |         57 |          2 |          2 |         61 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ConfirmModal.jsx           | JavaScript JSX     |         93 |         22 |          9 |        124 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\FileUploadModal.jsx        | JavaScript JSX     |        239 |         28 |         26 |        293 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ImageModal.jsx             | JavaScript JSX     |        300 |         40 |         37 |        377 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\InputModal.jsx             | JavaScript JSX     |        104 |         24 |         13 |        141 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\Modal.jsx                  | JavaScript JSX     |        159 |         16 |         22 |        197 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ModalFab.jsx               | JavaScript JSX     |         32 |          0 |          4 |         36 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ModalFooter.jsx            | JavaScript JSX     |         20 |          2 |          4 |         26 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ModalHeader.jsx            | JavaScript JSX     |         63 |          3 |          5 |         71 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\MoreBoxesModal.jsx         | JavaScript JSX     |        121 |         24 |         12 |        157 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\NotificationModal.jsx      | JavaScript JSX     |        229 |         30 |         33 |        292 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\PdfUploadModal.jsx         | JavaScript JSX     |        236 |         30 |         28 |        294 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\RichTextModal.jsx          | JavaScript JSX     |        258 |         30 |         27 |        315 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\UploadModal.jsx            | JavaScript JSX     |        249 |         31 |         28 |        308 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\VersionUploadModal.jsx     | JavaScript JSX     |        303 |         37 |         32 |        372 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\index.js                   | JavaScript         |         14 |          0 |          1 |         15 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\profile\ProfileModal.jsx         | JavaScript JSX     |         98 |         14 |         14 |        126 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\profile\index.js                 | JavaScript         |          1 |          0 |          1 |          2 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\CreateProjectButton.jsx | JavaScript JSX     |         21 |          6 |          3 |         30 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\ProjectCard.jsx         | JavaScript JSX     |         81 |         17 |         13 |        111 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\ProjectGrid.jsx         | JavaScript JSX     |         91 |         20 |         14 |        125 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\ProjectInfoModal.jsx    | JavaScript JSX     |        120 |         21 |         16 |        157 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\StatusModal.jsx         | JavaScript JSX     |        123 |         28 |         17 |        168 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\index.js                | JavaScript         |          5 |          0 |          1 |          6 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\pwa\InstallModal.jsx             | JavaScript JSX     |         99 |          8 |          8 |        115 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\pwa\index.js                     | JavaScript         |          1 |          0 |          1 |          2 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Badge.jsx                     | JavaScript JSX     |         21 |          7 |          3 |         31 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Button.jsx                    | JavaScript JSX     |         49 |          1 |          7 |         57 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ColorPicker.jsx               | JavaScript JSX     |         66 |          9 |         11 |         86 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\CopyableInfoBox.jsx           | JavaScript JSX     |        100 |         10 |          8 |        118 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\DangerButton.jsx              | JavaScript JSX     |         64 |         13 |          8 |         85 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Divider.jsx                   | JavaScript JSX     |         14 |          7 |          3 |         24 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\DropdownMenu.jsx              | JavaScript JSX     |        167 |         19 |         16 |        202 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\EditableInfoBox.jsx           | JavaScript JSX     |         88 |         11 |          6 |        105 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\InfoBox.jsx                   | JavaScript JSX     |         74 |          8 |          5 |         87 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Input.jsx                     | JavaScript JSX     |         29 |          0 |          4 |         33 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\MemberPillList.jsx            | JavaScript JSX     |        108 |         11 |         14 |        133 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\NotificationToggle.jsx        | JavaScript JSX     |        129 |         13 |         15 |        157 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\PasswordInput.jsx             | JavaScript JSX     |         45 |          0 |          5 |         50 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ProjectColorPicker.jsx        | JavaScript JSX     |         69 |         13 |          9 |         91 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Spinner.jsx                   | JavaScript JSX     |         14 |          0 |          4 |         18 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\StatusSlider.jsx              | JavaScript JSX     |        122 |         20 |         13 |        155 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ThemeSelector.jsx             | JavaScript JSX     |         15 |          4 |          3 |         22 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ThemeSwitcher.jsx             | JavaScript JSX     |         29 |          3 |          4 |         36 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\index.js                      | JavaScript         |         18 |          0 |          1 |         19 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\contexts\AuthContext.jsx                    | JavaScript JSX     |         39 |          2 |          7 |         48 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\contexts\ModalContext.jsx                   | JavaScript JSX     |        126 |         16 |         15 |        157 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\contexts\ThemeContext.jsx                   | JavaScript JSX     |        152 |         19 |         18 |        189 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useBentoAnimation.js                  | JavaScript         |        281 |         67 |         68 |        416 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useColumnCount.js                     | JavaScript         |         34 |         22 |         12 |         68 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useIsMobile.js                        | JavaScript         |         12 |          0 |          4 |         16 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useKeyboardHeight.js                  | JavaScript         |         15 |          0 |          6 |         21 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\hooks\usePWAInstall.js                      | JavaScript         |         78 |         12 |         15 |        105 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\index.css                                   | PostCSS            |        184 |         25 |         42 |        251 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\main.jsx                                    | JavaScript JSX     |          9 |          0 |          2 |         11 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\pages\Dashboard.jsx                         | JavaScript JSX     |        171 |         18 |         18 |        207 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\pages\LoadingPage.jsx                       | JavaScript JSX     |          9 |          0 |          3 |         12 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\pages\ProjectPage.jsx                       | JavaScript JSX     |      1,113 |        158 |        115 |      1,386 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\pages\WelcomePage.jsx                       | JavaScript JSX     |        124 |          5 |          7 |        136 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\pages\index.js                              | JavaScript         |          4 |          0 |          1 |          5 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\auth.js                            | JavaScript         |         35 |          0 |          8 |         43 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\config.js                          | JavaScript         |         11 |          0 |          4 |         15 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\files.js                           | JavaScript         |        199 |         67 |         24 |        290 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\groups.js                          | JavaScript         |        202 |         71 |         48 |        321 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\notifications.js                   | JavaScript         |        389 |        104 |         70 |        563 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\pdfs.js                            | JavaScript         |        118 |         43 |         19 |        180 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\photos.js                          | JavaScript         |        117 |         36 |         17 |        170 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\services\projects.js                        | JavaScript         |        390 |        208 |         79 |        677 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\utils\authValidation.js                     | JavaScript         |         31 |          1 |          5 |         37 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\utils\groupValidation.js                    | JavaScript         |         23 |         14 |         10 |         47 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\utils\notificationInit.js                   | JavaScript         |         58 |         13 |          9 |         80 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\utils\projectColors.js                      | JavaScript         |         68 |         20 |          4 |         92 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\utils\projectStatuses.js                    | JavaScript         |        122 |         23 |         13 |        158 |
+| d:\Matteo\Desktop\Progetti\scaletta\src\utils\projectValidation.js                  | JavaScript         |         13 |          8 |          6 |         27 |
+| d:\Matteo\Desktop\Progetti\scaletta\vite.config.js                                  | JavaScript         |         20 |          2 |          2 |         24 |
+| Total                                                                               |                    |     29,733 |      2,453 |      2,872 |     35,058 |
++-------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+

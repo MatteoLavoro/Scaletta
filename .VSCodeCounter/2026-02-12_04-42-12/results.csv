@@ -1,0 +1,194 @@
+"filename", "language", "JSON", "JavaScript", "HTML", "Markdown", "JavaScript JSX", "PostCSS", "JSON with Comments", "XML", "comment", "blank", "total"
+"d:\Matteo\Desktop\Progetti\scaletta\CONFIGURAZIONE.md", "Markdown", 0, 0, 0, 431, 0, 0, 0, 0, 0, 132, 563
+"d:\Matteo\Desktop\Progetti\scaletta\PROGETTO.md", "Markdown", 0, 0, 0, 548, 0, 0, 0, 0, 0, 189, 737
+"d:\Matteo\Desktop\Progetti\scaletta\README.md", "Markdown", 0, 0, 0, 230, 0, 0, 0, 0, 0, 60, 290
+"d:\Matteo\Desktop\Progetti\scaletta\UI_DESIGN.md", "Markdown", 0, 0, 0, 833, 0, 0, 0, 0, 0, 230, 1063
+"d:\Matteo\Desktop\Progetti\scaletta\cors.json", "JSON", 7, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8
+"d:\Matteo\Desktop\Progetti\scaletta\eslint.config.js", "JavaScript", 0, 41, 0, 0, 0, 0, 0, 0, 0, 2, 43
+"d:\Matteo\Desktop\Progetti\scaletta\firebase.json", "JSON", 39, 0, 0, 0, 0, 0, 0, 0, 0, 1, 40
+"d:\Matteo\Desktop\Progetti\scaletta\firestore.indexes.json", "JSON", 23, 0, 0, 0, 0, 0, 0, 0, 0, 1, 24
+"d:\Matteo\Desktop\Progetti\scaletta\functions\.eslintrc.json", "JSON with Comments", 0, 0, 0, 0, 0, 0, 27, 0, 0, 1, 28
+"d:\Matteo\Desktop\Progetti\scaletta\functions\index.js", "JavaScript", 0, 190, 0, 0, 0, 0, 0, 0, 68, 28, 286
+"d:\Matteo\Desktop\Progetti\scaletta\functions\package-lock.json", "JSON", 7952, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7953
+"d:\Matteo\Desktop\Progetti\scaletta\functions\package.json", "JSON", 26, 0, 0, 0, 0, 0, 0, 0, 0, 1, 27
+"d:\Matteo\Desktop\Progetti\scaletta\index.html", "HTML", 0, 0, 36, 0, 0, 0, 0, 0, 4, 6, 46
+"d:\Matteo\Desktop\Progetti\scaletta\package-lock.json", "JSON", 4698, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4699
+"d:\Matteo\Desktop\Progetti\scaletta\package.json", "JSON", 33, 0, 0, 0, 0, 0, 0, 0, 0, 1, 34
+"d:\Matteo\Desktop\Progetti\scaletta\public\favicon.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1
+"d:\Matteo\Desktop\Progetti\scaletta\public\firebase-messaging-sw.js", "JavaScript", 0, 153, 0, 0, 0, 0, 0, 0, 30, 28, 211
+"d:\Matteo\Desktop\Progetti\scaletta\public\manifest.json", "JSON", 44, 0, 0, 0, 0, 0, 0, 0, 0, 1, 45
+"d:\Matteo\Desktop\Progetti\scaletta\public\sw.js", "JavaScript", 0, 111, 0, 0, 0, 0, 0, 0, 13, 15, 139
+"d:\Matteo\Desktop\Progetti\scaletta\src\App.css", "PostCSS", 0, 0, 0, 0, 0, 21, 0, 0, 1, 3, 25
+"d:\Matteo\Desktop\Progetti\scaletta\src\App.jsx", "JavaScript JSX", 0, 0, 0, 0, 192, 0, 0, 0, 21, 28, 241
+"d:\Matteo\Desktop\Progetti\scaletta\src\STRUTTURA.md", "Markdown", 0, 0, 0, 534, 0, 0, 0, 0, 0, 157, 691
+"d:\Matteo\Desktop\Progetti\scaletta\src\assets\react.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\auth\AuthModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 131, 0, 0, 0, 8, 20, 159
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\auth\index.js", "JavaScript", 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\AddBentoBoxButton.jsx", "JavaScript JSX", 0, 0, 0, 0, 317, 0, 0, 0, 48, 31, 396
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\AnagraficaBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 338, 0, 0, 0, 65, 40, 443
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BENTO_BOX.md", "Markdown", 0, 0, 0, 605, 0, 0, 0, 0, 0, 173, 778
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BaseBentoBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 235, 0, 0, 0, 61, 29, 325
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BentoBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 61, 0, 0, 0, 15, 6, 82
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\BentoGrid.jsx", "JavaScript JSX", 0, 0, 0, 0, 27, 0, 0, 0, 13, 5, 45
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\CameraFab.jsx", "JavaScript JSX", 0, 0, 0, 0, 65, 0, 0, 0, 24, 10, 99
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\ChecklistBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 244, 0, 0, 0, 43, 24, 311
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\FileBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 392, 0, 0, 0, 75, 50, 517
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\NoteBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 88, 0, 0, 0, 23, 8, 119
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\PdfBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 439, 0, 0, 0, 67, 51, 557
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\PhotoBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 367, 0, 0, 0, 63, 42, 472
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\TutorialBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 40, 0, 0, 0, 11, 6, 57
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\VersionBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 478, 0, 0, 0, 75, 52, 605
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\bentoConstants.js", "JavaScript", 0, 13, 0, 0, 0, 0, 0, 0, 10, 3, 26
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\index.js", "JavaScript", 0, 19, 0, 0, 0, 0, 0, 0, 3, 3, 25
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\bento\useBentoLayout.js", "JavaScript", 0, 74, 0, 0, 0, 0, 0, 0, 43, 19, 136
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\DateTimePicker.jsx", "JavaScript JSX", 0, 0, 0, 0, 61, 0, 0, 0, 12, 8, 81
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormDivider.jsx", "JavaScript JSX", 0, 0, 0, 0, 4, 0, 0, 0, 3, 2, 9
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormError.jsx", "JavaScript JSX", 0, 0, 0, 0, 25, 0, 0, 0, 6, 5, 36
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormField.jsx", "JavaScript JSX", 0, 0, 0, 0, 4, 0, 0, 0, 4, 2, 10
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormHint.jsx", "JavaScript JSX", 0, 0, 0, 0, 7, 0, 0, 0, 4, 3, 14
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormLabel.jsx", "JavaScript JSX", 0, 0, 0, 0, 12, 0, 0, 0, 4, 2, 18
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\FormSection.jsx", "JavaScript JSX", 0, 0, 0, 0, 20, 0, 0, 0, 4, 2, 26
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\InfoField.jsx", "JavaScript JSX", 0, 0, 0, 0, 12, 0, 0, 0, 4, 3, 19
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\PasswordField.jsx", "JavaScript JSX", 0, 0, 0, 0, 77, 0, 0, 0, 10, 6, 93
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\TextArea.jsx", "JavaScript JSX", 0, 0, 0, 0, 63, 0, 0, 0, 12, 6, 81
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\TextField.jsx", "JavaScript JSX", 0, 0, 0, 0, 70, 0, 0, 0, 12, 7, 89
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\form\index.js", "JavaScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 1, 12
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\CreateGroupButton.jsx", "JavaScript JSX", 0, 0, 0, 0, 21, 0, 0, 0, 3, 3, 27
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\EmptyGroupsCard.jsx", "JavaScript JSX", 0, 0, 0, 0, 55, 0, 0, 0, 6, 5, 66
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\GroupCard.jsx", "JavaScript JSX", 0, 0, 0, 0, 122, 0, 0, 0, 22, 17, 161
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\GroupInfoModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 161, 0, 0, 0, 20, 16, 197
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\JoinGroupButton.jsx", "JavaScript JSX", 0, 0, 0, 0, 21, 0, 0, 0, 3, 3, 27
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\groups\index.js", "JavaScript", 0, 5, 0, 0, 0, 0, 0, 0, 0, 1, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\AlertCircleIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\AlertTriangleIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ArchiveIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ArrowLeftIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\BellIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\BellOffIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 21, 0, 0, 0, 0, 2, 23
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\BoldIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CameraIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 17, 0, 0, 0, 0, 2, 19
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CheckCircleIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CheckIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ChevronDownIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ChevronLeftIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 16, 0, 0, 0, 0, 2, 18
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ChevronRightIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 16, 0, 0, 0, 0, 2, 18
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ClockIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 17, 0, 0, 0, 0, 2, 19
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CloseIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CodeIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CopyIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\CrownIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\DownloadIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\EyeIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\EyeOffIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileArchiveIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileSpreadsheetIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileTextIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 20, 0, 0, 0, 4, 2, 26
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FileTypeIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\FolderIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 16, 0, 0, 0, 0, 2, 18
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\IdCardIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 20, 0, 0, 0, 0, 2, 22
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ImageIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 18, 0, 0, 0, 0, 2, 20
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\InfoIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ItalicIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ListChecksIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\LogOutIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MailIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MapPinIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MoonIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MoreHorizontalIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MoreVerticalIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\MusicIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PencilIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PercentIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PhoneIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PinIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 17, 0, 0, 0, 0, 2, 19
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PlayIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PlusIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\PresentationIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\RotateCwIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 17, 0, 0, 0, 0, 2, 19
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\RulerIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\SendIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\SettingsIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\SunIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\TrashIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UploadIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 18, 0, 0, 0, 0, 2, 20
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UserIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UserPlusIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\UsersIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 8
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\VideoIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\ZapIcon.jsx", "JavaScript JSX", 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\icons\index.js", "JavaScript", 0, 57, 0, 0, 0, 0, 0, 0, 2, 2, 61
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ConfirmModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 93, 0, 0, 0, 22, 9, 124
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\FileUploadModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 239, 0, 0, 0, 28, 26, 293
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ImageModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 300, 0, 0, 0, 40, 37, 377
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\InputModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 104, 0, 0, 0, 24, 13, 141
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\Modal.jsx", "JavaScript JSX", 0, 0, 0, 0, 159, 0, 0, 0, 16, 22, 197
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ModalFab.jsx", "JavaScript JSX", 0, 0, 0, 0, 32, 0, 0, 0, 0, 4, 36
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ModalFooter.jsx", "JavaScript JSX", 0, 0, 0, 0, 20, 0, 0, 0, 2, 4, 26
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\ModalHeader.jsx", "JavaScript JSX", 0, 0, 0, 0, 63, 0, 0, 0, 3, 5, 71
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\MoreBoxesModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 121, 0, 0, 0, 24, 12, 157
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\NotificationModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 229, 0, 0, 0, 30, 33, 292
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\PdfUploadModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 236, 0, 0, 0, 30, 28, 294
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\RichTextModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 258, 0, 0, 0, 30, 27, 315
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\UploadModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 249, 0, 0, 0, 31, 28, 308
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\VersionUploadModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 303, 0, 0, 0, 37, 32, 372
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\modal\index.js", "JavaScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 1, 15
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\profile\ProfileModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 98, 0, 0, 0, 14, 14, 126
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\profile\index.js", "JavaScript", 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\CreateProjectButton.jsx", "JavaScript JSX", 0, 0, 0, 0, 21, 0, 0, 0, 6, 3, 30
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\ProjectCard.jsx", "JavaScript JSX", 0, 0, 0, 0, 81, 0, 0, 0, 17, 13, 111
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\ProjectGrid.jsx", "JavaScript JSX", 0, 0, 0, 0, 91, 0, 0, 0, 20, 14, 125
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\ProjectInfoModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 120, 0, 0, 0, 21, 16, 157
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\StatusModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 123, 0, 0, 0, 28, 17, 168
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\projects\index.js", "JavaScript", 0, 5, 0, 0, 0, 0, 0, 0, 0, 1, 6
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\pwa\InstallModal.jsx", "JavaScript JSX", 0, 0, 0, 0, 99, 0, 0, 0, 8, 8, 115
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\pwa\index.js", "JavaScript", 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Badge.jsx", "JavaScript JSX", 0, 0, 0, 0, 21, 0, 0, 0, 7, 3, 31
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Button.jsx", "JavaScript JSX", 0, 0, 0, 0, 49, 0, 0, 0, 1, 7, 57
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ColorPicker.jsx", "JavaScript JSX", 0, 0, 0, 0, 66, 0, 0, 0, 9, 11, 86
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\CopyableInfoBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 100, 0, 0, 0, 10, 8, 118
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\DangerButton.jsx", "JavaScript JSX", 0, 0, 0, 0, 64, 0, 0, 0, 13, 8, 85
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Divider.jsx", "JavaScript JSX", 0, 0, 0, 0, 14, 0, 0, 0, 7, 3, 24
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\DropdownMenu.jsx", "JavaScript JSX", 0, 0, 0, 0, 167, 0, 0, 0, 19, 16, 202
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\EditableInfoBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 88, 0, 0, 0, 11, 6, 105
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\InfoBox.jsx", "JavaScript JSX", 0, 0, 0, 0, 74, 0, 0, 0, 8, 5, 87
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Input.jsx", "JavaScript JSX", 0, 0, 0, 0, 29, 0, 0, 0, 0, 4, 33
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\MemberPillList.jsx", "JavaScript JSX", 0, 0, 0, 0, 108, 0, 0, 0, 11, 14, 133
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\NotificationToggle.jsx", "JavaScript JSX", 0, 0, 0, 0, 129, 0, 0, 0, 13, 15, 157
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\PasswordInput.jsx", "JavaScript JSX", 0, 0, 0, 0, 45, 0, 0, 0, 0, 5, 50
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ProjectColorPicker.jsx", "JavaScript JSX", 0, 0, 0, 0, 69, 0, 0, 0, 13, 9, 91
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\Spinner.jsx", "JavaScript JSX", 0, 0, 0, 0, 14, 0, 0, 0, 0, 4, 18
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\StatusSlider.jsx", "JavaScript JSX", 0, 0, 0, 0, 122, 0, 0, 0, 20, 13, 155
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ThemeSelector.jsx", "JavaScript JSX", 0, 0, 0, 0, 15, 0, 0, 0, 4, 3, 22
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\ThemeSwitcher.jsx", "JavaScript JSX", 0, 0, 0, 0, 29, 0, 0, 0, 3, 4, 36
+"d:\Matteo\Desktop\Progetti\scaletta\src\components\ui\index.js", "JavaScript", 0, 18, 0, 0, 0, 0, 0, 0, 0, 1, 19
+"d:\Matteo\Desktop\Progetti\scaletta\src\contexts\AuthContext.jsx", "JavaScript JSX", 0, 0, 0, 0, 39, 0, 0, 0, 2, 7, 48
+"d:\Matteo\Desktop\Progetti\scaletta\src\contexts\ModalContext.jsx", "JavaScript JSX", 0, 0, 0, 0, 126, 0, 0, 0, 16, 15, 157
+"d:\Matteo\Desktop\Progetti\scaletta\src\contexts\ThemeContext.jsx", "JavaScript JSX", 0, 0, 0, 0, 152, 0, 0, 0, 19, 18, 189
+"d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useBentoAnimation.js", "JavaScript", 0, 281, 0, 0, 0, 0, 0, 0, 67, 68, 416
+"d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useColumnCount.js", "JavaScript", 0, 34, 0, 0, 0, 0, 0, 0, 22, 12, 68
+"d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useIsMobile.js", "JavaScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 4, 16
+"d:\Matteo\Desktop\Progetti\scaletta\src\hooks\useKeyboardHeight.js", "JavaScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 6, 21
+"d:\Matteo\Desktop\Progetti\scaletta\src\hooks\usePWAInstall.js", "JavaScript", 0, 78, 0, 0, 0, 0, 0, 0, 12, 15, 105
+"d:\Matteo\Desktop\Progetti\scaletta\src\index.css", "PostCSS", 0, 0, 0, 0, 0, 184, 0, 0, 25, 42, 251
+"d:\Matteo\Desktop\Progetti\scaletta\src\main.jsx", "JavaScript JSX", 0, 0, 0, 0, 9, 0, 0, 0, 0, 2, 11
+"d:\Matteo\Desktop\Progetti\scaletta\src\pages\Dashboard.jsx", "JavaScript JSX", 0, 0, 0, 0, 171, 0, 0, 0, 18, 18, 207
+"d:\Matteo\Desktop\Progetti\scaletta\src\pages\LoadingPage.jsx", "JavaScript JSX", 0, 0, 0, 0, 9, 0, 0, 0, 0, 3, 12
+"d:\Matteo\Desktop\Progetti\scaletta\src\pages\ProjectPage.jsx", "JavaScript JSX", 0, 0, 0, 0, 1113, 0, 0, 0, 158, 115, 1386
+"d:\Matteo\Desktop\Progetti\scaletta\src\pages\WelcomePage.jsx", "JavaScript JSX", 0, 0, 0, 0, 124, 0, 0, 0, 5, 7, 136
+"d:\Matteo\Desktop\Progetti\scaletta\src\pages\index.js", "JavaScript", 0, 4, 0, 0, 0, 0, 0, 0, 0, 1, 5
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\auth.js", "JavaScript", 0, 35, 0, 0, 0, 0, 0, 0, 0, 8, 43
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\config.js", "JavaScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 4, 15
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\files.js", "JavaScript", 0, 199, 0, 0, 0, 0, 0, 0, 67, 24, 290
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\groups.js", "JavaScript", 0, 202, 0, 0, 0, 0, 0, 0, 71, 48, 321
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\notifications.js", "JavaScript", 0, 389, 0, 0, 0, 0, 0, 0, 104, 70, 563
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\pdfs.js", "JavaScript", 0, 118, 0, 0, 0, 0, 0, 0, 43, 19, 180
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\photos.js", "JavaScript", 0, 117, 0, 0, 0, 0, 0, 0, 36, 17, 170
+"d:\Matteo\Desktop\Progetti\scaletta\src\services\projects.js", "JavaScript", 0, 390, 0, 0, 0, 0, 0, 0, 208, 79, 677
+"d:\Matteo\Desktop\Progetti\scaletta\src\utils\authValidation.js", "JavaScript", 0, 31, 0, 0, 0, 0, 0, 0, 1, 5, 37
+"d:\Matteo\Desktop\Progetti\scaletta\src\utils\groupValidation.js", "JavaScript", 0, 23, 0, 0, 0, 0, 0, 0, 14, 10, 47
+"d:\Matteo\Desktop\Progetti\scaletta\src\utils\notificationInit.js", "JavaScript", 0, 58, 0, 0, 0, 0, 0, 0, 13, 9, 80
+"d:\Matteo\Desktop\Progetti\scaletta\src\utils\projectColors.js", "JavaScript", 0, 68, 0, 0, 0, 0, 0, 0, 20, 4, 92
+"d:\Matteo\Desktop\Progetti\scaletta\src\utils\projectStatuses.js", "JavaScript", 0, 122, 0, 0, 0, 0, 0, 0, 23, 13, 158
+"d:\Matteo\Desktop\Progetti\scaletta\src\utils\projectValidation.js", "JavaScript", 0, 13, 0, 0, 0, 0, 0, 0, 8, 6, 27
+"d:\Matteo\Desktop\Progetti\scaletta\vite.config.js", "JavaScript", 0, 20, 0, 0, 0, 0, 0, 0, 2, 2, 24
+"Total", "-", 12822, 2934, 36, 3181, 10526, 205, 27, 2, 2453, 2872, 35058

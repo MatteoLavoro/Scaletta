@@ -129,10 +129,28 @@ firebase.initializeApp(firebaseConfig);
 // Ottieni l'istanza di messaging
 const messaging = firebase.messaging();
 
-// Gestisci le notifiche in background
-messaging.onBackgroundMessage((payload) => {
-  console.log("Notifica ricevuta in background:", payload);
+// Gestisci i messaggi in background
+messaging.onBackgroundMessage(async (payload) => {
+  console.log("Messaggio ricevuto in background:", payload);
 
+  // Controlla se ci sono finestre/tab aperte dell'app
+  const allClients = await clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+
+  // Se ci sono client aperti, non mostrare la notifica push
+  // (l'app è già aperta e l'utente vedrà il messaggio nell'interfaccia)
+  if (allClients.length > 0) {
+    console.log(
+      "App aperta, notifica push soppressa. Client aperti:",
+      allClients.length,
+    );
+    return; // Non mostrare notifica
+  }
+
+  // Se l'app è chiusa, mostra la notifica push
+  console.log("App chiusa, mostro notifica push");
   const notificationTitle = payload.notification?.title || "Scaletta";
   const notificationOptions = {
     body: payload.notification?.body || "",
@@ -150,9 +168,9 @@ messaging.onBackgroundMessage((payload) => {
   );
 });
 
-// Gestisci il click sulla notifica
+// Gestisci il click sul messaggio
 self.addEventListener("notificationclick", (event) => {
-  console.log("Notifica cliccata:", event.notification.data);
+  console.log("Messaggio cliccato:", event.notification.data);
 
   event.notification.close();
 
@@ -187,24 +205,43 @@ self.addEventListener("push", (event) => {
   if (event.data) {
     console.log("Push event ricevuto:", event.data.json());
 
-    const data = event.data.json();
-    const notificationTitle =
-      data.notification?.title || data.data?.title || "Scaletta";
-    const notificationOptions = {
-      body: data.notification?.body || data.data?.body || "",
-      icon: data.notification?.icon || "/web-app-manifest-192x192.png",
-      badge: "/favicon-96x96.png",
-      data: data.data || {},
-      vibrate: [200, 100, 200],
-      tag: data.data?.projectId || "general",
-      requireInteraction: false,
-    };
-
     event.waitUntil(
-      self.registration.showNotification(
-        notificationTitle,
-        notificationOptions,
-      ),
+      (async () => {
+        // Controlla se ci sono finestre/tab aperte dell'app
+        const allClients = await clients.matchAll({
+          type: "window",
+          includeUncontrolled: true,
+        });
+
+        // Se ci sono client aperti, non mostrare la notifica push
+        if (allClients.length > 0) {
+          console.log(
+            "App aperta, notifica push soppressa. Client aperti:",
+            allClients.length,
+          );
+          return; // Non mostrare notifica
+        }
+
+        // Se l'app è chiusa, mostra la notifica push
+        console.log("App chiusa, mostro notifica push");
+        const data = event.data.json();
+        const notificationTitle =
+          data.notification?.title || data.data?.title || "Scaletta";
+        const notificationOptions = {
+          body: data.notification?.body || data.data?.body || "",
+          icon: data.notification?.icon || "/web-app-manifest-192x192.png",
+          badge: "/favicon-96x96.png",
+          data: data.data || {},
+          vibrate: [200, 100, 200],
+          tag: data.data?.projectId || "general",
+          requireInteraction: false,
+        };
+
+        return self.registration.showNotification(
+          notificationTitle,
+          notificationOptions,
+        );
+      })(),
     );
   }
 });

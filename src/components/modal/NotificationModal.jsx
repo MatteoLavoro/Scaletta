@@ -10,7 +10,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
 
 /**
- * NotificationModal - Modale per inviare e visualizzare notifiche del progetto
+ * MessageModal - Modale per inviare e visualizzare messaggi del progetto
  * Layout responsive:
  * - Desktop: 2 colonne (storico sx, form dx)
  * - Mobile: flex column (form sopra, storico sotto)
@@ -20,7 +20,7 @@ import { useIsMobile } from "../../hooks/useIsMobile";
  * @param {object} project - Dati del progetto
  * @param {object} group - Dati del gruppo
  */
-const NotificationModal = ({ isOpen, onClose, project, group }) => {
+const MessageModal = ({ isOpen, onClose, project, group }) => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [message, setMessage] = useState("");
@@ -31,7 +31,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
 
   const maxLength = 200;
 
-  // Sottoscrizione alle notifiche del progetto
+  // Sottoscrizione ai messaggi del progetto
   useEffect(() => {
     if (!isOpen || !project?.id || !user?.uid) return;
 
@@ -57,7 +57,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
     }
   }, [isOpen]);
 
-  // Invia notifica (immediata o programmata) in background
+  // Invia messaggio (immediato o programmato) in background
   const handleSend = async () => {
     if (!message.trim() || !project || !group || !user) return;
 
@@ -65,7 +65,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
     try {
       const memberIds = group.members.map((m) => m.uid);
 
-      // Salva la notifica (immediata o programmata)
+      // Salva il messaggio (immediato o programmato)
       await sendNotificationToGroup(
         group.id,
         project.id,
@@ -86,8 +86,8 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
         window.history.back();
       }
     } catch (error) {
-      console.error("Errore invio notifica:", error);
-      alert("Errore durante l'invio della notifica");
+      console.error("Errore invio messaggio:", error);
+      alert("Errore durante l'invio del messaggio");
       setIsSending(false);
     }
   };
@@ -118,7 +118,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
       return `${day}/${month} ${hours}:${minutes}`;
     }
 
-    // Notifiche passate (già inviate)
+    // Messaggi passati (già inviati)
     const diffMsPast = now - date;
     const diffMinsPast = Math.floor(diffMsPast / 60000);
     const diffHoursPast = Math.floor(diffMsPast / 3600000);
@@ -161,10 +161,10 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
   const formContent = (
     <div className="flex flex-col gap-4">
       <TextArea
-        label="Messaggio"
+        label="Nuovo messaggio"
         value={message}
         onChange={handleMessageChange}
-        placeholder="Scrivi il messaggio della notifica..."
+        placeholder="Scrivi il messaggio..."
         rows={4}
         resize={false}
         maxLength={maxLength}
@@ -196,7 +196,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
   const historyContent = (
     <div className="flex flex-col h-full min-h-0">
       <h3 className="text-base font-semibold text-text-primary mb-3 shrink-0">
-        Storico notifiche
+        Messaggi
       </h3>
 
       {loadingNotifications ? (
@@ -206,7 +206,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
       ) : notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <BellOffIcon className="w-12 h-12 text-text-muted mb-2" />
-          <p className="text-sm text-text-muted">Nessuna notifica inviata</p>
+          <p className="text-sm text-text-muted">Nessun messaggio inviato</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 pr-2">
@@ -251,7 +251,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
   return (
     <Modal
       isOpen={isOpen}
-      title="Notifiche Progetto"
+      title="Messaggi Progetto"
       confirmText={scheduledDate ? "Programma" : "Invia Ora"}
       onConfirm={handleSend}
       onClose={onClose}
@@ -288,4 +288,4 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
   );
 };
 
-export default NotificationModal;
+export default MessageModal;

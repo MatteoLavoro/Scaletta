@@ -25,7 +25,7 @@ import {
   TutorialBox,
   CameraFab,
 } from "../components/bento";
-import { MoreBoxesModal, NotificationModal } from "../components/modal";
+import { MoreBoxesModal, MessageModal } from "../components/modal";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import {
   createBentoBox,
@@ -45,7 +45,10 @@ import {
 import { deletePhotos, uploadPhoto, uploadPhotos } from "../services/photos";
 import { deleteFiles, uploadFiles } from "../services/files";
 import { deletePdfs, uploadPdfs } from "../services/pdfs";
-import { markProjectNotificationsAsRead } from "../services/notifications";
+import {
+  markProjectNotificationsAsRead,
+  subscribeToUnreadCount,
+} from "../services/notifications";
 
 /**
  * ProjectPage - Pagina di un singolo progetto
@@ -79,6 +82,7 @@ const ProjectPage = ({
   const [isMoreBoxesModalOpen, setIsMoreBoxesModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dragCounterRef = useRef(0);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
@@ -106,11 +110,19 @@ const ProjectPage = ({
     return () => unsubscribe();
   }, [project?.id]);
 
-  // Marca le notifiche come lette quando si entra nel progetto
+  // Sottoscrizione al conteggio notifiche non lette
   useEffect(() => {
     if (!project?.id || !currentUser?.uid) return;
 
-    markProjectNotificationsAsRead(project.id, currentUser.uid);
+    const unsubscribe = subscribeToUnreadCount(
+      project.id,
+      currentUser.uid,
+      (count) => {
+        setUnreadCount(count);
+      },
+    );
+
+    return () => unsubscribe();
   }, [project?.id, currentUser?.uid]);
 
   // Funzione per verificare se un box è vuoto (nessun contenuto significativo)
@@ -870,6 +882,16 @@ const ProjectPage = ({
     }
   };
 
+  // Handler per apertura modale notifiche - marca notifiche come lette
+  const handleOpenNotifications = async () => {
+    setIsNotificationModalOpen(true);
+    
+    // Marca le notifiche come lette quando si apre il modale
+    if (project?.id && currentUser?.uid) {
+      await markProjectNotificationsAsRead(project.id, currentUser.uid);
+    }
+  };
+
   // Costruisci il menu kebab - solo info e gestisci stato
   const menuItems = [
     // Info progetto
@@ -877,13 +899,6 @@ const ProjectPage = ({
       label: "Info progetto",
       icon: <InfoIcon className="w-5 h-5" />,
       onClick: () => setIsInfoModalOpen(true),
-    },
-    { separator: true },
-    // Invia notifica
-    {
-      label: "Invia notifica",
-      icon: <BellIcon className="w-5 h-5" />,
-      onClick: () => setIsNotificationModalOpen(true),
     },
     { separator: true },
     // Gestisci stato
@@ -933,14 +948,39 @@ const ProjectPage = ({
             {project.name}
           </h1>
 
-          {/* Kebab menu dropdown - Destra con cerchietto */}
-          <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
-            <DropdownMenu
-              items={menuItems}
-              buttonColor={projectColor.text}
-              ariaLabel="Menu progetto"
-              compact
-            />
+          {/* Pulsante notifiche + Kebab menu - Destra */}
+          <div className="flex items-center gap-2">
+            {/* Pulsante notifiche con badge */}
+            <div className="relative w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                onClick={handleOpenNotifications}
+                className="
+                  flex items-center justify-center w-full h-full
+                  rounded-full
+                  hover:bg-black/10 active:bg-black/20
+                  transition-colors duration-150
+                "
+                style={{ color: projectColor.text }}
+                aria-label="Notifiche progetto"
+              >
+                <BellIcon className="w-5 h-5" />
+              </button>
+              
+              {/* Badge rosso messaggi non letti */}
+              {unreadCount > 0 && (
+                <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              )}
+            </div>
+
+            {/* Kebab menu dropdown con cerchietto */}
+            <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+              <DropdownMenu
+                items={menuItems}
+                buttonColor={projectColor.text}
+                ariaLabel="Menu progetto"
+                compact
+              />
+            </div>
           </div>
         </header>
 
@@ -1371,8 +1411,8 @@ const ProjectPage = ({
         onAddVersion={handleAddVersion}
       />
 
-      {/* Modale notifiche */}
-      <NotificationModal
+      {/* Modale messaggi */}
+      <MessageModal
         isOpen={isNotificationModalOpen}
         onClose={() => setIsNotificationModalOpen(false)}
         project={project}
