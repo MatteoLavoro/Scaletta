@@ -49,7 +49,7 @@ const ChecklistItemRow = ({
       <div className="flex-1 min-w-0">
         <p
           className={`
-            text-sm font-medium break-words
+            text-sm font-medium wrap-break-word
             ${
               item.completed
                 ? "line-through text-text-muted"

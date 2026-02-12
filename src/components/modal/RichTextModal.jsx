@@ -42,6 +42,18 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
       editorRef.current.innerHTML = initialContent;
       const text = editorRef.current.innerText.trim();
       setHasContent(text.length > 0);
+
+      // Focus automatico sull'editor
+      setTimeout(() => {
+        editorRef.current?.focus();
+        // Posiziona il cursore alla fine del testo
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }, 100);
     }
   }, [isOpen, initialContent]);
 

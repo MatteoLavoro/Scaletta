@@ -194,8 +194,8 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
 
   // JSX dello storico (renderizzato direttamente per evitare ricreazioni)
   const historyContent = (
-    <div className="flex flex-col gap-3 min-h-0">
-      <h3 className="text-base font-semibold text-text-primary">
+    <div className="flex flex-col h-full min-h-0">
+      <h3 className="text-base font-semibold text-text-primary mb-3 shrink-0">
         Storico notifiche
       </h3>
 
@@ -209,7 +209,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
           <p className="text-sm text-text-muted">Nessuna notifica inviata</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 overflow-y-auto flex-1 pr-1">
+        <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 pr-2">
           {notifications.map((notification) => {
             // Determina se è una notifica programmata futura
             const hasVisibleFrom = !!notification.visibleFrom;
@@ -257,7 +257,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
       onClose={onClose}
       confirmDisabled={isDisabled}
       isLoading={isSending}
-      maxWidth="max-w-[900px]"
+      maxWidth="max-w-4xl"
     >
       {/* Layout responsive: 2 colonne desktop, stack mobile */}
       <div
@@ -265,7 +265,7 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
           ${
             isMobile
               ? "flex flex-col gap-5"
-              : "grid grid-cols-2 gap-6 min-h-[500px]"
+              : "grid grid-cols-2 gap-6 h-[450px]"
           }
         `}
       >
@@ -273,12 +273,16 @@ const NotificationModal = ({ isOpen, onClose, project, group }) => {
         {isMobile && formContent}
 
         {/* Desktop: Storico sinistra / Mobile: Storico sotto */}
-        <div className={isMobile ? "border-t border-divider pt-5" : ""}>
+        <div
+          className={
+            isMobile ? "border-t border-divider pt-5" : "flex flex-col min-h-0"
+          }
+        >
           {historyContent}
         </div>
 
         {/* Desktop: Form destra */}
-        {!isMobile && formContent}
+        {!isMobile && <div className="flex flex-col">{formContent}</div>}
       </div>
     </Modal>
   );
