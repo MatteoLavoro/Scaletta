@@ -2,8 +2,7 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "lint": "echo \"Lint temporaneamente disabilitato\" && exit 0",
-    "lint:full": "eslint .",
+    "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",

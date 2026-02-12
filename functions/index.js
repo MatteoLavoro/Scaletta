@@ -11,8 +11,6 @@ const admin = require("firebase-admin");
 // Inizializza Firebase Admin
 admin.initializeApp();
 
-const db = admin.firestore();
-
 /**
  * Cloud Function per inviare notifiche push multicast
  *
