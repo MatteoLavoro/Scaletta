@@ -16,6 +16,11 @@ import {
  * - Quando un box cambia altezza, si ricalcolano le assegnazioni ottimali
  * - Le transizioni vengono animate con tecnica FLIP
  *
+ * NUOVO SISTEMA:
+ * - Calcolo posizioni in background prima di animare
+ * - Solo i box che cambiano posizione vengono animati
+ * - I box che non si muovono rimangono fermi (no animazione)
+ *
  * @param {Array} items - Array di elementi con id univoci
  * @param {number} columnCount - Numero di colonne
  * @param {number} gap - Gap tra i box (default: 16)
@@ -23,7 +28,7 @@ import {
  */
 const useBentoAnimation = (items, columnCount, gap = 16) => {
   const containerRef = useRef(null);
-  const positionsRef = useRef(new Map());
+  const targetPositionsRef = useRef(new Map()); // Posizioni target salvate per FLIP
   const heightsRef = useRef(new Map());
   const isFirstRenderRef = useRef(true);
   const animatingRef = useRef(new Set());
@@ -33,6 +38,12 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
   const prevItemIdsRef = useRef(new Set());
   // Set di ID degli elementi che stanno facendo fade-in (gestito dal useLayoutEffect)
   const [fadingInIds, setFadingInIds] = useState(() => new Set());
+  // Traccia il columnCount precedente per rilevare cambiamenti
+  const prevColumnCountRef = useRef(columnCount);
+  // Flag per indicare che stiamo calcolando nuove posizioni
+  const isCalculatingRef = useRef(false);
+  // Flag per indicare che le nuove posizioni sono pronte per essere applicate
+  const isReadyToAnimateRef = useRef(false);
 
   // Crea una chiave unica basata sugli items per rilevare cambiamenti nel contenuto
   const itemsKey = useMemo(() => {
@@ -148,40 +159,42 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     return cols.map((col) => col.items);
   }, [items, columnCount, heights, gap]);
 
-  // Cattura le posizioni correnti degli elementi
-  const capturePositions = useCallback(() => {
-    if (!containerRef.current) return new Map();
+  // Calcola le posizioni target per ogni box (in background, senza applicarle al DOM)
+  const calculateTargetPositions = useCallback(() => {
+    if (!columns || columns.length === 0) return new Map();
 
     const positions = new Map();
-    const elements = containerRef.current.querySelectorAll("[data-bento-id]");
+    const columnTops = Array(columnCount).fill(0);
 
-    elements.forEach((el) => {
-      const id = el.getAttribute("data-bento-id");
-      const rect = el.getBoundingClientRect();
+    const ESTIMATED_HEIGHTS = {
+      tutorial: 200,
+      add: 320,
+      note: 180,
+      photo: 280,
+      generic: 200,
+    };
+    const DEFAULT_HEIGHT = 200;
 
-      // Se l'elemento sta animando, calcola la posizione reale
-      const computedStyle = window.getComputedStyle(el);
-      const transform = computedStyle.transform;
+    columns.forEach((colItems, colIndex) => {
+      colItems.forEach((item) => {
+        const measuredHeight = heights.get(item.id);
+        const estimatedHeight =
+          ESTIMATED_HEIGHTS[item.type] ||
+          ESTIMATED_HEIGHTS[item.boxType] ||
+          DEFAULT_HEIGHT;
+        const itemHeight = measuredHeight || estimatedHeight;
 
-      let offsetX = 0;
-      let offsetY = 0;
+        positions.set(item.id, {
+          columnIndex: colIndex,
+          top: columnTops[colIndex],
+        });
 
-      if (transform && transform !== "none") {
-        const matrix = new DOMMatrix(transform);
-        offsetX = matrix.m41;
-        offsetY = matrix.m42;
-      }
-
-      positions.set(id, {
-        left: rect.left - offsetX,
-        top: rect.top - offsetY,
-        width: rect.width,
-        height: rect.height,
+        columnTops[colIndex] += itemHeight + gap;
       });
     });
 
     return positions;
-  }, []);
+  }, [columns, columnCount, heights, gap]);
 
   // Setup ResizeObserver per rilevare cambiamenti di altezza
   useEffect(() => {
@@ -224,7 +237,25 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     };
   }, [items, measureHeights]);
 
-  // useLayoutEffect per animazioni FLIP
+  // Rileva cambiamenti di columnCount per trigger ricalcolo
+  useEffect(() => {
+    if (prevColumnCountRef.current !== columnCount) {
+      // ColumnCount è cambiato (chat aperta/chiusa o resize)
+      isCalculatingRef.current = true;
+
+      prevColumnCountRef.current = columnCount;
+
+      // Aspetta che il container si sia stabilizzato (transizione CSS completata)
+      const timer = setTimeout(() => {
+        isCalculatingRef.current = false;
+        isReadyToAnimateRef.current = true;
+      }, 50); // Breve delay per stabilità
+
+      return () => clearTimeout(timer);
+    }
+  }, [columnCount]);
+
+  // useLayoutEffect per animazioni FLIP con calcolo posizioni in background
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
@@ -232,28 +263,96 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
       containerRef.current.offsetHeight;
-      positionsRef.current = capturePositions();
+      // Salva le posizioni iniziali (FIRST delle prossime animazioni)
+      targetPositionsRef.current = calculateTargetPositions();
       return;
     }
 
-    // Usa le posizioni salvate dal ciclo precedente
-    const oldPositions = positionsRef.current;
+    // Skip se stiamo ancora calcolando (durante transizione container)
+    if (isCalculatingRef.current) {
+      return;
+    }
 
-    // Forza reflow
-    containerRef.current.offsetHeight;
+    // TECNICA FLIP CORRETTA:
+    // FIRST: usa le posizioni target salvate dal ciclo precedente (dove ERANO i box)
+    const firstPositions = targetPositionsRef.current;
 
-    // Calcola le nuove posizioni
-    const newPositions = capturePositions();
+    // LAST: calcola le nuove posizioni target (dove DEVONO ANDARE i box)
+    const lastPositions = calculateTargetPositions();
 
-    // Salva per il prossimo ciclo
-    positionsRef.current = newPositions;
+    // FASE 1: Determina quali box devono essere animati confrontando first e last
+    const boxesToAnimate = new Map(); // id -> { deltaX, deltaY }
 
+    // Ottieni dimensioni container per conversioni
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const BOX_WIDTH = columnCount === 1 ? containerRect.width : 320;
+
+    lastPositions.forEach((lastPos, id) => {
+      const firstPos = firstPositions.get(id);
+
+      // Se il box non esisteva prima, è nuovo (skip animation, gestito separatamente)
+      if (!firstPos) return;
+
+      // Posizione FIRST in pixel assoluti
+      const firstLeft =
+        containerRect.left + firstPos.columnIndex * (BOX_WIDTH + gap);
+      const firstTop = containerRect.top + firstPos.top;
+
+      // Posizione LAST in pixel assoluti
+      const lastLeft =
+        containerRect.left + lastPos.columnIndex * (BOX_WIDTH + gap);
+      const lastTop = containerRect.top + lastPos.top;
+
+      // INVERT: calcola quanto dobbiamo spostare indietro per simulare la posizione vecchia
+      const deltaX = firstLeft - lastLeft;
+      const deltaY = firstTop - lastTop;
+
+      // Soglia per considerare il movimento significativo (evita micro-movimenti)
+      const MOVEMENT_THRESHOLD = 2;
+
+      if (
+        Math.abs(deltaX) >= MOVEMENT_THRESHOLD ||
+        Math.abs(deltaY) >= MOVEMENT_THRESHOLD
+      ) {
+        boxesToAnimate.set(id, { deltaX, deltaY });
+      }
+    });
+
+    // FASE 2: Applica le animazioni FLIP solo ai box che si muovono
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
 
+    // Prima gestiamo i nuovi elementi (devono apparire immediatamente nella posizione corretta)
+    const newElementsToShow = [];
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
-      const oldPos = oldPositions.get(id);
-      const newPos = newPositions.get(id);
+      if (newItemIds.has(id)) {
+        newElementsToShow.push({ el, id });
+      }
+    });
+
+    // Poi gestiamo le animazioni dei box esistenti
+    elements.forEach((el) => {
+      const id = el.getAttribute("data-bento-id");
+
+      // Skip nuovi elementi (gestiti separatamente)
+      if (newItemIds.has(id)) {
+        return;
+      }
+
+      // Controlla se questo box deve essere animato
+      const animationData = boxesToAnimate.get(id);
+
+      if (!animationData) {
+        // Box NON si muove: assicurati che non abbia transform residui
+        if (el.style.transform) {
+          el.style.transition = "none";
+          el.style.transform = "";
+        }
+        return;
+      }
+
+      // Box SI MUOVE: applica animazione FLIP
+      const { deltaX, deltaY } = animationData;
 
       // Cancella eventuali animazioni in corso
       if (animatingRef.current.has(id)) {
@@ -261,58 +360,21 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         el.style.transform = "";
       }
 
-      // Nuovo elemento (identificato dal useMemo newItemIds)
-      if (newItemIds.has(id)) {
-        // Aggiungi a fadingInIds per tracciare il fade-in in corso
-        setFadingInIds((prev) => new Set([...prev, id]));
-
-        // Ritarda il fade-in per permettere agli altri elementi di completare la loro animazione FLIP
-        // In questo modo il nuovo box appare nella posizione finale dopo che gli altri si sono spostati
-        setTimeout(() => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              el.style.transition = "opacity 200ms ease-out";
-              el.style.opacity = "1";
-
-              const cleanup = () => {
-                el.style.transition = "";
-                el.style.opacity = "";
-                // Rimuovi da fadingInIds dopo l'animazione
-                setFadingInIds((prev) => {
-                  const next = new Set(prev);
-                  next.delete(id);
-                  return next;
-                });
-              };
-              el.addEventListener("transitionend", cleanup, { once: true });
-              setTimeout(cleanup, 250);
-            });
-          });
-        }, 280); // Aspetta che l'animazione FLIP degli altri elementi sia quasi completa
-        return;
-      }
-
-      // Se non abbiamo la posizione precedente o nuova, skip
-      if (!oldPos || !newPos) return;
-
-      const deltaX = oldPos.left - newPos.left;
-      const deltaY = oldPos.top - newPos.top;
-
-      // Se non c'è movimento significativo, skip
-      if (Math.abs(deltaX) < 2 && Math.abs(deltaY) < 2) return;
-
       animatingRef.current.add(id);
 
-      // FLIP: Applica trasformazione inversa
+      // INVERT: applica trasformazione inversa (istantanea) per riportare visivamente alla posizione vecchia
       el.style.transition = "none";
       el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
+      // Force reflow per assicurare che il transform venga applicato
       el.offsetHeight;
 
-      // Play: Anima verso la posizione finale
+      // PLAY: anima verso la posizione finale (transform = 0)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          el.style.transition = "transform 350ms cubic-bezier(0.4, 0, 0.2, 1)";
+          // Animazione fluida: 500ms con easing Material Design "emphasized"
+          // cubic-bezier(0.2, 0, 0, 1) = emphasize deceleration
+          el.style.transition = "transform 500ms cubic-bezier(0.2, 0, 0, 1)";
           el.style.transform = "translate(0, 0)";
 
           const cleanup = () => {
@@ -322,33 +384,97 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
           };
 
           el.addEventListener("transitionend", cleanup, { once: true });
-          setTimeout(cleanup, 400);
+          setTimeout(cleanup, 550); // Cleanup di sicurezza
         });
       });
     });
-  }, [columns, columnCount, capturePositions, itemsKey, newItemIds]);
+
+    // FASE 3: Mostra i nuovi elementi nella posizione corretta (dopo il layout)
+    // Aspettiamo che il DOM sia stabile, poi facciamo apparire i nuovi box
+    if (newElementsToShow.length > 0) {
+      // Rimuovi gli ID da newItemIds spostandoli in fadingInIds
+      // Questo rende i box visibility: visible ma ancora opacity: 0
+      setFadingInIds((prev) => {
+        const next = new Set(prev);
+        newElementsToShow.forEach(({ id }) => next.add(id));
+        return next;
+      });
+
+      // Aspetta che il DOM si sia stabilizzato e che visibility: visible sia applicato
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Ulteriore frame per assicurarsi che tutto sia stabile
+          requestAnimationFrame(() => {
+            newElementsToShow.forEach(({ el, id }) => {
+              // Ora il box è nella posizione corretta e visibility: visible
+              // Fade-in con opacity
+              el.style.transition = "opacity 250ms ease-out";
+              el.style.opacity = "1";
+
+              const cleanup = () => {
+                el.style.transition = "";
+                el.style.opacity = "";
+                // Rimuovi dal set di fade-in
+                setFadingInIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(id);
+                  return next;
+                });
+              };
+
+              el.addEventListener("transitionend", cleanup, { once: true });
+              setTimeout(cleanup, 300); // Cleanup di sicurezza
+            });
+          });
+        });
+      });
+    }
+
+    // FASE 4: Salva le posizioni target correnti per il prossimo ciclo
+    // Queste diventeranno le posizioni "FIRST" nella prossima animazione
+    targetPositionsRef.current = lastPositions;
+    isReadyToAnimateRef.current = false;
+  }, [
+    columns,
+    columnCount,
+    calculateTargetPositions,
+    itemsKey,
+    newItemIds,
+    gap,
+  ]);
 
   // Funzione helper per ottenere lo stile iniziale di un elemento
-  // I nuovi elementi devono essere nascosti finché non sono nella posizione corretta
+  // I nuovi elementi devono essere completamente nascosti finché non sono nella posizione corretta
   const getItemStyle = useCallback(
     (itemId) => {
-      // Nascondi se è un nuovo elemento O se sta ancora facendo il fade-in
-      if (newItemIds.has(itemId) || fadingInIds.has(itemId)) {
-        return { opacity: 0 };
+      // Nascondi completamente se è un nuovo elemento (non ancora posizionato)
+      if (newItemIds.has(itemId)) {
+        return { opacity: 0, visibility: "hidden" };
+      }
+      // Nascondi con opacity se sta facendo il fade-in (già posizionato)
+      if (fadingInIds.has(itemId)) {
+        return { opacity: 0, visibility: "visible" };
       }
       return {};
     },
-    [newItemIds, fadingInIds]
+    [newItemIds, fadingInIds],
   );
 
   // Crea un array flat di tutti gli items con la loro colonna assegnata
   // e le coordinate assolute per il posizionamento
-  // Questo permette di renderizzare tutti i box in un unico contenitore
-  // mantenendo lo stato quando vengono spostati tra colonne
   const flatItems = useMemo(() => {
     const result = [];
-    // Traccia l'altezza cumulativa per ogni colonna
     const columnTops = Array(columnCount).fill(0);
+
+    const ESTIMATED_HEIGHTS = {
+      tutorial: 200,
+      add: 320,
+      note: 180,
+      photo: 280,
+      file: 200,
+      generic: 200,
+    };
+    const DEFAULT_HEIGHT = 200;
 
     columns.forEach((colItems, colIndex) => {
       colItems.forEach((item) => {
@@ -356,17 +482,10 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
 
         // Ottieni l'altezza misurata o stimata
         const measuredHeight = heights.get(item.id);
-        const ESTIMATED_HEIGHTS = {
-          tutorial: 200,
-          note: 180,
-          photo: 280,
-          file: 200,
-          generic: 200,
-        };
         const estimatedHeight =
           ESTIMATED_HEIGHTS[item.type] ||
           ESTIMATED_HEIGHTS[item.boxType] ||
-          200;
+          DEFAULT_HEIGHT;
         const itemHeight = measuredHeight || estimatedHeight;
 
         result.push({
@@ -387,20 +506,23 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
   const containerHeight = useMemo(() => {
     const columnTops = Array(columnCount).fill(0);
 
+    const ESTIMATED_HEIGHTS = {
+      tutorial: 200,
+      add: 320,
+      note: 180,
+      photo: 280,
+      file: 200,
+      generic: 200,
+    };
+    const DEFAULT_HEIGHT = 200;
+
     columns.forEach((colItems, colIndex) => {
       colItems.forEach((item) => {
         const measuredHeight = heights.get(item.id);
-        const ESTIMATED_HEIGHTS = {
-          tutorial: 200,
-          note: 180,
-          photo: 280,
-          file: 200,
-          generic: 200,
-        };
         const estimatedHeight =
           ESTIMATED_HEIGHTS[item.type] ||
           ESTIMATED_HEIGHTS[item.boxType] ||
-          200;
+          DEFAULT_HEIGHT;
         const itemHeight = measuredHeight || estimatedHeight;
         columnTops[colIndex] += itemHeight + gap;
       });

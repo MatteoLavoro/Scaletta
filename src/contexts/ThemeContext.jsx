@@ -185,4 +185,17 @@ export const useTheme = () => {
   return context;
 };
 
+/**
+ * Ottiene il colore primario per un dato accent color e tema
+ * Utile per colorare elementi in base alle preferenze di altri utenti
+ * @param {string} accentColor - Il colore accent (teal, blue, purple, etc.)
+ * @param {string} theme - Il tema corrente (light o dark)
+ * @returns {string} - Colore esadecimale
+ */
+export const getColorForAccent = (accentColor, theme) => {
+  const colorSet = THEME_COLORS[accentColor];
+  if (!colorSet) return THEME_COLORS.teal[theme].primary; // Fallback a teal
+  return colorSet[theme].primary;
+};
+
 export { THEME_COLORS, THEME_BG };

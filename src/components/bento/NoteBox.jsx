@@ -19,6 +19,7 @@ import { RichTextModal } from "../modal";
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onContentChange - Callback per cambiare il contenuto
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const NoteBox = ({
   title = "Nota",
@@ -30,6 +31,7 @@ const NoteBox = ({
   onTitleChange,
   onContentChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
 
@@ -63,6 +65,7 @@ const NoteBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={noteMenuItems}
         minHeight={hasContent ? undefined : 150}
       >

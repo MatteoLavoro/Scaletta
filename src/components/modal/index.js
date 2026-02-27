@@ -12,3 +12,4 @@ export { default as MoreBoxesModal } from "./MoreBoxesModal";
 export { default as ImageModal } from "./ImageModal";
 export { default as RichTextModal } from "./RichTextModal";
 export { default as MessageModal } from "./NotificationModal";
+export { default as BoxTagModal } from "./BoxTagModal";

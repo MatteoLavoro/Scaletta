@@ -41,16 +41,10 @@ export const registerFirebaseMessagingSW = async () => {
  * @param {string} userId - ID dell'utente
  */
 export const initializeNotifications = async (userId) => {
-  if (!userId) {
-    console.log("🔔 Inizializzazione notifiche: userId mancante");
-    return;
-  }
-
-  console.log("🔔 Inizializzo notifiche per utente:", userId);
+  if (!userId) return;
 
   try {
     // Registra il service worker (ora include anche il caching PWA)
-    console.log("📝 Registrazione service worker...");
     const registration = await registerFirebaseMessagingSW();
 
     if (!registration) {
@@ -58,20 +52,10 @@ export const initializeNotifications = async (userId) => {
       return;
     }
 
-    console.log("✅ Service worker registrato:", registration.scope);
-
     // Verifica se i permessi sono già stati concessi
     if (Notification.permission === "granted") {
-      console.log("✅ Permessi notifiche già concessi, richiedo token...");
       // Richiedi il token FCM
-      const token = await requestNotificationPermission(userId);
-      if (token) {
-        console.log("✅ Sistema notifiche inizializzato correttamente");
-      } else {
-        console.warn("⚠️ Token FCM non ottenuto");
-      }
-    } else {
-      console.log("⚠️ Permessi notifiche non ancora concessi");
+      await requestNotificationPermission(userId);
     }
   } catch (error) {
     console.error("❌ Errore inizializzazione notifiche:", error);

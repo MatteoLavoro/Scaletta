@@ -19,7 +19,7 @@ import {
 } from "../services/groups";
 import { validateGroupName, validateGroupCode } from "../utils/groupValidation";
 
-const Dashboard = ({ onProjectClick }) => {
+const Dashboard = ({ onProjectClick, deletingProjectIds }) => {
   const { user } = useAuth();
   const { openModal } = useModal();
   const displayName = user?.displayName || "Utente";
@@ -150,6 +150,7 @@ const Dashboard = ({ onProjectClick }) => {
                     currentUserId={user?.uid}
                     currentUser={currentUser}
                     onProjectClick={onProjectClick}
+                    deletingProjectIds={deletingProjectIds}
                   />
                 ))}
 

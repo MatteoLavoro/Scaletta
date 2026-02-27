@@ -173,7 +173,7 @@ export const uploadFile = async (projectId, file, onProgress = () => {}) => {
       "state_changed",
       (snapshot) => {
         const progress = Math.round(
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
         );
         onProgress(progress);
       },
@@ -196,7 +196,7 @@ export const uploadFile = async (projectId, file, onProgress = () => {}) => {
         } catch (error) {
           reject(error);
         }
-      }
+      },
     );
   });
 };
@@ -213,7 +213,7 @@ export const uploadFiles = async (
   projectId,
   files,
   onProgress = () => {},
-  onFileUploaded = () => {}
+  onFileUploaded = () => {},
 ) => {
   const uploadedFiles = [];
   const totalFiles = files.length;
@@ -274,16 +274,37 @@ export const deleteFiles = async (files) => {
 };
 
 /**
- * Scarica un file (apre in nuova tab)
+ * Scarica un file mantenendo il nome originale
+ * Usa fetch + blob per bypassare limitazioni CORS sull'attributo download
  * @param {string} url - URL del file
  * @param {string} filename - Nome del file
  */
-export const downloadFile = (url, filename) => {
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.target = "_blank";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+export const downloadFile = async (url, filename) => {
+  try {
+    // Fetch del file come blob
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error("Errore nel download del file");
+    }
+
+    const blob = await response.blob();
+
+    // Crea URL temporaneo dal blob
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Crea link di download
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Cleanup: rilascia l'URL del blob per liberare memoria
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+  } catch (error) {
+    console.error("Errore download file:", error);
+    // Fallback: apre in nuova tab se il download fallisce
+    window.open(url, "_blank");
+  }
 };

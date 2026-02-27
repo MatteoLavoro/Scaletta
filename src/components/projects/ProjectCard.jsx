@@ -9,11 +9,14 @@ import {
   DEFAULT_PROJECT_STATUS,
 } from "../../utils/projectStatuses";
 import { subscribeToUnreadCount } from "../../services/notifications";
+import { hasProjectNews } from "../../utils/projectViews";
+import { ZapIcon, BellIcon } from "../icons";
 
 /**
  * ProjectCard - Quadrato cliccabile per un progetto
  * Icona stato centrata (solo icona senza sfondo), nome sopra, data sotto
- * Badge rosso in alto a destra se ci sono notifiche non lette
+ * Badge "News" in alto a sinistra se ci sono attività recenti
+ * Badge "Notifiche" in alto a destra se ci sono notifiche non lette
  *
  * @param {object} project - Dati del progetto
  * @param {string} currentUserId - ID dell'utente corrente
@@ -22,6 +25,7 @@ import { subscribeToUnreadCount } from "../../services/notifications";
 const ProjectCard = ({ project, currentUserId, onClick }) => {
   const { isDark } = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showNews, setShowNews] = useState(false);
 
   // Sottoscrizione notifiche non lette
   useEffect(() => {
@@ -37,6 +41,12 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
 
     return () => unsubscribe();
   }, [project?.id, currentUserId]);
+
+  // Controlla se ci sono news (attività recenti)
+  useEffect(() => {
+    if (!project || !currentUserId) return;
+    setShowNews(hasProjectNews(project, currentUserId));
+  }, [project, currentUserId]);
 
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
@@ -84,9 +94,28 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
         e.currentTarget.style.borderColor = `${projectColor.bg}50`;
       }}
     >
-      {/* Badge notifiche non lette */}
+      {/* Badge News - in alto a sinistra */}
+      {showNews && (
+        <div
+          className="absolute top-1.5 left-1.5 flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
+          style={{
+            backgroundColor: projectColor.bg,
+          }}
+        >
+          <ZapIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
+        </div>
+      )}
+
+      {/* Badge Notifiche - in alto a destra */}
       {unreadCount > 0 && (
-        <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+        <div className="absolute top-1.5 right-1.5 flex items-center justify-center gap-1 px-1.5 h-5 bg-red-500 rounded-md shadow-lg">
+          <BellIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
+          {unreadCount > 1 && (
+            <span className="text-[10px] font-bold text-white leading-none">
+              {unreadCount}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Nome progetto - in alto */}

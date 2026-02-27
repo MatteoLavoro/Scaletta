@@ -50,6 +50,8 @@ const AppContent = () => {
   });
   // Key per forzare refresh della Dashboard
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
+  // Traccia progetti in eliminazione (per UI ottimistica)
+  const [deletingProjectIds, setDeletingProjectIds] = useState(new Set());
 
   useEffect(() => {
     if (isAuthenticated) closeAllModals();
@@ -150,13 +152,39 @@ const AppContent = () => {
 
   const handleDeleteProject = async () => {
     if (!currentProject) return;
-    await deleteProject(currentProject.id);
-    // Forza refresh Dashboard per rimuovere il progetto eliminato
-    setDashboardRefreshKey((k) => k + 1);
+
+    const projectId = currentProject.id;
+
+    // 1. Aggiungi al Set dei progetti in eliminazione (per nascondere immediatamente dalla UI)
+    setDeletingProjectIds((prev) => new Set(prev).add(projectId));
+
+    // 2. Naviga immediatamente alla home
     setCurrentProject(null);
     setCurrentGroup(null);
-    // Torna indietro nella history (la ProjectPage ha aggiunto un entry)
+    setDashboardRefreshKey((k) => k + 1);
     window.history.back();
+
+    // 3. Elimina in background (senza await)
+    deleteProject(projectId)
+      .then(() => {
+        // Rimuovi dal Set dopo un delay per permettere a onSnapshot di aggiornare
+        setTimeout(() => {
+          setDeletingProjectIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(projectId);
+            return newSet;
+          });
+        }, 2000);
+      })
+      .catch((error) => {
+        console.error("Errore eliminazione progetto:", error);
+        // In caso di errore, rimuovi immediatamente dal Set così il progetto riappare
+        setDeletingProjectIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(projectId);
+          return newSet;
+        });
+      });
   };
 
   if (loading) return <LoadingPage />;
@@ -170,6 +198,7 @@ const AppContent = () => {
           <Dashboard
             key={dashboardRefreshKey}
             onProjectClick={handleProjectClick}
+            deletingProjectIds={deletingProjectIds}
           />
         </div>
 

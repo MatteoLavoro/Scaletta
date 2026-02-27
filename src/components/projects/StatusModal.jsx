@@ -72,7 +72,8 @@ const StatusModal = ({
   const handleDeleteConfirm = async () => {
     setIsDeleteConfirmOpen(false);
     if (onDelete) {
-      await onDelete();
+      // Non aspettare il completamento - l'eliminazione avviene in background
+      onDelete();
     }
   };
 

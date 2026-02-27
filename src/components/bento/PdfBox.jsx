@@ -192,6 +192,7 @@ const PdfThumbnail = ({ pdf, containerWidth }) => {
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPdfsChange - Callback quando cambiano i PDF
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const PdfBox = ({
   projectId,
@@ -207,6 +208,7 @@ const PdfBox = ({
   onTitleChange,
   onPdfsChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   // Stato locale per i PDF (sincronizzato con props)
   const [localPdfs, setLocalPdfs] = useState(pdfs);
@@ -396,6 +398,7 @@ const PdfBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={pdfMenuItems}
         minHeight={hasPdfs ? undefined : 150}
       >

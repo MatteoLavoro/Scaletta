@@ -18,6 +18,7 @@ import { validateProjectName } from "../../utils/projectValidation";
  * @param {object} currentUser - Utente corrente { uid, displayName, email }
  * @param {function} onProjectClick - Callback quando un progetto viene cliccato (riceve { project, group })
  * @param {function} onProjectCountChange - Callback quando cambia il numero di progetti (riceve il count totale)
+ * @param {Set} deletingProjectIds - Set di ID progetti in eliminazione (per UI ottimistica)
  */
 const ProjectGrid = ({
   groupId,
@@ -25,6 +26,7 @@ const ProjectGrid = ({
   currentUser,
   onProjectClick,
   onProjectCountChange,
+  deletingProjectIds = new Set(),
 }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,12 +87,17 @@ const ProjectGrid = ({
     );
   }
 
+  // Filtra i progetti escludendo quelli in eliminazione (UI ottimistica)
+  const visibleProjects = projects.filter(
+    (project) => !deletingProjectIds.has(project.id),
+  );
+
   return (
     <>
       {/* Griglia responsive: 3 colonne mobile, 4 tablet, 5 desktop */}
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         {/* Progetti esistenti */}
-        {projects.map((project) => (
+        {visibleProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}

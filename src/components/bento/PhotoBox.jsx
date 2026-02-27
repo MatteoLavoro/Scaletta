@@ -67,6 +67,7 @@ const useImagePreload = (photos) => {
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onPhotosChange - Callback quando cambiano le foto
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const PhotoBox = ({
   projectId,
@@ -82,6 +83,7 @@ const PhotoBox = ({
   onTitleChange,
   onPhotosChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -263,6 +265,7 @@ const PhotoBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={photoMenuItems}
         minHeight={hasPhotos ? undefined : 150}
       >

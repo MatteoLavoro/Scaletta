@@ -4,9 +4,11 @@ import {
   InfoIcon,
   SettingsIcon,
   BellIcon,
+  MessageSquareIcon,
 } from "../components/icons";
 import useColumnCount, { BOX_WIDTH, GAP } from "../hooks/useColumnCount";
 import useBentoAnimation from "../hooks/useBentoAnimation";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { useTheme } from "../contexts/ThemeContext";
 import { useModal } from "../contexts/ModalContext";
 import { ProjectInfoModal, StatusModal } from "../components/projects";
@@ -25,8 +27,10 @@ import {
   TutorialBox,
   CameraFab,
 } from "../components/bento";
-import { MoreBoxesModal, MessageModal } from "../components/modal";
+import { MoreBoxesModal } from "../components/modal";
+import { ChatSidebar, ChatFab } from "../components/chat";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
+import { markProjectAsViewed } from "../utils/projectViews";
 import {
   createBentoBox,
   updateBentoBoxTitle,
@@ -77,7 +81,8 @@ const ProjectPage = ({
 }) => {
   const hasAddedHistoryRef = useRef(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isChatSidebarOpen, setIsChatSidebarOpen] = useState(false);
+  const [initialTaggedBoxes, setInitialTaggedBoxes] = useState([]);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isMoreBoxesModalOpen, setIsMoreBoxesModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,6 +129,12 @@ const ProjectPage = ({
 
     return () => unsubscribe();
   }, [project?.id, currentUser?.uid]);
+
+  // Marca il progetto come visualizzato quando viene aperto
+  useEffect(() => {
+    if (!project?.id) return;
+    markProjectAsViewed(project.id);
+  }, [project?.id]);
 
   // Funzione per verificare se un box è vuoto (nessun contenuto significativo)
   const isBoxEmpty = useCallback((box) => {
@@ -182,7 +193,6 @@ const ProjectPage = ({
           await deleteFiles(box.versions);
         }
         await deleteBentoBox(project.id, box.id);
-        console.log(`Box vuoto "${box.title}" eliminato automaticamente`);
       } catch (error) {
         console.error("Errore eliminazione automatica box:", error);
       }
@@ -392,6 +402,8 @@ const ProjectPage = ({
               project.id,
               result.boxId,
               result.uploadedPhotos,
+              currentUser?.uid,
+              currentUser?.displayName || currentUser?.email,
             );
           }
         })
@@ -435,6 +447,8 @@ const ProjectPage = ({
               project.id,
               result.boxId,
               result.uploadedPdfs,
+              currentUser?.uid,
+              currentUser?.displayName || currentUser?.email,
             );
           }
         })
@@ -479,6 +493,8 @@ const ProjectPage = ({
               project.id,
               result.boxId,
               result.uploadedFiles,
+              currentUser?.uid,
+              currentUser?.displayName || currentUser?.email,
             );
           }
         })
@@ -591,7 +607,13 @@ const ProjectPage = ({
       if (newPhotos.length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxPhotos(project.id, boxId, newPhotos);
+      await updateBentoBoxPhotos(
+        project.id,
+        boxId,
+        newPhotos,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
       console.error("Errore aggiornamento foto:", error);
     }
@@ -606,7 +628,13 @@ const ProjectPage = ({
       if (newPdfs.length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxPdfs(project.id, boxId, newPdfs);
+      await updateBentoBoxPdfs(
+        project.id,
+        boxId,
+        newPdfs,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
       console.error("Errore aggiornamento PDF:", error);
     }
@@ -621,7 +649,13 @@ const ProjectPage = ({
       if (newFiles.length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxFiles(project.id, boxId, newFiles);
+      await updateBentoBoxFiles(
+        project.id,
+        boxId,
+        newFiles,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
       console.error("Errore aggiornamento file:", error);
     }
@@ -636,7 +670,13 @@ const ProjectPage = ({
       if (newVersions.length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxVersions(project.id, boxId, newVersions);
+      await updateBentoBoxVersions(
+        project.id,
+        boxId,
+        newVersions,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
       console.error("Errore aggiornamento versioni:", error);
     }
@@ -651,7 +691,13 @@ const ProjectPage = ({
       if (newItems.length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxChecklistItems(project.id, boxId, newItems);
+      await updateBentoBoxChecklistItems(
+        project.id,
+        boxId,
+        newItems,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
       console.error("Errore aggiornamento checklist:", error);
     }
@@ -667,7 +713,13 @@ const ProjectPage = ({
       if (hasValues) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxAnagraficaFields(project.id, boxId, newFields);
+      await updateBentoBoxAnagraficaFields(
+        project.id,
+        boxId,
+        newFields,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
       console.error("Errore aggiornamento campi anagrafica:", error);
     }
@@ -686,6 +738,8 @@ const ProjectPage = ({
         project.id,
         boxId,
         newCustomFields,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
       );
     } catch (error) {
       console.error("Errore aggiornamento campi custom anagrafica:", error);
@@ -699,25 +753,34 @@ const ProjectPage = ({
     try {
       // Trova il box per verificare se ha foto/file/pdf da eliminare
       const box = bentoBoxes.find((b) => b.id === boxId);
-      if (box?.boxType === "photo" && box.photos?.length > 0) {
-        // Elimina tutte le foto dallo storage
-        await deletePhotos(box.photos.map((p) => p.storagePath));
+
+      // Rimuovi il box dal Set dei modificati (se presente)
+      modifiedBoxesRef.current.delete(boxId);
+
+      // Elimina le foto dallo storage se presenti
+      if (box?.photos && box.photos.length > 0) {
+        await deletePhotos(box.photos);
       }
-      if (box?.boxType === "pdf" && box.pdfs?.length > 0) {
-        // Elimina tutti i PDF dallo storage
+
+      // Elimina i PDF dallo storage se presenti
+      if (box?.pdfs && box.pdfs.length > 0) {
         await deletePdfs(box.pdfs);
       }
-      if (box?.boxType === "file" && box.files?.length > 0) {
-        // Elimina tutti i file dallo storage
+
+      // Elimina i file dallo storage se presenti
+      if (box?.files && box.files.length > 0) {
         await deleteFiles(box.files);
       }
-      if (box?.boxType === "version" && box.versions?.length > 0) {
-        // Elimina tutte le versioni dallo storage
-        await deleteFiles(box.versions);
-      }
-      await deleteBentoBox(project.id, boxId);
+
+      // Elimina il box da Firestore
+      await deleteBentoBox(
+        project.id,
+        boxId,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
     } catch (error) {
-      console.error("Errore eliminazione bento box:", error);
+      console.error("Errore eliminazione box:", error);
     }
   };
 
@@ -744,7 +807,13 @@ const ProjectPage = ({
       if (newContent && newContent.trim().length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxContent(project.id, boxId, newContent);
+      await updateBentoBoxContent(
+        project.id,
+        boxId,
+        newContent,
+        currentUser?.uid,
+        currentUser?.displayName || currentUser?.email,
+      );
       // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore aggiornamento contenuto box:", error);
@@ -776,14 +845,35 @@ const ProjectPage = ({
     // Pinnati prima dei non-pinnati
     if (a.isPinned) return -1;
     if (b.isPinned) return 1;
+    
     // Non-pinnati ordinati per createdAt
-    const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
-    const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
-    return dateA - dateB;
+    // IMPORTANTE: i box con createdAt null (appena creati, in attesa del serverTimestamp)
+    // vanno messi ALLA FINE per evitare che appaiano per primi e poi si spostino
+    const dateA = a.createdAt?.toDate?.() || null;
+    const dateB = b.createdAt?.toDate?.() || null;
+    
+    // Se entrambi hanno timestamp, ordina normalmente
+    if (dateA && dateB) {
+      return dateA - dateB;
+    }
+    // Se solo A ha timestamp null, mettilo DOPO B
+    if (!dateA && dateB) {
+      return 1;
+    }
+    // Se solo B ha timestamp null, mettilo DOPO A
+    if (dateA && !dateB) {
+      return -1;
+    }
+    // Se entrambi null, mantieni l'ordine
+    return 0;
   });
 
   // Numero di colonne dinamico (si aggiorna al resize)
-  const columnCount = useColumnCount();
+  const columnCount = useColumnCount(isChatSidebarOpen, 340);
+
+  // Flag per determinare se è veramente mobile (basato sulla viewport, non sul columnCount)
+  // Solo viewport < 640px è considerata mobile
+  const isReallyMobile = useIsMobile(640);
 
   // Se non ci sono box, mostra il tutorial
   const hasBoxes = sortedBoxes.length > 0;
@@ -809,7 +899,7 @@ const ProjectPage = ({
   }, [sortedBoxes, hasBoxes]);
 
   // Hook per layout "shortest column first" + animazioni FLIP
-  const { containerRef, columns, getItemStyle, flatItems, containerHeight } =
+  const { containerRef, getItemStyle, flatItems, containerHeight } =
     useBentoAnimation(allItems, columnCount);
 
   // Ottieni il colore del progetto
@@ -868,6 +958,28 @@ const ProjectPage = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleClose, isInfoModalOpen, isStatusModalOpen]);
 
+  // Blocca lo scroll della pagina quando la chat è aperta su mobile
+  useEffect(() => {
+    if (isChatSidebarOpen && isReallyMobile) {
+      // Salva lo scroll corrente
+      const scrollY = window.scrollY;
+      // Blocca lo scroll
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+
+      return () => {
+        // Ripristina lo scroll
+        document.body.style.overflow = "";
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isChatSidebarOpen, isReallyMobile]);
+
   // Gestione cambio stato
   const handleStatusChange = async (newStatus) => {
     if (onUpdateStatus) {
@@ -882,15 +994,47 @@ const ProjectPage = ({
     }
   };
 
-  // Handler per apertura modale notifiche - marca notifiche come lette
+  // Handler per apertura chat sidebar - marca notifiche come lette
   const handleOpenNotifications = async () => {
-    setIsNotificationModalOpen(true);
-    
-    // Marca le notifiche come lette quando si apre il modale
+    setIsChatSidebarOpen(true);
+
+    // Marca le notifiche come lette quando si apre
     if (project?.id && currentUser?.uid) {
       await markProjectNotificationsAsRead(project.id, currentUser.uid);
     }
   };
+
+  // Handler per chiusura chat sidebar
+  const handleCloseChatSidebar = () => {
+    setIsChatSidebarOpen(false);
+    setInitialTaggedBoxes([]); // Reset box taggati
+  };
+
+  // Apri chat con un box già taggato (dal kebab menu del box)
+  const handleSendMessageFromBox = useCallback((boxId, boxTitle, boxType) => {
+    // Imposta il box come taggato inizialmente (con title per fallback se eliminato)
+    setInitialTaggedBoxes([{ id: boxId, boxType, title: boxTitle }]);
+    // Apri la chat
+    setIsChatSidebarOpen(true);
+  }, []);
+
+  // Evidenzia un box con animazione (chiamato dal click su etichetta in chat)
+  const handleHighlightBox = useCallback((boxId) => {
+    // Trova il box nel DOM usando data-bento-id
+    const boxElement = document.querySelector(`[data-bento-id="${boxId}"]`);
+    if (!boxElement) return;
+
+    // Scrolla fino al box
+    boxElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Applica animazione di evidenziazione
+    boxElement.classList.add("box-highlight-animation");
+
+    // Rimuovi l'animazione dopo che finisce
+    setTimeout(() => {
+      boxElement.classList.remove("box-highlight-animation");
+    }, 2000);
+  }, []);
 
   // Costruisci il menu kebab - solo info e gestisci stato
   const menuItems = [
@@ -916,7 +1060,7 @@ const ProjectPage = ({
       <div className="min-h-dvh flex flex-col bg-bg-primary">
         {/* Header - stile standard con colore progetto */}
         <header
-          className="flex items-center justify-between px-4 min-h-14 border-b border-border sticky top-0 z-50"
+          className="flex items-center justify-between px-4 min-h-14 border-b border-border sticky top-0 z-60"
           style={{
             backgroundColor: projectColor.bg,
             paddingTop: `calc(0.75rem + var(--safe-area-inset-top))`,
@@ -948,29 +1092,38 @@ const ProjectPage = ({
             {project.name}
           </h1>
 
-          {/* Pulsante notifiche + Kebab menu - Destra */}
+          {/* Kebab menu - Destra */}
           <div className="flex items-center gap-2">
-            {/* Pulsante notifiche con badge */}
-            <div className="relative w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
-              <button
-                onClick={handleOpenNotifications}
-                className="
-                  flex items-center justify-center w-full h-full
-                  rounded-full
-                  hover:bg-black/10 active:bg-black/20
-                  transition-colors duration-150
-                "
-                style={{ color: projectColor.text }}
-                aria-label="Notifiche progetto"
-              >
-                <BellIcon className="w-5 h-5" />
-              </button>
-              
-              {/* Badge rosso messaggi non letti */}
-              {unreadCount > 0 && (
-                <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              )}
-            </div>
+            {/* Tasto Chat - solo mobile */}
+            {isReallyMobile && (
+              <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center relative">
+                <button
+                  onClick={
+                    isChatSidebarOpen
+                      ? handleCloseChatSidebar
+                      : handleOpenNotifications
+                  }
+                  className="
+                    flex items-center justify-center w-full h-full
+                    rounded-full
+                    hover:bg-black/10 active:bg-black/20
+                    transition-colors duration-150
+                  "
+                  style={{ color: projectColor.text }}
+                  aria-label={isChatSidebarOpen ? "Chiudi chat" : "Apri chat"}
+                >
+                  <MessageSquareIcon className="w-5 h-5" />
+                </button>
+                {/* Badge messaggi non letti */}
+                {!isChatSidebarOpen && unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Kebab menu dropdown con cerchietto */}
             <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
@@ -986,7 +1139,10 @@ const ProjectPage = ({
 
         {/* Contenuto principale - Bento Grid */}
         <main
-          className={`flex-1 ${columnCount === 1 ? "px-2" : "p-4"} relative`}
+          className={`flex-1 ${columnCount === 1 ? "px-2" : "p-4"} relative transition-all duration-300`}
+          style={{
+            marginRight: isChatSidebarOpen && !isReallyMobile ? "340px" : "0",
+          }}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
@@ -1073,7 +1229,7 @@ const ProjectPage = ({
                         data-bento-id={item.id}
                         style={itemStyle}
                       >
-                        <TutorialBox isMobile={columnCount === 1} />
+                        <TutorialBox isMobile={isReallyMobile} />
                       </div>
                     );
                   }
@@ -1101,6 +1257,13 @@ const ProjectPage = ({
                             handleBoxContentChange(item.id, newContent)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1140,6 +1303,13 @@ const ProjectPage = ({
                             handlePhotosChange(item.id, newPhotos)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1179,6 +1349,13 @@ const ProjectPage = ({
                             handlePdfsChange(item.id, newPdfs)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1218,6 +1395,13 @@ const ProjectPage = ({
                             handleFilesChange(item.id, newFiles)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1246,6 +1430,13 @@ const ProjectPage = ({
                             handleChecklistItemsChange(item.id, newItems)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1281,6 +1472,13 @@ const ProjectPage = ({
                             )
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1311,6 +1509,13 @@ const ProjectPage = ({
                             handleVersionsChange(item.id, newVersions)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
                         />
                       </div>
                     );
@@ -1349,7 +1554,7 @@ const ProjectPage = ({
         </main>
 
         {/* FAB aggiunta box - mobile */}
-        {columnCount === 1 && !isLoading && (
+        {isReallyMobile && !isLoading && (
           <div className={isDraggingFiles ? "-z-10" : ""}>
             <MobileAddFab
               onAddNote={handleAddNote}
@@ -1361,8 +1566,14 @@ const ProjectPage = ({
         )}
 
         {/* FAB aggiunta box - desktop */}
-        {columnCount > 1 && !isLoading && (
-          <div className={isDraggingFiles ? "-z-10" : ""}>
+        {!isReallyMobile && !isLoading && (
+          <div
+            className={isDraggingFiles ? "-z-10" : ""}
+            style={{
+              marginRight: isChatSidebarOpen ? "340px" : "0",
+              transition: "margin-right 300ms ease-in-out",
+            }}
+          >
             <DesktopAddFab
               onAddNote={handleAddNote}
               onAddPhoto={handleAddPhoto}
@@ -1372,8 +1583,8 @@ const ProjectPage = ({
           </div>
         )}
 
-        {/* FAB fotocamera rapida - solo mobile */}
-        {columnCount === 1 && !isLoading && (
+        {/* FAB fotocamera rapida - solo mobile, nascosto quando chat aperta */}
+        {isReallyMobile && !isLoading && !isChatSidebarOpen && (
           <div className={isDraggingFiles ? "-z-10" : ""}>
             <CameraFab onCapture={handleCameraCapture} />
           </div>
@@ -1411,13 +1622,31 @@ const ProjectPage = ({
         onAddVersion={handleAddVersion}
       />
 
-      {/* Modale messaggi */}
-      <MessageModal
-        isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
+      {/* Chat Sidebar - per tutti i dispositivi */}
+      <ChatSidebar
+        isOpen={isChatSidebarOpen}
+        onClose={handleCloseChatSidebar}
         project={project}
         group={group}
+        bentoBoxes={bentoBoxes}
+        initialTaggedBoxes={initialTaggedBoxes}
+        onHighlightBox={handleHighlightBox}
+        isMobile={isReallyMobile}
+        isBoxEmpty={isBoxEmpty}
+        modifiedBoxesRef={modifiedBoxesRef}
       />
+
+      {/* Chat FAB - solo desktop (su mobile è nell'header) */}
+      {!isReallyMobile && (
+        <ChatFab
+          onClick={
+            isChatSidebarOpen ? handleCloseChatSidebar : handleOpenNotifications
+          }
+          unreadCount={unreadCount}
+          isMobile={false}
+          isOpen={isChatSidebarOpen}
+        />
+      )}
     </>
   );
 };

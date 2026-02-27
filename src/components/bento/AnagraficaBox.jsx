@@ -152,6 +152,7 @@ const AnagraficaFieldRow = ({
  * @param {function} onFieldsChange - Callback quando cambiano i campi
  * @param {function} onCustomFieldsChange - Callback quando cambiano i campi custom
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const AnagraficaBox = ({
   title = "Anagrafica",
@@ -165,6 +166,7 @@ const AnagraficaBox = ({
   onFieldsChange,
   onCustomFieldsChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingField, setEditingField] = useState(null);
@@ -360,6 +362,7 @@ const AnagraficaBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={anagraficaMenuItems}
       >
         {/* Lista campi */}

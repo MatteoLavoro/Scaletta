@@ -106,6 +106,7 @@ const ChecklistItemRow = ({
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onItemsChange - Callback quando cambiano gli items
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const ChecklistBox = ({
   title = "Checklist",
@@ -117,6 +118,7 @@ const ChecklistBox = ({
   onTitleChange,
   onItemsChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null); // null = nuovo, object = modifica
@@ -234,6 +236,7 @@ const ChecklistBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={checklistMenuItems}
         minHeight={hasItems ? undefined : 150}
       >

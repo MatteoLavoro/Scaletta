@@ -83,11 +83,14 @@ export const createProject = async (name, groupId, creator, color = null) => {
     createdAt: serverTimestamp(),
     createdBy: creator.uid,
     createdByName: creator.displayName || creator.email,
+    lastActivityAt: serverTimestamp(),
+    lastActivityBy: creator.uid,
+    lastActivityByName: creator.displayName || creator.email,
   };
 
   await setDoc(doc(db, PROJECTS_COLLECTION, projectId), projectData);
 
-  return { ...projectData, createdAt: new Date() };
+  return { ...projectData, createdAt: new Date(), lastActivityAt: new Date() };
 };
 
 /**
@@ -235,6 +238,25 @@ export const updateProjectStatus = async (projectId, status) => {
   await updateDoc(doc(db, PROJECTS_COLLECTION, projectId), {
     status,
   });
+};
+
+/**
+ * Aggiorna il timestamp di ultima attività del progetto
+ * Chiamato ogni volta che viene modificato un box
+ * @param {string} projectId - ID del progetto
+ * @param {string} userId - ID dell'utente che ha fatto la modifica
+ * @param {string} userName - Nome dell'utente
+ */
+export const updateProjectActivity = async (projectId, userId, userName) => {
+  try {
+    await updateDoc(doc(db, PROJECTS_COLLECTION, projectId), {
+      lastActivityAt: serverTimestamp(),
+      lastActivityBy: userId,
+      lastActivityByName: userName,
+    });
+  } catch (error) {
+    console.error("Errore aggiornamento attività progetto:", error);
+  }
 };
 
 /**
@@ -401,6 +423,15 @@ export const createBentoBox = async (projectId, boxData) => {
 
   await setDoc(doc(boxesRef, boxId), newBox);
 
+  // Aggiorna timestamp attività progetto
+  if (boxData.createdBy && boxData.createdByName) {
+    await updateProjectActivity(
+      projectId,
+      boxData.createdBy,
+      boxData.createdByName,
+    );
+  }
+
   return { ...newBox, createdAt: new Date() };
 };
 
@@ -420,10 +451,23 @@ export const updateBentoBoxTitle = async (projectId, boxId, newTitle) => {
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {string} newContent - Nuovo contenuto
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const updateBentoBoxContent = async (projectId, boxId, newContent) => {
+export const updateBentoBoxContent = async (
+  projectId,
+  boxId,
+  newContent,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { content: newContent });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -431,8 +475,16 @@ export const updateBentoBoxContent = async (projectId, boxId, newContent) => {
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {array} photos - Array di foto { id, url, name, storagePath }
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
+export const updateBentoBoxPhotos = async (
+  projectId,
+  boxId,
+  photos,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, {
     photos,
@@ -441,6 +493,11 @@ export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
     uploadTotal: 0,
     content: "", // Pulisce anche il content usato per il progresso
   });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -448,8 +505,16 @@ export const updateBentoBoxPhotos = async (projectId, boxId, photos) => {
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {array} pdfs - Array di PDF { id, url, name, storagePath, pageCount }
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const updateBentoBoxPdfs = async (projectId, boxId, pdfs) => {
+export const updateBentoBoxPdfs = async (
+  projectId,
+  boxId,
+  pdfs,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, {
     pdfs,
@@ -458,6 +523,11 @@ export const updateBentoBoxPdfs = async (projectId, boxId, pdfs) => {
     uploadTotal: 0,
     content: "", // Pulisce anche il content usato per il progresso
   });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -465,8 +535,16 @@ export const updateBentoBoxPdfs = async (projectId, boxId, pdfs) => {
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {array} files - Array di file { id, url, name, size, type, fileType, storagePath }
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const updateBentoBoxFiles = async (projectId, boxId, files) => {
+export const updateBentoBoxFiles = async (
+  projectId,
+  boxId,
+  files,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, {
     files,
@@ -475,6 +553,11 @@ export const updateBentoBoxFiles = async (projectId, boxId, files) => {
     uploadTotal: 0,
     content: "", // Pulisce anche il content usato per il progresso
   });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -482,10 +565,23 @@ export const updateBentoBoxFiles = async (projectId, boxId, files) => {
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {array} items - Array di items { id, text, completed }
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const updateBentoBoxChecklistItems = async (projectId, boxId, items) => {
+export const updateBentoBoxChecklistItems = async (
+  projectId,
+  boxId,
+  items,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { checklistItems: items });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -493,14 +589,23 @@ export const updateBentoBoxChecklistItems = async (projectId, boxId, items) => {
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {object} fields - Oggetto con i valori dei campi
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
 export const updateBentoBoxAnagraficaFields = async (
   projectId,
   boxId,
   fields,
+  userId = null,
+  userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { anagraficaFields: fields });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -508,14 +613,23 @@ export const updateBentoBoxAnagraficaFields = async (
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {array} customFields - Array di campi custom [{ key, label }]
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
 export const updateBentoBoxAnagraficaCustomFields = async (
   projectId,
   boxId,
   customFields,
+  userId = null,
+  userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { anagraficaCustomFields: customFields });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -523,10 +637,23 @@ export const updateBentoBoxAnagraficaCustomFields = async (
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
  * @param {array} versions - Array di versioni con metadati
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const updateBentoBoxVersions = async (projectId, boxId, versions) => {
+export const updateBentoBoxVersions = async (
+  projectId,
+  boxId,
+  versions,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await updateDoc(boxRef, { versions });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 /**
  * Aggiunge atomicamente una nuova versione usando transaction (previene race conditions)
@@ -598,10 +725,22 @@ export const updateBentoBoxPin = async (
  * Elimina un bento box
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
+ * @param {string} userId - ID utente che elimina (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
  */
-export const deleteBentoBox = async (projectId, boxId) => {
+export const deleteBentoBox = async (
+  projectId,
+  boxId,
+  userId = null,
+  userName = null,
+) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
   await deleteDoc(boxRef);
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
 };
 
 /**
@@ -643,10 +782,27 @@ export const subscribeToBentoBoxes = (projectId, onUpdate) => {
         // Pinnati prima dei non-pinnati
         if (a.isPinned) return -1;
         if (b.isPinned) return 1;
+        
         // Non-pinnati ordinati per createdAt
-        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
-        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
-        return dateA - dateB;
+        // IMPORTANTE: i box con createdAt null (appena creati, in attesa del serverTimestamp)
+        // vanno messi ALLA FINE per evitare che appaiano per primi e poi si spostino
+        const dateA = a.createdAt?.toDate?.() || null;
+        const dateB = b.createdAt?.toDate?.() || null;
+        
+        // Se entrambi hanno timestamp, ordina normalmente
+        if (dateA && dateB) {
+          return dateA - dateB;
+        }
+        // Se solo A ha timestamp null, mettilo DOPO B
+        if (!dateA && dateB) {
+          return 1;
+        }
+        // Se solo B ha timestamp null, mettilo DOPO A
+        if (dateA && !dateB) {
+          return -1;
+        }
+        // Se entrambi null, mantieni l'ordine
+        return 0;
       });
 
       onUpdate(boxes);

@@ -32,8 +32,15 @@ const saveExpandedGroups = (groupIds) => {
  * @param {string} currentUserId - ID dell'utente corrente
  * @param {object} currentUser - Oggetto utente corrente { uid, displayName, email }
  * @param {function} onProjectClick - Callback quando un progetto viene cliccato
+ * @param {Set} deletingProjectIds - Set di ID progetti in eliminazione (per UI ottimistica)
  */
-const GroupCard = ({ group, currentUserId, currentUser, onProjectClick }) => {
+const GroupCard = ({
+  group,
+  currentUserId,
+  currentUser,
+  onProjectClick,
+  deletingProjectIds,
+}) => {
   // Inizializza lo stato di espansione da localStorage
   const [isExpanded, setIsExpanded] = useState(() => {
     const expandedGroups = getExpandedGroups();
@@ -138,6 +145,7 @@ const GroupCard = ({ group, currentUserId, currentUser, onProjectClick }) => {
                   currentUser={currentUser}
                   onProjectClick={onProjectClick}
                   onProjectCountChange={handleProjectCountChange}
+                  deletingProjectIds={deletingProjectIds}
                 />
               </div>
             </div>

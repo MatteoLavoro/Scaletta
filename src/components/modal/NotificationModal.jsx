@@ -7,6 +7,7 @@ import {
   subscribeToProjectNotifications,
 } from "../../services/notifications";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme, getColorForAccent } from "../../contexts/ThemeContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
 
 /**
@@ -22,6 +23,7 @@ import { useIsMobile } from "../../hooks/useIsMobile";
  */
 const MessageModal = ({ isOpen, onClose, project, group }) => {
   const { user } = useAuth();
+  const { accentColor, isDark } = useTheme();
   const isMobile = useIsMobile();
   const [message, setMessage] = useState("");
   const [scheduledDate, setScheduledDate] = useState(null);
@@ -74,6 +76,7 @@ const MessageModal = ({ isOpen, onClose, project, group }) => {
         {
           uid: user.uid,
           displayName: user.displayName || "Utente",
+          accentColor: accentColor, // Passa il colore tema dell'utente corrente
         },
         memberIds,
         scheduledDate, // null = immediata, Date = programmata
@@ -224,13 +227,22 @@ const MessageModal = ({ isOpen, onClose, project, group }) => {
             const displayTime =
               notification.visibleFrom || notification.createdAt;
 
+            // Ottieni il colore del mittente dal suo tema
+            const senderColor = getColorForAccent(
+              notification.senderAccentColor || "teal",
+              isDark ? "dark" : "light",
+            );
+
             return (
               <div
                 key={notification.id}
                 className="p-3 rounded-lg border transition-colors bg-bg-tertiary border-border hover:border-primary/30"
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <span className="text-xs font-semibold text-primary">
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: senderColor }}
+                  >
                     {notification.senderName}
                   </span>
                   <span className="text-xs text-text-muted whitespace-nowrap">

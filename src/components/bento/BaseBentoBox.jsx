@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { PencilIcon, TrashIcon, PinIcon, UserIcon } from "../icons";
+import {
+  PencilIcon,
+  TrashIcon,
+  PinIcon,
+  UserIcon,
+  MessageSquareIcon,
+} from "../icons";
 import { DropdownMenu, Divider } from "../ui";
 import { InputModal, ConfirmModal } from "../modal";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -32,6 +38,7 @@ import { useTheme } from "../../contexts/ThemeContext";
  * @param {string} props.className - Classi CSS aggiuntive
  * @param {string} props.createdByName - Nome dell'utente che ha creato il box
  * @param {Date|Timestamp} props.createdAt - Data di creazione del box
+ * @param {function} props.onSendMessageFromBox - Callback per inviare un messaggio taggando questo box
  */
 const BaseBentoBox = ({
   title = "Box",
@@ -47,6 +54,7 @@ const BaseBentoBox = ({
   className = "",
   createdByName = null,
   createdAt = null,
+  onSendMessageFromBox,
 }) => {
   const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -70,6 +78,15 @@ const BaseBentoBox = ({
 
     // Costruisci items universali (sempre in fondo)
     const universalItems = [];
+
+    // Opzione "Messaggio da box" (se callback fornita)
+    if (onSendMessageFromBox) {
+      universalItems.push({
+        label: "Messaggio da box",
+        icon: <MessageSquareIcon className="w-5 h-5" />,
+        onClick: onSendMessageFromBox,
+      });
+    }
 
     // Opzione modifica titolo
     if (onTitleChange) {

@@ -428,6 +428,7 @@ const VersionRow = ({ version, onDownload, onDelete }) => {
  * @param {function} onTitleChange - Callback cambio titolo
  * @param {function} onVersionsChange - Callback quando cambiano le versioni
  * @param {function} onDelete - Callback eliminazione box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const VersionBox = ({
   projectId,
@@ -441,6 +442,7 @@ const VersionBox = ({
   onTitleChange,
   onVersionsChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadingVersion, setUploadingVersion] = useState(null);
@@ -531,6 +533,7 @@ const VersionBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={[
           {
             label: "Nuova versione",

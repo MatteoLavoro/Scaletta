@@ -63,16 +63,12 @@ export const requestNotificationPermission = async (userId) => {
     const permission = await Notification.requestPermission();
 
     if (permission !== "granted") {
-      console.log("Permesso notifiche negato");
       return null;
     }
-
-    console.log("Permesso notifiche concesso, inizializzo messaging...");
 
     // Assicurati che il service worker sia pronto
     if ("serviceWorker" in navigator) {
       await navigator.serviceWorker.ready;
-      console.log("Service worker pronto");
     }
 
     // Inizializza messaging
@@ -81,8 +77,6 @@ export const requestNotificationPermission = async (userId) => {
       console.error("Impossibile inizializzare messaging");
       return null;
     }
-
-    console.log("Richiedo token FCM con VAPID key...");
 
     // Ottieni il token FCM
     const currentToken = await getToken(msg, {
@@ -93,10 +87,8 @@ export const requestNotificationPermission = async (userId) => {
     if (currentToken) {
       // Salva il token nel database associato all'utente
       await saveUserToken(userId, currentToken);
-      console.log("✅ Token FCM ottenuto e salvato:", currentToken);
       return currentToken;
     } else {
-      console.log("❌ Nessun token FCM disponibile");
       return null;
     }
   } catch (error) {
@@ -113,7 +105,6 @@ export const requestNotificationPermission = async (userId) => {
  */
 const saveUserToken = async (userId, token) => {
   try {
-    console.log("💾 Salvataggio token FCM per utente:", userId);
     const tokenDoc = doc(db, USER_TOKENS_COLLECTION, userId);
     await setDoc(
       tokenDoc,
@@ -124,7 +115,6 @@ const saveUserToken = async (userId, token) => {
       },
       { merge: true },
     );
-    console.log("✅ Token FCM salvato con successo nel database");
   } catch (error) {
     console.error("❌ Errore salvataggio token FCM:", error);
     throw error;
@@ -176,9 +166,10 @@ export const getUserNotificationsEnabled = async (userId) => {
  * @param {string} projectId - ID del progetto
  * @param {string} projectName - Nome del progetto
  * @param {string} message - Messaggio della notifica
- * @param {object} sender - Dati del mittente { uid, displayName }
+ * @param {object} sender - Dati del mittente { uid, displayName, accentColor }
  * @param {Array} memberIds - Array di ID utenti membri del gruppo
  * @param {Date} scheduledFor - Data/ora programmata (opzionale, null = visibile subito)
+ * @param {Array} taggedBoxes - Array di box taggati [{ id, title, boxType }] (opzionale)
  */
 export const sendNotificationToGroup = async (
   groupId,
@@ -188,6 +179,7 @@ export const sendNotificationToGroup = async (
   sender,
   memberIds,
   scheduledFor = null,
+  taggedBoxes = [],
 ) => {
   if (!message || !message.trim()) {
     throw new Error("Il messaggio non può essere vuoto");
@@ -204,6 +196,8 @@ export const sendNotificationToGroup = async (
       message: message.trim(),
       senderId: sender.uid,
       senderName: sender.displayName,
+      senderAccentColor: sender.accentColor || "teal", // Colore tema del mittente
+      taggedBoxes: taggedBoxes || [], // Box taggati nel messaggio
       createdAt: serverTimestamp(),
       sentAt: serverTimestamp(),
       read: false,
@@ -263,15 +257,7 @@ const sendPushNotifications = async (
     // Invia solo agli userId (escluso il mittente)
     const recipientIds = memberIds.filter((id) => id !== sender.uid);
 
-    console.log("📤 Invio notifiche push:", {
-      totalMembers: memberIds.length,
-      recipientIds: recipientIds.length,
-      recipients: recipientIds,
-      sender: sender.uid,
-    });
-
     if (recipientIds.length === 0) {
-      console.log("⚠️ Nessun destinatario (solo tu nel gruppo)");
       return;
     }
 
@@ -286,8 +272,6 @@ const sendPushNotifications = async (
       recipientIds,
     };
 
-    console.log("📡 Chiamata Cloud Function:", CLOUD_FUNCTION_URL);
-
     const response = await fetch(CLOUD_FUNCTION_URL, {
       method: "POST",
       headers: {
@@ -300,15 +284,6 @@ const sendPushNotifications = async (
 
     if (!result.success) {
       console.error("Errore invio notifiche push:", result.error);
-    } else {
-      console.log(
-        `Notifiche inviate: ${result.successCount} successi, ${result.failureCount} fallimenti`,
-      );
-
-      // TODO: Opzionale - rimuovi i token invalidi dal database
-      if (result.invalidTokens && result.invalidTokens.length > 0) {
-        console.log(`${result.invalidTokens.length} token da rimuovere`);
-      }
     }
   } catch (error) {
     console.error("Errore chiamata Cloud Function:", error);

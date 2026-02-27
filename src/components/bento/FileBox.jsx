@@ -262,6 +262,7 @@ const FileRow = ({ file, onDownload, onDelete, primaryColor }) => {
  * @param {function} onTitleChange - Callback per cambiare il titolo
  * @param {function} onFilesChange - Callback quando cambiano i file
  * @param {function} onDelete - Callback per eliminare il box
+ * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
 const FileBox = ({
   projectId,
@@ -277,6 +278,7 @@ const FileBox = ({
   onTitleChange,
   onFilesChange,
   onDelete,
+  onSendMessageFromBox,
 }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadResetKey, setUploadResetKey] = useState(0);
@@ -361,8 +363,12 @@ const FileBox = ({
   };
 
   // Gestione download
-  const handleDownload = (file) => {
-    downloadFile(file.url, file.name);
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file.url, file.name);
+    } catch (error) {
+      console.error("Errore download file:", error);
+    }
   };
 
   // Apri conferma eliminazione file
@@ -406,6 +412,7 @@ const FileBox = ({
         onPinToggle={onPinToggle}
         onTitleChange={onTitleChange}
         onDelete={onDelete}
+        onSendMessageFromBox={onSendMessageFromBox}
         menuItems={fileMenuItems}
         minHeight={
           hasFiles || hasUploadingFiles || isUploading ? undefined : 150
