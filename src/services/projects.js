@@ -722,6 +722,19 @@ export const updateBentoBoxPin = async (
 };
 
 /**
+ * Aggiorna lo stato expanded di un VersionBox
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {boolean} isExpanded - Se il box è espanso
+ */
+export const updateBentoBoxExpanded = async (projectId, boxId, isExpanded) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, {
+    isExpanded,
+  });
+};
+
+/**
  * Elimina un bento box
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
@@ -782,13 +795,13 @@ export const subscribeToBentoBoxes = (projectId, onUpdate) => {
         // Pinnati prima dei non-pinnati
         if (a.isPinned) return -1;
         if (b.isPinned) return 1;
-        
+
         // Non-pinnati ordinati per createdAt
         // IMPORTANTE: i box con createdAt null (appena creati, in attesa del serverTimestamp)
         // vanno messi ALLA FINE per evitare che appaiano per primi e poi si spostino
         const dateA = a.createdAt?.toDate?.() || null;
         const dateB = b.createdAt?.toDate?.() || null;
-        
+
         // Se entrambi hanno timestamp, ordina normalmente
         if (dateA && dateB) {
           return dateA - dateB;

@@ -277,3 +277,49 @@ kbd {
   z-index: 10;
   border-radius: 0.75rem;
 }
+
+/* ===== VersionBox Expansion Animation ===== */
+/* Hitbox immediato: layout si adatta subito, animazione solo visiva */
+/* Gli altri box si riposizionano immediatamente senza aspettare l'animazione */
+
+.version-box-previous-versions {
+  /* Grid collassa completamente quando non espanso */
+  display: grid;
+  grid-template-rows: 0fr;
+  height: 0;
+
+  /* Rimuovi completamente spazio quando contratto */
+  margin: 0 !important;
+  padding: 0 !important;
+
+  /* Animazione solo visiva su opacity e scale */
+  opacity: 0;
+  transform: scaleY(0.95);
+  transform-origin: top;
+
+  /* Ottimizzazione GPU */
+  will-change: opacity, transform;
+
+  transition:
+    opacity 150ms ease-out,
+    transform 180ms ease-out;
+  /* NO transition su grid-template-rows/height = hitbox immediato */
+}
+
+.version-box-previous-versions.expanded {
+  /* Grid espande immediatamente */
+  grid-template-rows: 1fr;
+  height: auto;
+
+  /* Aggiungi margin quando espanso (0.5rem = space-y-2) */
+  margin-top: 0.5rem !important;
+
+  /* Animazione visiva completa */
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.version-box-previous-versions > div {
+  overflow: hidden;
+  min-height: 0;
+}

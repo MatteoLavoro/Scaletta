@@ -14,6 +14,7 @@ import {
   CodeIcon,
   FileArchiveIcon,
   RulerIcon,
+  ChevronDownIcon,
 } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { VersionUploadModal } from "../modal";
@@ -422,11 +423,13 @@ const VersionRow = ({ version, onDownload, onDelete }) => {
  * @param {string} title - Titolo del box
  * @param {array} versions - Array di versioni: { id, url, name, size, storagePath, versionNumber, description, tags, uploadedAt }
  * @param {boolean} isPinned - Se il box è fissato in alto
+ * @param {boolean} isExpanded - Se il box è espanso (mostra tutte le versioni)
  * @param {string} createdByName - Nome utente che ha creato il box
  * @param {Date|Timestamp} createdAt - Data creazione box
  * @param {function} onPinToggle - Callback quando si clicca sul pin
  * @param {function} onTitleChange - Callback cambio titolo
  * @param {function} onVersionsChange - Callback quando cambiano le versioni
+ * @param {function} onExpandedChange - Callback quando cambia lo stato espanso/contratto
  * @param {function} onDelete - Callback eliminazione box
  * @param {function} onSendMessageFromBox - Callback per inviare messaggio taggando questo box
  */
@@ -436,11 +439,13 @@ const VersionBox = ({
   title,
   versions = [],
   isPinned = false,
+  isExpanded = false,
   createdByName = null,
   createdAt = null,
   onPinToggle,
   onTitleChange,
   onVersionsChange,
+  onExpandedChange,
   onDelete,
   onSendMessageFromBox,
 }) => {
@@ -523,6 +528,18 @@ const VersionBox = ({
     }
   };
 
+  // Toggle espansione del box
+  const handleToggleExpanded = () => {
+    if (onExpandedChange) {
+      onExpandedChange(!isExpanded);
+    }
+  };
+
+  // Separa prima versione e versioni precedenti
+  const latestVersion = sortedVersions[0]; // Ultima versione
+  const previousVersions = sortedVersions.slice(1); // Versioni precedenti
+  const hasMoreVersions = previousVersions.length > 0;
+
   return (
     <>
       <BaseBentoBox
@@ -543,26 +560,81 @@ const VersionBox = ({
         ]}
       >
         {/* Contenuto */}
-        <div className="space-y-3">
+        <div>
           {/* Versione in caricamento */}
           {uploadingVersion && (
-            <VersionRowUploading
-              versionData={uploadingVersion}
-              progress={uploadProgress}
-            />
+            <div className="mb-3">
+              <VersionRowUploading
+                versionData={uploadingVersion}
+                progress={uploadProgress}
+              />
+            </div>
           )}
 
           {/* Lista versioni */}
           {sortedVersions.length > 0 ? (
-            <div className="space-y-2">
-              {sortedVersions.map((version) => (
+            <div>
+              {/* Ultima versione (sempre visibile) */}
+              {latestVersion && (
                 <VersionRow
-                  key={version.id}
-                  version={version}
+                  key={latestVersion.id}
+                  version={latestVersion}
                   onDownload={handleDownload}
                   onDelete={handleDeleteVersion}
                 />
-              ))}
+              )}
+
+              {/* Barretta divisoria con chevron - sempre tra l'ultima e le precedenti */}
+              {hasMoreVersions && (
+                <button
+                  onClick={handleToggleExpanded}
+                  className="
+                    w-full py-2 px-3 mt-2
+                    border-2 border-dashed border-border/50 rounded-lg
+                    flex items-center justify-center gap-2
+                    text-text-secondary hover:text-primary
+                    hover:border-primary/50
+                    transition-colors duration-150
+                    group
+                  "
+                  aria-label={
+                    isExpanded ? "Contrai versioni" : "Espandi versioni"
+                  }
+                >
+                  <span className="text-xs font-medium">
+                    {isExpanded
+                      ? "Nascondi versioni precedenti"
+                      : `Mostra ${previousVersions.length} versione${previousVersions.length > 1 ? "i" : ""} precedente${previousVersions.length > 1 ? "i" : ""}`}
+                  </span>
+                  <ChevronDownIcon
+                    className={`
+                      w-4 h-4 transition-transform duration-150 ease-out
+                      ${isExpanded ? "rotate-180" : "rotate-0"}
+                    `}
+                  />
+                </button>
+              )}
+
+              {/* Versioni precedenti - hitbox immediato, animazione solo visiva */}
+              {hasMoreVersions && (
+                <div
+                  className={`
+                    version-box-previous-versions
+                    ${isExpanded ? "expanded" : ""}
+                  `}
+                >
+                  <div className="space-y-2">
+                    {previousVersions.map((version) => (
+                      <VersionRow
+                        key={version.id}
+                        version={version}
+                        onDownload={handleDownload}
+                        onDelete={handleDeleteVersion}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : !uploadingVersion ? (
             <button

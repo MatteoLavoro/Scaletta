@@ -1,12 +1,15 @@
 // Firebase Cloud Messaging Service Worker + PWA Caching
 // Questo file gestisce sia le notifiche push che il caching PWA
 
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js",
-);
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.6.0/firebase-messaging-compat.js",
-);
+// Import Firebase solo se non è già caricato
+if (typeof firebase === "undefined") {
+  importScripts(
+    "https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js",
+  );
+  importScripts(
+    "https://www.gstatic.com/firebasejs/12.6.0/firebase-messaging-compat.js",
+  );
+}
 
 // ====================================
 // PWA CACHING

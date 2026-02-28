@@ -43,6 +43,7 @@ import {
   updateBentoBoxAnagraficaCustomFields,
   updateBentoBoxVersions,
   updateBentoBoxPin,
+  updateBentoBoxExpanded,
   deleteBentoBox,
   subscribeToBentoBoxes,
 } from "../services/projects";
@@ -308,6 +309,7 @@ const ProjectPage = ({
         title: `Controllo Versioni File ${versionCount}`,
         boxType: "version",
         versions: [],
+        isExpanded: false, // Default: contratto
         createdBy: currentUser?.uid,
         createdByName: currentUser?.displayName || currentUser?.email,
       });
@@ -682,6 +684,18 @@ const ProjectPage = ({
     }
   };
 
+  // Funzione per aggiornare lo stato isExpanded di un VersionBox
+  const handleVersionBoxExpandedChange = async (boxId, isExpanded) => {
+    if (!project?.id) return;
+
+    try {
+      await updateBentoBoxExpanded(project.id, boxId, isExpanded);
+      // Il listener onSnapshot aggiornerà automaticamente lo stato
+    } catch (error) {
+      console.error("Errore aggiornamento stato expanded:", error);
+    }
+  };
+
   // Funzione per aggiornare gli items di un ChecklistBox
   const handleChecklistItemsChange = async (boxId, newItems) => {
     if (!project?.id) return;
@@ -845,13 +859,13 @@ const ProjectPage = ({
     // Pinnati prima dei non-pinnati
     if (a.isPinned) return -1;
     if (b.isPinned) return 1;
-    
+
     // Non-pinnati ordinati per createdAt
     // IMPORTANTE: i box con createdAt null (appena creati, in attesa del serverTimestamp)
     // vanno messi ALLA FINE per evitare che appaiano per primi e poi si spostino
     const dateA = a.createdAt?.toDate?.() || null;
     const dateB = b.createdAt?.toDate?.() || null;
-    
+
     // Se entrambi hanno timestamp, ordina normalmente
     if (dateA && dateB) {
       return dateA - dateB;
@@ -1497,6 +1511,7 @@ const ProjectPage = ({
                           title={item.title}
                           versions={item.versions || []}
                           isPinned={item.isPinned || false}
+                          isExpanded={item.isExpanded || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
                           onPinToggle={() =>
@@ -1507,6 +1522,9 @@ const ProjectPage = ({
                           }
                           onVersionsChange={(newVersions) =>
                             handleVersionsChange(item.id, newVersions)
+                          }
+                          onExpandedChange={(newExpanded) =>
+                            handleVersionBoxExpandedChange(item.id, newExpanded)
                           }
                           onDelete={() => handleDeleteBox(item.id)}
                           onSendMessageFromBox={() =>
