@@ -4,10 +4,12 @@ const ModalFooter = ({ confirmText, onConfirm, disabled, loading }) => {
   return (
     <>
       {/* Divider above footer */}
-      <div className="h-px bg-divider shrink-0" aria-hidden="true" />
+      <div className="px-6 shrink-0" aria-hidden="true">
+        <div className="h-px bg-divider" />
+      </div>
 
       {/* Footer with full-width confirm button */}
-      <footer className="p-4 shrink-0">
+      <footer className="p-6 shrink-0">
         <Button
           onClick={onConfirm}
           disabled={disabled}

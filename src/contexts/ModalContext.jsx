@@ -12,6 +12,7 @@ const ModalContext = createContext(null);
 
 export const ModalProvider = ({ children }) => {
   const [modalStack, setModalStack] = useState([]);
+  const [nestedModalCount, setNestedModalCount] = useState(0);
   // Stack di callback onClose per modali annidati (gestiti localmente, non nel modalStack)
   const nestedCloseCallbacksRef = useRef([]);
   // Flag per indicare che un popstate è stato gestito da un modale
@@ -23,7 +24,7 @@ export const ModalProvider = ({ children }) => {
       document.body.classList.add("modal-open");
       window.history.pushState({ modalId, stackIndex: modalStack.length }, "");
     },
-    [modalStack.length]
+    [modalStack.length],
   );
 
   const closeModal = useCallback(() => {
@@ -37,20 +38,36 @@ export const ModalProvider = ({ children }) => {
   const closeAllModals = useCallback(() => {
     setModalStack([]);
     nestedCloseCallbacksRef.current = [];
+    setNestedModalCount(0);
     document.body.classList.remove("modal-open");
   }, []);
 
   // Registra una callback onClose per modali annidati
-  const registerNestedClose = useCallback((callback) => {
-    nestedCloseCallbacksRef.current.push(callback);
-    // Ritorna una funzione per rimuovere la callback
-    return () => {
-      const index = nestedCloseCallbacksRef.current.indexOf(callback);
-      if (index > -1) {
-        nestedCloseCallbacksRef.current.splice(index, 1);
-      }
-    };
-  }, []);
+  const registerNestedClose = useCallback(
+    (callback) => {
+      nestedCloseCallbacksRef.current.push(callback);
+      setNestedModalCount(nestedCloseCallbacksRef.current.length);
+      // Blocca scroll quando si aggiunge un modale annidato
+      document.body.style.overflow = "hidden";
+
+      // Ritorna una funzione per rimuovere la callback
+      return () => {
+        const index = nestedCloseCallbacksRef.current.indexOf(callback);
+        if (index > -1) {
+          nestedCloseCallbacksRef.current.splice(index, 1);
+        }
+        setNestedModalCount(nestedCloseCallbacksRef.current.length);
+        // Ripristina scroll solo se non ci sono più modali aperti
+        if (
+          nestedCloseCallbacksRef.current.length === 0 &&
+          modalStack.length === 0
+        ) {
+          document.body.style.overflow = "";
+        }
+      };
+    },
+    [modalStack.length],
+  );
 
   // Chiude il modale più in alto (annidato o normale)
   const closeTopModal = useCallback(() => {
@@ -114,7 +131,8 @@ export const ModalProvider = ({ children }) => {
 
   const currentModal = modalStack[modalStack.length - 1] || null;
   // Numero di modali aperti (per gestire z-index e blur)
-  const modalDepth = modalStack.length;
+  // Include sia modali normali che annidati
+  const modalDepth = modalStack.length + nestedModalCount;
 
   // Controlla se ci sono modali annidati aperti
   const hasNestedModals = useCallback(() => {

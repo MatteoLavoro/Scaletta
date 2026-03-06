@@ -26,8 +26,22 @@ const Modal = ({
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
   const hasAddedHistoryRef = useRef(false);
-  const { modalDepth, registerNestedClose } = useModal();
+  const hasSetOverflowRef = useRef(false);
+  const fixedZIndexRef = useRef(null);
+  const { modalDepth, registerNestedClose, hasNestedModals } = useModal();
+  // Calcola e fissa lo z-index alla prima apertura
+  if (fixedZIndexRef.current === null && isOpen) {
+    fixedZIndexRef.current = zIndex ?? 1000 + modalDepth * 10;
+  }
 
+  // Reset z-index quando il modale si chiude
+  useEffect(() => {
+    if (!isOpen) {
+      fixedZIndexRef.current = null;
+    }
+  }, [isOpen]);
+
+  const computedZIndex = fixedZIndexRef.current ?? zIndex ?? 1000;
   // Se variant è "info", non mostrare il tasto conferma
   const showConfirm = variant === "info" ? false : showConfirmButton;
 
@@ -61,18 +75,24 @@ const Modal = ({
     }
   }, [isOpen, onClose, registerNestedClose, skipHistory]);
 
-  // Calcola z-index basato su profondità o valore personalizzato
-  const computedZIndex = zIndex ?? 1000 + modalDepth * 10;
-
   // Blocca scroll del body quando il modale è aperto
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      // Solo se non è un modale annidato (skipHistory false significa che è gestito dal context)
+      if (!onClose || skipHistory) {
+        document.body.style.overflow = "hidden";
+        hasSetOverflowRef.current = true;
+      }
       return () => {
-        document.body.style.overflow = "";
+        // Ripristina overflow solo se questo modale l'ha impostato
+        // e non ci sono modali annidati aperti
+        if (hasSetOverflowRef.current && !hasNestedModals()) {
+          document.body.style.overflow = "";
+          hasSetOverflowRef.current = false;
+        }
       };
     }
-  }, [isOpen]);
+  }, [isOpen, onClose, skipHistory, hasNestedModals]);
 
   // Focus trap and restore focus on close
   useEffect(() => {
@@ -126,10 +146,13 @@ const Modal = ({
 
   if (!isOpen) return null;
 
+  // Determina se questo è un modale annidato
+  const isNestedModal = onClose && !skipHistory;
+
   return (
     <>
-      {/* Overlay - Desktop only */}
-      {!isMobile && (
+      {/* Overlay - Desktop or Nested Modal */}
+      {(!isMobile || isNestedModal) && (
         <div
           className="fixed inset-0 bg-black/60 animate-fade-in"
           style={{ zIndex: computedZIndex - 1 }}
@@ -141,7 +164,9 @@ const Modal = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        style={{ zIndex: computedZIndex }}
+        style={{
+          zIndex: computedZIndex,
+        }}
         className={`
           fixed flex flex-col bg-bg-secondary
           ${
@@ -157,7 +182,9 @@ const Modal = ({
         <ModalHeader title={title} isMobile={isMobile} onClose={handleClose} />
 
         {/* Divider below header */}
-        <div className="h-px bg-divider shrink-0" aria-hidden="true" />
+        <div className="px-6 shrink-0" aria-hidden="true">
+          <div className="h-px bg-divider" />
+        </div>
 
         {/* Scrollable content area */}
         <div
