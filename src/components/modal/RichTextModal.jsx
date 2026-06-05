@@ -151,6 +151,17 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
     updateToolbarState();
   };
 
+  // Gestisce il paste: rimuove tutta la formattazione e incolla solo testo semplice
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData(
+      "text/plain",
+    );
+    if (text) {
+      document.execCommand("insertText", false, text);
+    }
+  };
+
   // Conferma e salva
   const handleConfirm = () => {
     let html = editorRef.current.innerHTML;
@@ -288,6 +299,7 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
           onInput={handleInput}
           onSelect={handleSelect}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onBlur={() => {
             // Previeni la perdita di focus
             setTimeout(() => {

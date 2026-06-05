@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PencilIcon, FileTextIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { RichTextModal } from "../modal";
+import { RichTextModal, NoteViewerModal } from "../modal";
 
 /**
  * NoteBox - Bento Box per le note
@@ -34,6 +34,7 @@ const NoteBox = ({
   onSendMessageFromBox,
 }) => {
   const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   // Menu aggiuntivo per il box nota
   const noteMenuItems = [
@@ -70,17 +71,27 @@ const NoteBox = ({
         minHeight={hasContent ? undefined : 150}
       >
         {hasContent ? (
-          // Riquadro contenente la nota con HTML formattato
-          <div className="bg-bg-tertiary/50 border border-border/50 rounded-lg p-3">
+          // Riquadro contenente la nota con HTML formattato — cliccabile per aprire il viewer
+          <button
+            type="button"
+            onClick={() => setIsViewerOpen(true)}
+            className="
+              w-full text-left bg-bg-tertiary/50 border border-border/50 rounded-lg p-3
+              hover:border-primary/40 hover:bg-bg-tertiary
+              transition-colors duration-150
+              cursor-pointer
+            "
+            aria-label="Visualizza nota"
+          >
             <div
-              className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none"
+              className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none pointer-events-none"
               dangerouslySetInnerHTML={{ __html: content }}
               style={{
                 wordWrap: "break-word",
                 whiteSpace: "pre-wrap",
               }}
             />
-          </div>
+          </button>
         ) : (
           // Stato vuoto - uniforme
           <button
@@ -113,6 +124,14 @@ const NoteBox = ({
         onClose={() => setIsEditNoteOpen(false)}
         onConfirm={handleNoteConfirm}
         initialContent={content}
+      />
+
+      {/* Modale visualizzatore nota (sola lettura, larghezza 3 bento box) */}
+      <NoteViewerModal
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        title={title}
+        content={content}
       />
     </>
   );

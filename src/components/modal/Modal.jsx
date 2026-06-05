@@ -172,7 +172,7 @@ const Modal = ({
           ${
             isMobile
               ? "inset-0 animate-slide-in-bottom"
-              : `inset-0 m-auto w-[90%] ${maxWidth} h-fit max-h-[85vh] rounded-2xl shadow-2xl animate-modal-scale`
+              : `inset-0 m-auto w-[90%] ${maxWidth} h-fit max-h-[85vh] rounded-2xl shadow-2xl animate-modal-scale overflow-hidden`
           }
         `}
         role="dialog"
