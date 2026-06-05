@@ -471,6 +471,32 @@ export const updateBentoBoxContent = async (
 };
 
 /**
+ * Aggiorna il contenuto testuale di un NoteBox (content + contentType)
+ * @param {string} projectId - ID del progetto
+ * @param {string} boxId - ID del box
+ * @param {string} content - Contenuto (HTML per "txt", Markdown per "markdown")
+ * @param {string} contentType - Tipo contenuto: "txt" | "markdown"
+ * @param {string} userId - ID utente che modifica (opzionale)
+ * @param {string} userName - Nome utente (opzionale)
+ */
+export const updateBentoBoxNoteContent = async (
+  projectId,
+  boxId,
+  content,
+  contentType = "txt",
+  userId = null,
+  userName = null,
+) => {
+  const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+  await updateDoc(boxRef, { content, contentType });
+
+  // Aggiorna timestamp attività progetto
+  if (userId && userName) {
+    await updateProjectActivity(projectId, userId, userName);
+  }
+};
+
+/**
  * Aggiorna le foto di un bento box (PhotoBox)
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box

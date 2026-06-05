@@ -35,6 +35,7 @@ import {
   createBentoBox,
   updateBentoBoxTitle,
   updateBentoBoxContent,
+  updateBentoBoxNoteContent,
   updateBentoBoxPhotos,
   updateBentoBoxPdfs,
   updateBentoBoxFiles,
@@ -813,7 +814,11 @@ const ProjectPage = ({
 
   // Funzione per aggiornare il contenuto di un box (es. nota)
   // Il listener onSnapshot aggiornerà automaticamente lo stato
-  const handleBoxContentChange = async (boxId, newContent) => {
+  const handleBoxContentChange = async (
+    boxId,
+    newContent,
+    newContentType = "txt",
+  ) => {
     if (!project?.id) return;
 
     try {
@@ -821,10 +826,11 @@ const ProjectPage = ({
       if (newContent && newContent.trim().length > 0) {
         modifiedBoxesRef.current.add(boxId);
       }
-      await updateBentoBoxContent(
+      await updateBentoBoxNoteContent(
         project.id,
         boxId,
         newContent,
+        newContentType,
         currentUser?.uid,
         currentUser?.displayName || currentUser?.email,
       );
@@ -1258,6 +1264,7 @@ const ProjectPage = ({
                         <NoteBox
                           title={item.title}
                           content={item.content || ""}
+                          contentType={item.contentType || "txt"}
                           isPinned={item.isPinned || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
@@ -1267,8 +1274,12 @@ const ProjectPage = ({
                           onTitleChange={(newTitle) =>
                             handleBoxTitleChange(item.id, newTitle)
                           }
-                          onContentChange={(newContent) =>
-                            handleBoxContentChange(item.id, newContent)
+                          onContentChange={(newContent, newContentType) =>
+                            handleBoxContentChange(
+                              item.id,
+                              newContent,
+                              newContentType,
+                            )
                           }
                           onDelete={() => handleDeleteBox(item.id)}
                           onSendMessageFromBox={() =>

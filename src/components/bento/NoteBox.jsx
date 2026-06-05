@@ -1,7 +1,12 @@
-import { useState } from "react";
-import { PencilIcon, FileTextIcon } from "../icons";
+import { useState, useRef, useLayoutEffect } from "react";
+import { PencilIcon, FileTextIcon, ChevronDownIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { RichTextModal, NoteViewerModal } from "../modal";
+import renderMarkdown from "../../utils/markdownRenderer";
+
+// Altezza massima (px) prima di troncare il testo nel box.
+// Corrisponde alla larghezza di 3 bento box (3 × 320px = 960px).
+const NOTE_MAX_HEIGHT = 960;
 
 /**
  * NoteBox - Bento Box per le note
@@ -24,6 +29,7 @@ import { RichTextModal, NoteViewerModal } from "../modal";
 const NoteBox = ({
   title = "Nota",
   content = "",
+  contentType = "txt",
   isPinned = false,
   createdByName = null,
   createdAt = null,
@@ -35,7 +41,18 @@ const NoteBox = ({
 }) => {
   const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [isNoteExpanded, setIsNoteExpanded] = useState(false);
+  // Traccia se il contenuto supera la soglia di altezza
+  const [isTall, setIsTall] = useState(false);
+  const contentMeasureRef = useRef(null);
 
+  // Misura l'altezza reale del contenuto dopo ogni render del contenuto
+  useLayoutEffect(() => {
+    const el = contentMeasureRef.current;
+    if (!el) return;
+    const tall = el.scrollHeight > NOTE_MAX_HEIGHT;
+    setIsTall((prev) => (prev !== tall ? tall : prev));
+  }, [content, contentType]);
   // Menu aggiuntivo per il box nota
   const noteMenuItems = [
     {
@@ -46,9 +63,9 @@ const NoteBox = ({
   ];
 
   // Gestione salvataggio nota
-  const handleNoteConfirm = async (newContent) => {
+  const handleNoteConfirm = async (newContent, newContentType) => {
     if (onContentChange) {
-      await onContentChange(newContent);
+      await onContentChange(newContent, newContentType);
     }
     setIsEditNoteOpen(false);
   };
@@ -71,27 +88,68 @@ const NoteBox = ({
         minHeight={hasContent ? undefined : 150}
       >
         {hasContent ? (
-          // Riquadro contenente la nota con HTML formattato — cliccabile per aprire il viewer
-          <button
-            type="button"
-            onClick={() => setIsViewerOpen(true)}
-            className="
-              w-full text-left bg-bg-tertiary/50 border border-border/50 rounded-lg p-3
-              hover:border-primary/40 hover:bg-bg-tertiary
-              transition-colors duration-150
-              cursor-pointer
-            "
-            aria-label="Visualizza nota"
-          >
-            <div
-              className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none pointer-events-none"
-              dangerouslySetInnerHTML={{ __html: content }}
-              style={{
-                wordWrap: "break-word",
-                whiteSpace: "pre-wrap",
-              }}
-            />
-          </button>
+          // Riquadro contenente la nota — cliccabile per aprire il viewer
+          <div className="flex flex-col gap-2">
+            {/* Wrapper con altezza massima e troncamento quando non espanso */}
+            <button
+              type="button"
+              onClick={() => setIsViewerOpen(true)}
+              className="
+                w-full text-left bg-bg-tertiary/50 border border-border/50 rounded-lg p-3
+                hover:border-primary/40 hover:bg-bg-tertiary
+                transition-colors duration-150
+                cursor-pointer
+              "
+              aria-label="Visualizza nota"
+            >
+              {/* Contenitore con clip quando non espanso */}
+              <div
+                ref={contentMeasureRef}
+                className={`note-box-content ${isNoteExpanded ? "expanded" : ""}`}
+              >
+                {contentType === "markdown" ? (
+                  <div
+                    className="note-markdown text-sm pointer-events-none"
+                    dangerouslySetInnerHTML={{
+                      __html: renderMarkdown(content),
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="text-sm text-text-secondary leading-relaxed pointer-events-none"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                    style={{ wordWrap: "break-word", whiteSpace: "pre-wrap" }}
+                  />
+                )}
+              </div>
+            </button>
+
+            {/* Bottone espandi/contrai — visibile solo se il contenuto supera la soglia */}
+            {isTall && (
+              <button
+                type="button"
+                onClick={() => setIsNoteExpanded((v) => !v)}
+                className="
+                  w-full py-2 px-3
+                  border-2 border-dashed border-border/50 rounded-lg
+                  flex items-center justify-center gap-2
+                  text-text-secondary hover:text-primary
+                  hover:border-primary/50
+                  transition-colors duration-150
+                "
+                aria-label={isNoteExpanded ? "Contrai nota" : "Espandi nota"}
+              >
+                <span className="text-xs font-medium">
+                  {isNoteExpanded ? "Contrai" : "Espandi"}
+                </span>
+                <ChevronDownIcon
+                  className={`w-4 h-4 transition-transform duration-150 ease-out ${
+                    isNoteExpanded ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
+            )}
+          </div>
         ) : (
           // Stato vuoto - uniforme
           <button
@@ -124,6 +182,7 @@ const NoteBox = ({
         onClose={() => setIsEditNoteOpen(false)}
         onConfirm={handleNoteConfirm}
         initialContent={content}
+        contentType={contentType}
       />
 
       {/* Modale visualizzatore nota (sola lettura, larghezza 3 bento box) */}
@@ -132,6 +191,7 @@ const NoteBox = ({
         onClose={() => setIsViewerOpen(false)}
         title={title}
         content={content}
+        contentType={contentType}
       />
     </>
   );

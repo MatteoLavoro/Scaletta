@@ -27,37 +27,84 @@ const TEXT_COLORS = [
   { id: "brown", name: "Marrone", hex: "#795548" },
 ];
 
-const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
+/**
+ * RichTextModal - Editor di testo per le note.
+ *
+ * Supporta due modalità:
+ *  - "txt": editor rich text con grassetto, corsivo, colori.
+ *  - "markdown": textarea plain per scrivere in sintassi Markdown.
+ *
+ * @param {boolean} isOpen        - Stato apertura
+ * @param {function} onClose      - Callback chiusura
+ * @param {function} onConfirm    - Callback salvataggio: (content, contentType) => void
+ * @param {string}   initialContent - Contenuto iniziale
+ * @param {string}   contentType  - Tipo iniziale: "txt" | "markdown" (default "txt")
+ */
+const RichTextModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  initialContent = "",
+  contentType = "txt",
+}) => {
+  // ─── Refs ───────────────────────────────────────────────────
   const editorRef = useRef(null);
+  const colorPickerRef = useRef(null);
+  // Ref sincrono per il tipo corrente (evita problemi di closure in onBlur)
+  const modeRef = useRef(contentType || "txt");
+
+  // ─── State ──────────────────────────────────────────────────
+  const [localContentType, setLocalContentType] = useState(
+    contentType || "txt",
+  );
+  const [markdownContent, setMarkdownContent] = useState("");
   const [hasContent, setHasContent] = useState(false);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState("#000000");
-  const colorPickerRef = useRef(null);
 
-  // Inizializza il contenuto quando il modale si apre
+  // ─── Inizializzazione al mount / riapertura ──────────────────
   useEffect(() => {
-    if (isOpen && editorRef.current) {
-      editorRef.current.innerHTML = initialContent;
-      const text = editorRef.current.innerText.trim();
-      setHasContent(text.length > 0);
+    if (!isOpen) return;
 
-      // Focus automatico sull'editor
-      setTimeout(() => {
-        editorRef.current?.focus();
-        // Posiziona il cursore alla fine del testo
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }, 100);
+    const mode = contentType || "txt";
+    modeRef.current = mode;
+    setLocalContentType(mode);
+    setShowColorPicker(false);
+
+    if (mode === "markdown") {
+      setMarkdownContent(initialContent || "");
+      setHasContent((initialContent || "").trim().length > 0);
+      // Pulisce l'editor TXT (è nel DOM ma nascosto)
+      if (editorRef.current) editorRef.current.innerHTML = "";
+    } else {
+      // Modalità TXT
+      setMarkdownContent("");
+      if (editorRef.current) {
+        editorRef.current.innerHTML = initialContent || "";
+        const text = editorRef.current.innerText.trim();
+        setHasContent(text.length > 0);
+        // Focus e cursore alla fine
+        setTimeout(() => {
+          if (!editorRef.current) return;
+          editorRef.current.focus();
+          try {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          } catch (_) {
+            /* noop */
+          }
+        }, 100);
+      }
     }
-  }, [isOpen, initialContent]);
+  }, [isOpen, initialContent, contentType]);
 
-  // Chiudi il color picker quando si clicca fuori
+  // ─── Chiudi color picker al click esterno ───────────────────
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -67,7 +114,6 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
         setShowColorPicker(false);
       }
     };
-
     if (showColorPicker) {
       document.addEventListener("mousedown", handleClickOutside);
       return () =>
@@ -75,15 +121,37 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
     }
   }, [showColorPicker]);
 
-  // Aggiorna lo stato dei pulsanti in base alla selezione
+  // ─── Cambio modalità (TXT ↔ Markdown) ───────────────────────
+  const switchMode = (newMode) => {
+    if (newMode === modeRef.current) return;
+
+    if (newMode === "markdown") {
+      // TXT → Markdown: estrae testo semplice dall'HTML
+      const plainText = editorRef.current?.innerText || "";
+      setMarkdownContent(plainText);
+      setHasContent(plainText.trim().length > 0);
+    } else {
+      // Markdown → TXT: inserisce il testo markdown come plain text
+      if (editorRef.current) {
+        editorRef.current.innerHTML = markdownContent;
+        setHasContent(markdownContent.trim().length > 0);
+        setTimeout(() => {
+          editorRef.current?.focus();
+        }, 50);
+      }
+    }
+
+    modeRef.current = newMode;
+    setLocalContentType(newMode);
+    setShowColorPicker(false);
+  };
+
+  // ─── Toolbar TXT ─────────────────────────────────────────────
   const updateToolbarState = () => {
     setIsBoldActive(document.queryCommandState("bold"));
     setIsItalicActive(document.queryCommandState("italic"));
-
-    // Ottieni il colore corrente
     const color = document.queryCommandValue("foreColor");
     if (color) {
-      // Converte rgb a hex
       const rgb = color.match(/\d+/g);
       if (rgb) {
         const hex = `#${(
@@ -99,50 +167,46 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
     }
   };
 
-  // Gestisce l'input nell'editor
   const handleInput = () => {
-    // Aggiorna lo stato hasContent
     if (editorRef.current) {
-      const text = editorRef.current.innerText.trim();
-      setHasContent(text.length > 0);
+      setHasContent(editorRef.current.innerText.trim().length > 0);
     }
     updateToolbarState();
   };
 
-  // Gestisce la selezione del testo
-  const handleSelect = () => {
-    updateToolbarState();
-  };
+  const handleSelect = () => updateToolbarState();
 
-  // Gestisce il tasto Enter (shift+enter per a capo)
   const handleKeyDown = (e) => {
-    // Shift + Enter per andare a capo
     if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       document.execCommand("insertLineBreak");
-    }
-    // Enter normale per nuovo paragrafo
-    else if (e.key === "Enter") {
+    } else if (e.key === "Enter") {
       e.preventDefault();
       document.execCommand("insertParagraph");
     }
   };
 
-  // Applica formattazione grassetto
+  // Paste come testo semplice (rimuove formattazione esterna)
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData(
+      "text/plain",
+    );
+    if (text) document.execCommand("insertText", false, text);
+  };
+
   const toggleBold = () => {
     document.execCommand("bold", false, null);
     editorRef.current?.focus();
     updateToolbarState();
   };
 
-  // Applica formattazione corsivo
   const toggleItalic = () => {
     document.execCommand("italic", false, null);
     editorRef.current?.focus();
     updateToolbarState();
   };
 
-  // Applica colore al testo
   const applyColor = (colorHex) => {
     document.execCommand("foreColor", false, colorHex);
     setCurrentColor(colorHex);
@@ -151,22 +215,22 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
     updateToolbarState();
   };
 
-  // Gestisce il paste: rimuove tutta la formattazione e incolla solo testo semplice
-  const handlePaste = (e) => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData(
-      "text/plain",
+  const getCurrentColorName = () => {
+    const color = TEXT_COLORS.find(
+      (c) => c.hex.toLowerCase() === currentColor.toLowerCase(),
     );
-    if (text) {
-      document.execCommand("insertText", false, text);
-    }
+    return color ? color.name : "Colore";
   };
 
-  // Conferma e salva
+  // ─── Conferma e salva ────────────────────────────────────────
   const handleConfirm = () => {
-    let html = editorRef.current.innerHTML;
+    if (localContentType === "markdown") {
+      onConfirm(markdownContent.trim(), "markdown");
+      return;
+    }
 
-    // Rimuovi tag vuoti nel mezzo
+    // Modalità TXT: pulizia HTML
+    let html = editorRef.current?.innerHTML || "";
     html = html
       .replace(/<p><br><\/p>/g, "<br>")
       .replace(/<div><br><\/div>/g, "<br>")
@@ -174,8 +238,6 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
       .replace(/<div>\s*<\/div>/g, "")
       .trim();
 
-    // Rimuovi in modo aggressivo tutti gli elementi vuoti alla fine
-    // Continua a rimuovere finché ci sono tag vuoti alla fine
     let previousHtml = "";
     while (previousHtml !== html) {
       previousHtml = html;
@@ -188,30 +250,56 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
         .trim();
     }
 
-    onConfirm(html);
+    onConfirm(html, "txt");
   };
 
-  // Ottieni il nome del colore corrente
-  const getCurrentColorName = () => {
-    const color = TEXT_COLORS.find(
-      (c) => c.hex.toLowerCase() === currentColor.toLowerCase(),
-    );
-    return color ? color.name : "Colore";
-  };
+  // Stato disabilitato per il pulsante conferma
+  const isConfirmDisabled =
+    localContentType === "txt"
+      ? !hasContent
+      : markdownContent.trim().length === 0;
 
+  // ─── Render ──────────────────────────────────────────────────
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Modifica nota"
-      variant="primary"
-      confirmLabel="Salva"
-      confirmDisabled={!hasContent}
+      confirmDisabled={isConfirmDisabled}
       onConfirm={handleConfirm}
     >
       <div className="space-y-3">
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 p-2 bg-bg-tertiary rounded-lg border border-border">
+        {/* ── Selettore modalità TXT / Markdown ── */}
+        <div className="flex items-center gap-1 p-1 bg-bg-tertiary rounded-lg border border-border">
+          <button
+            type="button"
+            onClick={() => switchMode("txt")}
+            className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors ${
+              localContentType === "txt"
+                ? "bg-primary text-white shadow-sm"
+                : "text-text-muted hover:text-text-secondary"
+            }`}
+          >
+            TXT
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode("markdown")}
+            className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors ${
+              localContentType === "markdown"
+                ? "bg-primary text-white shadow-sm"
+                : "text-text-muted hover:text-text-secondary"
+            }`}
+          >
+            Markdown
+          </button>
+        </div>
+
+        {/* ── Toolbar formattazione (solo TXT) ── */}
+        <div
+          style={{ display: localContentType === "txt" ? "flex" : "none" }}
+          className="items-center gap-2 p-2 bg-bg-tertiary rounded-lg border border-border"
+        >
           {/* Grassetto */}
           <button
             type="button"
@@ -243,7 +331,7 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
           {/* Separatore */}
           <div className="w-px h-6 bg-border" />
 
-          {/* Colore testo - allineato a destra */}
+          {/* Colore testo */}
           <div className="relative ml-auto" ref={colorPickerRef}>
             <button
               type="button"
@@ -266,7 +354,6 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
               />
             </button>
 
-            {/* Color picker dropdown */}
             {showColorPicker && (
               <div className="absolute top-full right-0 mt-1 p-3 bg-bg-secondary border border-border rounded-lg shadow-lg z-50 animate-dropdown-in">
                 <div className="grid grid-cols-5 gap-2 w-max">
@@ -290,20 +377,20 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
           </div>
         </div>
 
-        {/* Editor */}
+        {/* ── Editor TXT (contentEditable) ── */}
         <div
           ref={editorRef}
           contentEditable
-          autoFocus
           suppressContentEditableWarning
           onInput={handleInput}
           onSelect={handleSelect}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onBlur={() => {
-            // Previeni la perdita di focus
+            // Previeni la perdita di focus accidentale in modalità TXT
             setTimeout(() => {
               if (
+                modeRef.current === "txt" &&
                 editorRef.current &&
                 document.activeElement !== editorRef.current
               ) {
@@ -311,12 +398,33 @@ const RichTextModal = ({ isOpen, onClose, onConfirm, initialContent = "" }) => {
               }
             }, 0);
           }}
-          className="min-h-[300px] max-h-[400px] overflow-y-auto p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none"
           style={{
+            display: localContentType === "txt" ? "block" : "none",
             lineHeight: "1.6",
             wordWrap: "break-word",
             whiteSpace: "pre-wrap",
           }}
+          className="min-h-[300px] max-h-[400px] overflow-y-auto p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none"
+        />
+
+        {/* ── Editor Markdown (textarea) ── */}
+        {/* L'altezza min/max è aumentata della toolbar TXT (44px + gap 12px = 56px)
+            per mantenere l'altezza totale del modale identica nelle due modalità */}
+        <textarea
+          value={markdownContent}
+          onChange={(e) => {
+            setMarkdownContent(e.target.value);
+            setHasContent(e.target.value.trim().length > 0);
+          }}
+          placeholder={
+            "Scrivi in Markdown...\n\n# Titolo\n## Sottotitolo\n\n**grassetto**, *corsivo*, ~~barrato~~\n\n- Elemento lista\n- Elemento lista\n\n```\nblocco codice\n```"
+          }
+          style={{
+            display: localContentType === "markdown" ? "block" : "none",
+            minHeight: "calc(300px + 44px + 12px)",
+            maxHeight: "calc(400px + 44px + 12px)",
+          }}
+          className="w-full overflow-y-auto p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none resize-none text-sm leading-relaxed focus:border-primary transition-colors"
         />
       </div>
     </Modal>
