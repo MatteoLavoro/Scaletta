@@ -325,14 +325,16 @@ kbd {
 }
 
 /* ===== Note Box Truncation ===== */
-/* Troncamento con animazione visiva per note lunghe (> 960px di altezza) */
+/* Troncamento con animazione visiva per note lunghe (> 800px di altezza = 2.5 bento box) */
 
 .note-box-content {
-  /* Grid collassa al max-height quando non espanso */
   overflow: hidden;
-  max-height: 960px;
+  max-height: 800px;
+  transition: max-height 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-  /* Gradiente sfumato sul fondo per indicare che c'è altro contenuto */
+/* Gradiente sfumato solo quando il contenuto è effettivamente troncato */
+.note-box-content.tall:not(.expanded) {
   -webkit-mask-image: linear-gradient(
     to bottom,
     black calc(100% - 48px),
@@ -343,18 +345,10 @@ kbd {
     black calc(100% - 48px),
     transparent 100%
   );
-
-  /* Transizione visiva fluida */
-  transition:
-    max-height 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    mask-image 200ms ease-out,
-    -webkit-mask-image 200ms ease-out;
 }
 
 .note-box-content.expanded {
   max-height: 99999px;
-  -webkit-mask-image: none;
-  mask-image: none;
 }
 
 /* ===== Markdown Note Styles ===== */

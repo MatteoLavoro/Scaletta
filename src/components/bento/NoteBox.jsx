@@ -5,8 +5,8 @@ import { RichTextModal, NoteViewerModal } from "../modal";
 import renderMarkdown from "../../utils/markdownRenderer";
 
 // Altezza massima (px) prima di troncare il testo nel box.
-// Corrisponde alla larghezza di 3 bento box (3 × 320px = 960px).
-const NOTE_MAX_HEIGHT = 960;
+// Corrisponde a 2.5 bento box (2.5 × 320px = 800px).
+const NOTE_MAX_HEIGHT = 800;
 
 /**
  * NoteBox - Bento Box per le note
@@ -105,7 +105,7 @@ const NoteBox = ({
               {/* Contenitore con clip quando non espanso */}
               <div
                 ref={contentMeasureRef}
-                className={`note-box-content ${isNoteExpanded ? "expanded" : ""}`}
+                className={`note-box-content${isTall ? " tall" : ""}${isNoteExpanded ? " expanded" : ""}`}
               >
                 {contentType === "markdown" ? (
                   <div
