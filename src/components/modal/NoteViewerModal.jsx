@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Modal from "./Modal";
 import renderMarkdown from "../../utils/markdownRenderer";
 
@@ -21,6 +22,17 @@ const NoteViewerModal = ({
   content,
   contentType = "txt",
 }) => {
+  // Disabilita la selezione testo su tutto il documento tranne il contenuto del modale,
+  // così il testo delle note in background non è selezionabile mentre il modale è aperto.
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.userSelect = "none";
+      return () => {
+        document.body.style.userSelect = "";
+      };
+    }
+  }, [isOpen]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -32,13 +44,18 @@ const NoteViewerModal = ({
       {contentType === "markdown" ? (
         <div
           className="note-markdown text-sm"
+          style={{ userSelect: "text" }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(content || "") }}
         />
       ) : (
         <div
           className="text-sm text-text-primary leading-relaxed"
           dangerouslySetInnerHTML={{ __html: content || "" }}
-          style={{ wordWrap: "break-word", whiteSpace: "pre-wrap" }}
+          style={{
+            userSelect: "text",
+            wordWrap: "break-word",
+            whiteSpace: "pre-wrap",
+          }}
         />
       )}
     </Modal>

@@ -219,14 +219,34 @@ const BaseBentoBox = ({
           )}
 
           {/* Titolo centrato con badge opzionale */}
-          <div className="flex-1 flex items-center justify-center gap-1.5 min-w-0">
-            <h3 className="text-xs font-semibold text-text-primary truncate">
-              {title}
-            </h3>
-            {badgeCount && (
-              <span className="text-xs font-medium text-text-muted shrink-0">
-                ({badgeCount})
-              </span>
+          <div className="flex-1 flex items-center justify-center min-w-0 px-1">
+            {onTitleChange ? (
+              <button
+                type="button"
+                onClick={() => setIsEditTitleOpen(true)}
+                className="flex items-center gap-1.5 max-w-full px-2.5 py-0.5 rounded-full bg-bg-tertiary hover:bg-divider transition-colors duration-150"
+                title="Cambia titolo"
+              >
+                <h3 className="text-xs font-semibold text-text-primary truncate">
+                  {title}
+                </h3>
+                {badgeCount && (
+                  <span className="text-xs font-medium text-text-muted shrink-0">
+                    ({badgeCount})
+                  </span>
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 max-w-full">
+                <h3 className="text-xs font-semibold text-text-primary truncate">
+                  {title}
+                </h3>
+                {badgeCount && (
+                  <span className="text-xs font-medium text-text-muted shrink-0">
+                    ({badgeCount})
+                  </span>
+                )}
+              </div>
             )}
           </div>
 

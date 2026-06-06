@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ModalProvider, useModal } from "./contexts/ModalContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -52,6 +52,9 @@ const AppContent = () => {
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   // Traccia progetti in eliminazione (per UI ottimistica)
   const [deletingProjectIds, setDeletingProjectIds] = useState(new Set());
+  // Salva posizione scroll Dashboard prima di entrare in un progetto
+  const dashboardScrollRef = useRef(0);
+  const shouldRestoreScrollRef = useRef(false);
 
   useEffect(() => {
     if (isAuthenticated) closeAllModals();
@@ -107,13 +110,25 @@ const AppContent = () => {
     }
   }, [isInstallable, isInstalled, deviceInfo]);
 
+  // Ripristina scroll Dashboard quando si torna da un progetto
+  useEffect(() => {
+    if (!currentProject && shouldRestoreScrollRef.current) {
+      shouldRestoreScrollRef.current = false;
+      requestAnimationFrame(() => {
+        window.scrollTo(0, dashboardScrollRef.current);
+      });
+    }
+  }, [currentProject]);
+
   // Gestione navigazione progetto
   const handleProjectClick = ({ project, group }) => {
+    dashboardScrollRef.current = window.scrollY;
     setCurrentProject(project);
     setCurrentGroup(group);
   };
 
   const handleBackFromProject = () => {
+    shouldRestoreScrollRef.current = true;
     setCurrentProject(null);
     setCurrentGroup(null);
   };
