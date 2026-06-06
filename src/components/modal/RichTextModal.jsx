@@ -1,9 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
-import { BoldIcon, ItalicIcon } from "../icons";
-import { ChevronDownIcon } from "../icons";
+import {
+  BoldIcon,
+  ItalicIcon,
+  InfoIcon,
+  ChevronDownIcon,
+  CopyIcon,
+} from "../icons";
 
-// 20 colori in scala cromatica (dall'arcobaleno)
+// ─── Costanti ─────────────────────────────────────────────────────────────────
+// Altezza fissa del container editor (px).
+// Entrambi i panel (TXT e Markdown) occupano esattamente questa altezza,
+// quindi il cambio modalità non causa mai un resize del modale.
+const EDITOR_HEIGHT = 480;
+
+// ─── Colori testo disponibili ─────────────────────────────────────────────────
 const TEXT_COLORS = [
   { id: "black", name: "Nero", hex: "#000000" },
   { id: "gray", name: "Grigio", hex: "#666666" },
@@ -27,25 +38,46 @@ const TEXT_COLORS = [
   { id: "brown", name: "Marrone", hex: "#795548" },
 ];
 
+// ─── Guida sintassi Markdown ──────────────────────────────────────────────────
+const MARKDOWN_GUIDE = [
+  { syntax: "# Titolo 1", desc: "Titolo grande" },
+  { syntax: "## Titolo 2", desc: "Titolo medio" },
+  { syntax: "### Titolo 3", desc: "Titolo piccolo" },
+  { syntax: "**testo**", desc: "Grassetto" },
+  { syntax: "*testo*", desc: "Corsivo" },
+  { syntax: "~~testo~~", desc: "Barrato" },
+  { syntax: "- elemento", desc: "Lista puntata" },
+  { syntax: "1. elemento", desc: "Lista numerata" },
+  { syntax: "`codice`", desc: "Codice inline" },
+  { syntax: "```\nblocco\n```", desc: "Blocco codice" },
+  { syntax: "---", desc: "Riga divisoria" },
+  { syntax: "[testo](url)", desc: "Link" },
+];
+
 /**
- * RichTextModal - Editor di testo per le note.
+ * RichTextModal - Editor di testo per le note, completamente ridisegnato.
  *
  * Supporta due modalità:
- *  - "txt": editor rich text con grassetto, corsivo, colori.
- *  - "markdown": textarea plain per scrivere in sintassi Markdown.
+ *  - "txt": editor rich text con grassetto, corsivo, colori (execCommand)
+ *  - "markdown": textarea plain per la sintassi Markdown
  *
- * Tecnica di layout: CSS Grid stacking.
- * Il layer TXT (toolbar + editor) e il layer Markdown (textarea) sono
- * sempre nel DOM e sovrapposti nella stessa cella grid tramite gridArea.
- * Si usa visibility:hidden (non display:none) per nasconderli, così la
- * cella grid mantiene sempre l'altezza del layer TXT, e il modale non
- * cambia mai dimensione quando si cambia modalità.
+ * Tecnica di layout: position-absolute panels.
+ * Container: position:relative con height fissa (EDITOR_HEIGHT px).
+ * Ogni panel: position:absolute; inset:0 → riempie esattamente il container.
+ * Panel inattivo: display:none (Tailwind "hidden").
+ *   - Nessun contributo all'altezza → zero resize al cambio modalità
+ *   - Il ref dell'elemento rimane valido → si può leggere/scrivere HTML/value
+ *   - Nessuna dipendenza da height:100% dentro h-fit (ambiguo nei browser)
  *
- * @param {boolean} isOpen        - Stato apertura
- * @param {function} onClose      - Callback chiusura
- * @param {function} onConfirm    - Callback salvataggio: (content, contentType) => void
+ * Toolbar TXT anti-blur: onMouseDown={(e) => e.preventDefault()} sul container
+ * toolbar impedisce che qualsiasi click tolga il focus al contentEditable,
+ * preservando la selezione di testo quando si clicca su Bold/Italic/Colori.
+ *
+ * @param {boolean}  isOpen         - Stato apertura
+ * @param {function} onClose        - Callback chiusura
+ * @param {function} onConfirm      - Callback salvataggio: (content, contentType) => void
  * @param {string}   initialContent - Contenuto iniziale
- * @param {string}   contentType  - Tipo iniziale: "txt" | "markdown" (default "txt")
+ * @param {string}   contentType    - Modalità iniziale: "txt" | "markdown" (default "txt")
  */
 const RichTextModal = ({
   isOpen,
@@ -54,54 +86,53 @@ const RichTextModal = ({
   initialContent = "",
   contentType = "txt",
 }) => {
-  // ─── Refs ───────────────────────────────────────────────────
-  const editorRef = useRef(null);
-  const textareaRef = useRef(null);
-  const colorPickerRef = useRef(null);
-  const modeRef = useRef(contentType || "txt");
+  // ─── Refs ─────────────────────────────────────────────────────────────────
+  const editorRef = useRef(null); // contentEditable TXT
+  const textareaRef = useRef(null); // textarea Markdown
+  const colorPickerRef = useRef(null); // container dropdown colori
+  const mdHelpRef = useRef(null); // container dropdown guida markdown
 
-  // ─── State ──────────────────────────────────────────────────
-  const [localContentType, setLocalContentType] = useState(
-    contentType || "txt",
-  );
-  const [markdownContent, setMarkdownContent] = useState("");
+  // ─── State ────────────────────────────────────────────────────────────────
+  const [mode, setMode] = useState(contentType || "txt");
+  const [mdContent, setMdContent] = useState("");
   const [hasContent, setHasContent] = useState(false);
-  const [isBoldActive, setIsBoldActive] = useState(false);
-  const [isItalicActive, setIsItalicActive] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [currentColor, setCurrentColor] = useState("#000000");
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [showColors, setShowColors] = useState(false);
+  const [activeColor, setActiveColor] = useState("#000000");
+  const [showMdHelp, setShowMdHelp] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
-  // ─── Inizializzazione al mount / riapertura ──────────────────
+  // ─── Inizializzazione al mount / riapertura ───────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
 
-    const mode = contentType || "txt";
-    modeRef.current = mode;
-    setLocalContentType(mode);
-    setShowColorPicker(false);
+    const m = contentType || "txt";
+    setMode(m);
+    setShowColors(false);
+    setShowMdHelp(false);
+    setIsCopied(false);
 
-    // Auto-focus e cursore solo se stai aggiungendo una nota nuova (contenuto vuoto).
-    // In modifica (contenuto già presente) l'utente deve cliccare per scrivere.
-    const isNewNote = !initialContent || initialContent.trim().length === 0;
+    // Auto-focus solo per note nuove (contenuto vuoto); per le modifiche il
+    // click sull'editor è più naturale.
+    const isNew = !initialContent || initialContent.trim().length === 0;
 
-    if (mode === "markdown") {
-      setMarkdownContent(initialContent || "");
+    if (m === "markdown") {
+      setMdContent(initialContent || "");
       setHasContent((initialContent || "").trim().length > 0);
+      // Pulisci l'editor TXT (il ref rimane valido anche con display:none)
       if (editorRef.current) editorRef.current.innerHTML = "";
-      if (isNewNote) {
+      if (isNew) {
         setTimeout(() => {
-          const ta = textareaRef.current;
-          if (!ta) return;
-          ta.focus();
-          ta.setSelectionRange(ta.value.length, ta.value.length);
+          textareaRef.current?.focus();
         }, 100);
       }
     } else {
-      setMarkdownContent("");
+      setMdContent("");
       if (editorRef.current) {
         editorRef.current.innerHTML = initialContent || "";
         setHasContent(editorRef.current.innerText.trim().length > 0);
-        if (isNewNote) {
+        if (isNew) {
           setTimeout(() => {
             if (!editorRef.current) return;
             editorRef.current.focus();
@@ -109,7 +140,7 @@ const RichTextModal = ({
               const range = document.createRange();
               const sel = window.getSelection();
               range.selectNodeContents(editorRef.current);
-              range.collapse(false); // cursore alla fine
+              range.collapse(false);
               sel.removeAllRanges();
               sel.addRange(range);
             } catch (_) {
@@ -121,32 +152,35 @@ const RichTextModal = ({
     }
   }, [isOpen, initialContent, contentType]);
 
-  // ─── Chiudi color picker al click esterno ───────────────────
+  // ─── Chiudi dropdown colori al click esterno ─────────────────────────────
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        colorPickerRef.current &&
-        !colorPickerRef.current.contains(e.target)
-      ) {
-        setShowColorPicker(false);
-      }
+    if (!showColors) return;
+    const fn = (e) => {
+      if (!colorPickerRef.current?.contains(e.target)) setShowColors(false);
     };
-    if (showColorPicker) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showColorPicker]);
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, [showColors]);
 
-  // ─── Cambio modalità (TXT ↔ Markdown) ───────────────────────
+  // ─── Chiudi guida Markdown al click esterno ──────────────────────────────
+  useEffect(() => {
+    if (!showMdHelp) return;
+    const fn = (e) => {
+      if (!mdHelpRef.current?.contains(e.target)) setShowMdHelp(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, [showMdHelp]);
+
+  // ─── Cambio modalità (TXT ↔ Markdown) ───────────────────────────────────
   const switchMode = (newMode) => {
-    if (newMode === modeRef.current) return;
+    if (newMode === mode) return;
 
     if (newMode === "markdown") {
-      const plainText = editorRef.current?.innerText || "";
-      setMarkdownContent(plainText);
-      setHasContent(plainText.trim().length > 0);
-      // Cursore alla fine del testo
+      // Porta il plain text dall'editor TXT alla textarea MD
+      const text = editorRef.current?.innerText || "";
+      setMdContent(text);
+      setHasContent(text.trim().length > 0);
       setTimeout(() => {
         const ta = textareaRef.current;
         if (!ta) return;
@@ -154,10 +188,10 @@ const RichTextModal = ({
         ta.setSelectionRange(ta.value.length, ta.value.length);
       }, 50);
     } else {
+      // Porta il testo MD nell'editor TXT (plain, senza formattazione)
       if (editorRef.current) {
-        editorRef.current.innerHTML = markdownContent;
-        setHasContent(markdownContent.trim().length > 0);
-        // Cursore alla fine del testo
+        editorRef.current.innerHTML = mdContent;
+        setHasContent(mdContent.trim().length > 0);
         setTimeout(() => {
           if (!editorRef.current) return;
           editorRef.current.focus();
@@ -165,7 +199,7 @@ const RichTextModal = ({
             const range = document.createRange();
             const sel = window.getSelection();
             range.selectNodeContents(editorRef.current);
-            range.collapse(false); // cursore alla fine
+            range.collapse(false);
             sel.removeAllRanges();
             sel.addRange(range);
           } catch (_) {
@@ -175,34 +209,43 @@ const RichTextModal = ({
       }
     }
 
-    modeRef.current = newMode;
-    setLocalContentType(newMode);
-    setShowColorPicker(false);
+    setMode(newMode);
+    setShowColors(false);
+    setShowMdHelp(false);
   };
 
-  // ─── Toolbar TXT ─────────────────────────────────────────────
-  const updateToolbarState = () => {
-    setIsBoldActive(document.queryCommandState("bold"));
-    setIsItalicActive(document.queryCommandState("italic"));
-    const color = document.queryCommandValue("foreColor");
-    if (color) {
-      const rgb = color.match(/\d+/g);
+  // ─── Toolbar TXT ─────────────────────────────────────────────────────────
+  /**
+   * Sincronizza lo stato dei bottoni toolbar (Bold/Italic/Colore)
+   * con la selezione corrente dell'editor.
+   */
+  const syncToolbar = () => {
+    setIsBold(document.queryCommandState("bold"));
+    setIsItalic(document.queryCommandState("italic"));
+    const rawColor = document.queryCommandValue("foreColor");
+    if (rawColor) {
+      const rgb = rawColor.match(/\d+/g);
       if (rgb) {
-        const hex = `#${((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1)}`;
-        setCurrentColor(hex);
+        const hex = `#${(
+          (1 << 24) +
+          (parseInt(rgb[0]) << 16) +
+          (parseInt(rgb[1]) << 8) +
+          parseInt(rgb[2])
+        )
+          .toString(16)
+          .slice(1)}`;
+        setActiveColor(hex);
       }
     }
   };
 
-  const handleInput = () => {
+  const handleEditorInput = () => {
     if (editorRef.current)
       setHasContent(editorRef.current.innerText.trim().length > 0);
-    updateToolbarState();
+    syncToolbar();
   };
 
-  const handleSelect = () => updateToolbarState();
-
-  const handleKeyDown = (e) => {
+  const handleEditorKeyDown = (e) => {
     if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       document.execCommand("insertLineBreak");
@@ -212,7 +255,7 @@ const RichTextModal = ({
     }
   };
 
-  const handlePaste = (e) => {
+  const handleEditorPaste = (e) => {
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData(
       "text/plain",
@@ -222,36 +265,43 @@ const RichTextModal = ({
 
   const toggleBold = () => {
     document.execCommand("bold", false, null);
-    editorRef.current?.focus();
-    updateToolbarState();
+    syncToolbar();
   };
+
   const toggleItalic = () => {
     document.execCommand("italic", false, null);
-    editorRef.current?.focus();
-    updateToolbarState();
+    syncToolbar();
   };
 
-  const applyColor = (colorHex) => {
-    document.execCommand("foreColor", false, colorHex);
-    setCurrentColor(colorHex);
-    setShowColorPicker(false);
-    editorRef.current?.focus();
-    updateToolbarState();
+  const applyColor = (hex) => {
+    document.execCommand("foreColor", false, hex);
+    setActiveColor(hex);
+    setShowColors(false);
+    syncToolbar();
   };
 
-  const getCurrentColorName = () => {
-    const color = TEXT_COLORS.find(
-      (c) => c.hex.toLowerCase() === currentColor.toLowerCase(),
-    );
-    return color ? color.name : "Colore";
+  const activeColorName =
+    TEXT_COLORS.find((c) => c.hex.toLowerCase() === activeColor.toLowerCase())
+      ?.name || "Colore";
+
+  // ─── Copia testo Markdown ─────────────────────────────────────────────────
+  const handleCopyMd = () => {
+    navigator.clipboard
+      .writeText(mdContent)
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(() => {});
   };
 
-  // ─── Conferma e salva ────────────────────────────────────────
+  // ─── Conferma e salva ─────────────────────────────────────────────────────
   const handleConfirm = () => {
-    if (localContentType === "markdown") {
-      onConfirm(markdownContent.trim(), "markdown");
+    if (mode === "markdown") {
+      onConfirm(mdContent.trim(), "markdown");
       return;
     }
+    // Pulisci HTML: rimuovi paragrafi/div vuoti e <br> finali
     let html = editorRef.current?.innerHTML || "";
     html = html
       .replace(/<p><br><\/p>/g, "<br>")
@@ -273,24 +323,25 @@ const RichTextModal = ({
     onConfirm(html, "txt");
   };
 
-  const isConfirmDisabled =
-    localContentType === "txt"
-      ? !hasContent
-      : markdownContent.trim().length === 0;
-  const isTxt = localContentType === "txt";
-  const isMd = localContentType === "markdown";
+  const confirmDisabled =
+    mode === "txt" ? !hasContent : mdContent.trim().length === 0;
 
-  // ─── Render ──────────────────────────────────────────────────
+  const isTxt = mode === "txt";
+  const isMd = mode === "markdown";
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Modifica nota"
-      confirmDisabled={isConfirmDisabled}
+      confirmText="Salva"
+      confirmDisabled={confirmDisabled}
       onConfirm={handleConfirm}
+      maxWidth="max-w-[992px]"
     >
       <div className="flex flex-col gap-3">
-        {/* ── Selettore modalità TXT / Markdown ── */}
+        {/* ── Selettore modalità TXT / Markdown ─────────────────────────── */}
         <div className="flex items-center gap-1 p-1 bg-bg-tertiary rounded-lg border border-border">
           <button
             type="button"
@@ -317,44 +368,39 @@ const RichTextModal = ({
         </div>
 
         {/*
-         * ── Area editor: CSS Grid stacking ──
+         * ── Area editor con panels sovrapposti ─────────────────────────────
          *
-         * Layer TXT (toolbar + contentEditable) e layer Markdown (textarea)
-         * occupano la STESSA cella grid (gridArea "1/1/2/2").
-         * Il layer TXT determina SEMPRE l'altezza della cella.
-         * minHeight="366px" = toolbar(54px) + gap(12px) + editor-min(300px)
-         * garantisce che anche quando il layer TXT è visibility:hidden
-         * (apertura diretta in markdown) la cella mantenga la stessa altezza.
-         * visibility:hidden preserva lo spazio; display:none non viene usato.
+         * Container position:relative con altezza fissa (EDITOR_HEIGHT px).
+         * Ogni panel è position:absolute; inset:0 → riempie esattamente il container.
+         *
+         * Il panel inattivo è nascosto con className="hidden" (display:none):
+         *  ✓ Completamente fuori dal layout → nessun contributo all'altezza
+         *  ✓ Il DOM element esiste → i ref rimangono validi (innerHTML/value leggibili)
+         *  ✓ Altezza container invariante al cambio modalità → zero layout shift
+         *
+         * Toolbar TXT: onMouseDown con e.preventDefault() su tutto il container.
+         * Impedisce che qualsiasi click nella toolbar tolga il focus all'editor,
+         * preservando la selezione quando si clicca Bold/Italic/Colori.
          */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateRows: "1fr",
-            minHeight: "366px",
-          }}
-        >
-          {/* ── Layer TXT: toolbar + contentEditable (sempre in DOM) ── */}
+        <div className="relative" style={{ height: EDITOR_HEIGHT }}>
+          {/* ── Panel TXT ────────────────────────────────────────────────── */}
           <div
-            style={{
-              gridArea: "1 / 1 / 2 / 2",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              minHeight: "366px",
-              visibility: isTxt ? "visible" : "hidden",
-              pointerEvents: isTxt ? "auto" : "none",
-            }}
-            aria-hidden={isMd}
+            className={`absolute inset-0 flex flex-col gap-3 ${isTxt ? "" : "hidden"}`}
           >
-            {/* Toolbar formattazione */}
-            <div className="flex items-center gap-2 p-2 bg-bg-tertiary rounded-lg border border-border">
+            {/* Toolbar TXT */}
+            <div
+              className="flex items-center gap-2 p-2 bg-bg-tertiary rounded-lg border border-border shrink-0"
+              onMouseDown={(e) => e.preventDefault()}
+            >
               {/* Grassetto */}
               <button
                 type="button"
                 onClick={toggleBold}
-                tabIndex={isTxt ? 0 : -1}
-                className={`p-2 rounded transition-colors ${isBoldActive ? "bg-primary text-white" : "hover:bg-bg-primary text-text-primary"}`}
+                className={`p-2 rounded transition-colors ${
+                  isBold
+                    ? "bg-primary text-white"
+                    : "hover:bg-bg-primary text-text-primary"
+                }`}
                 title="Grassetto"
               >
                 <BoldIcon size={20} />
@@ -364,54 +410,55 @@ const RichTextModal = ({
               <button
                 type="button"
                 onClick={toggleItalic}
-                tabIndex={isTxt ? 0 : -1}
-                className={`p-2 rounded transition-colors ${isItalicActive ? "bg-primary text-white" : "hover:bg-bg-primary text-text-primary"}`}
+                className={`p-2 rounded transition-colors ${
+                  isItalic
+                    ? "bg-primary text-white"
+                    : "hover:bg-bg-primary text-text-primary"
+                }`}
                 title="Corsivo"
               >
                 <ItalicIcon size={20} />
               </button>
 
               {/* Separatore */}
-              <div className="w-px h-6 bg-border" />
+              <div className="w-px h-6 bg-border mx-1" />
 
-              {/* Colore testo */}
+              {/* Color picker */}
               <div className="relative ml-auto" ref={colorPickerRef}>
                 <button
                   type="button"
-                  onClick={() => setShowColorPicker(!showColorPicker)}
-                  tabIndex={isTxt ? 0 : -1}
+                  onClick={() => setShowColors(!showColors)}
                   className="flex items-center gap-2 px-3 py-2 rounded hover:bg-bg-primary transition-colors"
                   title="Colore testo"
                 >
                   <div
-                    className="w-5 h-5 rounded-full border border-border"
-                    style={{ backgroundColor: currentColor }}
+                    className="w-5 h-5 rounded-full border border-border shrink-0"
+                    style={{ backgroundColor: activeColor }}
                   />
                   <span className="text-sm text-text-primary">
-                    {getCurrentColorName()}
+                    {activeColorName}
                   </span>
                   <ChevronDownIcon
                     size={16}
-                    className={`text-text-muted transition-transform ${showColorPicker ? "rotate-180" : ""}`}
+                    className={`text-text-muted transition-transform ${showColors ? "rotate-180" : ""}`}
                   />
                 </button>
 
-                {showColorPicker && isTxt && (
+                {showColors && (
                   <div className="absolute top-full right-0 mt-1 p-3 bg-bg-secondary border border-border rounded-lg shadow-lg z-50 animate-dropdown-in">
                     <div className="grid grid-cols-5 gap-2 w-max">
-                      {TEXT_COLORS.map((color) => (
+                      {TEXT_COLORS.map((c) => (
                         <button
-                          key={color.id}
+                          key={c.id}
                           type="button"
-                          onClick={() => applyColor(color.hex)}
+                          onClick={() => applyColor(c.hex)}
                           className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                            currentColor.toLowerCase() ===
-                            color.hex.toLowerCase()
+                            activeColor.toLowerCase() === c.hex.toLowerCase()
                               ? "border-primary ring-2 ring-primary/30"
                               : "border-border hover:border-primary/50"
                           }`}
-                          style={{ backgroundColor: color.hex }}
-                          title={color.name}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.name}
                         />
                       ))}
                     </div>
@@ -423,55 +470,102 @@ const RichTextModal = ({
             {/* Editor contentEditable */}
             <div
               ref={editorRef}
-              contentEditable={isTxt}
-              tabIndex={isTxt ? 0 : -1}
+              contentEditable
               suppressContentEditableWarning
-              onInput={handleInput}
-              onSelect={handleSelect}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              onBlur={() => {
-                setTimeout(() => {
-                  if (
-                    modeRef.current === "txt" &&
-                    editorRef.current &&
-                    document.activeElement !== editorRef.current
-                  ) {
-                    editorRef.current.focus();
-                  }
-                }, 0);
-              }}
+              onInput={handleEditorInput}
+              onSelect={syncToolbar}
+              onKeyDown={handleEditorKeyDown}
+              onPaste={handleEditorPaste}
+              className="flex-1 min-h-0 overflow-y-auto p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none"
               style={{
                 lineHeight: "1.6",
                 wordWrap: "break-word",
                 whiteSpace: "pre-wrap",
               }}
-              className="min-h-[300px] max-h-[400px] overflow-y-auto p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none"
             />
           </div>
 
-          {/* ── Layer Markdown: textarea (sempre in DOM, riempie la cella grid) ── */}
-          <textarea
-            ref={textareaRef}
-            value={markdownContent}
-            onChange={(e) => {
-              setMarkdownContent(e.target.value);
-              setHasContent(e.target.value.trim().length > 0);
-            }}
-            tabIndex={isMd ? 0 : -1}
-            placeholder={
-              "Scrivi in Markdown...\n\n# Titolo\n## Sottotitolo\n\n**grassetto**, *corsivo*, ~~barrato~~\n\n- Elemento lista\n- Elemento lista\n\n```\nblocco codice\n```"
-            }
-            style={{
-              gridArea: "1 / 1 / 2 / 2",
-              alignSelf: "stretch",
-              visibility: isMd ? "visible" : "hidden",
-              pointerEvents: isMd ? "auto" : "none",
-              fontFamily: "inherit",
-              lineHeight: "1.6",
-            }}
-            className="w-full p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none resize-none text-sm overflow-y-auto"
-          />
+          {/* ── Panel Markdown ───────────────────────────────────────────── */}
+          <div
+            className={`absolute inset-0 flex flex-col gap-3 ${isMd ? "" : "hidden"}`}
+          >
+            {/* Toolbar Markdown */}
+            <div className="flex items-center gap-2 p-2 bg-bg-tertiary rounded-lg border border-border shrink-0">
+              {/* Copia testo */}
+              <button
+                type="button"
+                onClick={handleCopyMd}
+                className="flex items-center gap-2 px-3 py-2 rounded hover:bg-bg-primary transition-colors"
+                title="Copia tutto il testo"
+              >
+                <CopyIcon
+                  className={`w-5 h-5 ${isCopied ? "text-primary" : "text-text-primary"}`}
+                />
+                <span
+                  className={`text-sm ${isCopied ? "text-primary font-medium" : "text-text-primary"}`}
+                >
+                  {isCopied ? "Copiato!" : "Copia testo"}
+                </span>
+              </button>
+
+              {/* Guida Markdown */}
+              <div className="relative ml-auto" ref={mdHelpRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowMdHelp(!showMdHelp)}
+                  className="flex items-center gap-2 px-3 py-2 rounded hover:bg-bg-primary transition-colors"
+                  title="Guida sintassi Markdown"
+                >
+                  <InfoIcon className="w-5 h-5 text-text-primary" />
+                  <span className="text-sm text-text-primary">
+                    Guida Markdown
+                  </span>
+                  <ChevronDownIcon
+                    size={16}
+                    className={`text-text-muted transition-transform ${showMdHelp ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {showMdHelp && (
+                  <div className="absolute top-full right-0 mt-1 p-4 bg-bg-secondary border border-border rounded-lg shadow-lg z-50 animate-dropdown-in w-72">
+                    <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-3">
+                      Sintassi Markdown
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {MARKDOWN_GUIDE.map(({ syntax, desc }) => (
+                        <div
+                          key={syntax}
+                          className="flex items-baseline justify-between gap-3"
+                        >
+                          <code className="text-xs font-mono bg-bg-tertiary px-1.5 py-0.5 rounded text-primary whitespace-pre">
+                            {syntax}
+                          </code>
+                          <span className="text-xs text-text-muted shrink-0">
+                            {desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Textarea Markdown */}
+            <textarea
+              ref={textareaRef}
+              value={mdContent}
+              onChange={(e) => {
+                setMdContent(e.target.value);
+                setHasContent(e.target.value.trim().length > 0);
+              }}
+              placeholder={
+                "Scrivi in Markdown...\n\n# Titolo\n## Sottotitolo\n\n**grassetto**, *corsivo*, ~~barrato~~\n\n- Elemento lista\n- Elemento lista\n\n```\nblocco codice\n```"
+              }
+              className="flex-1 min-h-0 w-full p-4 bg-bg-tertiary rounded-lg border border-border text-text-primary focus:outline-none resize-none text-sm overflow-y-auto"
+              style={{ fontFamily: "inherit", lineHeight: "1.6" }}
+            />
+          </div>
         </div>
       </div>
     </Modal>
