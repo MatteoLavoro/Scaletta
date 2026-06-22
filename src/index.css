@@ -516,3 +516,35 @@ kbd {
 .note-markdown td {
   color: var(--color-text-secondary);
 }
+
+/* ===== KaTeX LaTeX Styles ===== */
+/* Override per integrare KaTeX con il tema dell'app */
+
+/* Inline math: eredita il colore del testo corrente */
+.note-markdown .katex {
+  font-size: 1em;
+  color: var(--color-text-primary);
+}
+
+/* Display math (blocco centrato) */
+.note-markdown .katex-display {
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.note-markdown .katex-display > .katex {
+  display: block;
+  text-align: center;
+}
+
+/* Evita che il background bianco di KaTeX sovrascriva il tema scuro */
+.note-markdown .katex .katex-html {
+  color: var(--color-text-primary);
+}
+
+/* Errori LaTeX: mostrati in rosso per indicare sintassi non valida */
+.note-markdown .katex-error {
+  color: var(--color-error);
+  font-size: 0.8125rem;
+  font-family: "Courier New", Courier, monospace;
+}
