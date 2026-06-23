@@ -556,23 +556,30 @@ kbd {
   margin: 0.75rem 0;
 }
 
-/* ── Preview mode: box compatto nella card nota ── */
+/* ──────────────────────────────────────────────────────────────
+   PREVIEW MODE (NoteBox)
+   Stesso stile del container renderizzato — si vede il "posto" del grafico.
+   Sfondo leggermente differenziato dal button-nota per risaltare.
+   ────────────────────────────────────────────────────────────── */
+.graphviz-placeholder.graphviz-preview-mode {
+  background: var(--color-bg-tertiary);
+  border: 1px dashed var(--color-border);
+  border-radius: 0.625rem;
+  overflow: hidden;
+}
 .graphviz-preview-box {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.625rem 0.875rem;
-  border: 1px dashed var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-muted);
-  min-height: 48px;
+  padding: 0.75rem 1rem;
+  min-height: 60px;
 }
 .graphviz-preview-icon {
   flex-shrink: 0;
-  opacity: 0.55;
+  opacity: 0.45;
   display: flex;
   align-items: center;
+  color: var(--color-text-secondary);
 }
 .graphviz-preview-body {
   display: flex;
@@ -581,88 +588,154 @@ kbd {
   min-width: 0;
 }
 .graphviz-preview-title {
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--color-text-secondary);
   line-height: 1.3;
 }
 .graphviz-preview-sub {
   font-size: 0.7rem;
   color: var(--color-text-muted);
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
-/* ── Viewer loading state: box rettangolare con puntini animati ── */
+/* ──────────────────────────────────────────────────────────────
+   LOADING / ERROR STATE (viewer modal)
+   Box mostrato mentre il WASM carica o in caso di errore.
+   ────────────────────────────────────────────────────────────── */
 .graphviz-loading-box {
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
-  padding: 1.25rem 1.75rem;
-  border: 1.5px dashed var(--color-border);
+  padding: 1.25rem 1.5rem;
+  border: 1px dashed var(--color-border);
   border-radius: 0.75rem;
   background: var(--color-bg-tertiary);
-  color: var(--color-text-muted);
-  font-size: 0.875rem;
   min-height: 72px;
 }
 .graphviz-loading-icon {
   flex-shrink: 0;
-  opacity: 0.5;
+  opacity: 0.4;
   display: flex;
   align-items: center;
+  color: var(--color-text-secondary);
 }
 .graphviz-loading-text {
   font-size: 0.875rem;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   line-height: 1.4;
 }
-
-/* Puntini animati — testo aggiornato via JS (". " → " .." → " ...") */
+/* Puntini animati — aggiornati via JS (" ." → " .." → " ...") */
 .graphviz-dots {
   display: inline;
   min-width: 1.5ch;
 }
 
-/* ── SVG renderizzato ── */
+/* ──────────────────────────────────────────────────────────────
+   SVG RENDERIZZATO
+   Container leggermente più chiaro dello sfondo modale (bg-tertiary)
+   per far risaltare il grafico.
+   ────────────────────────────────────────────────────────────── */
 .graphviz-placeholder.graphviz-rendered {
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 0.875rem;
+  border-radius: 0.75rem;
+  padding: 1rem;
   overflow-x: auto;
-  min-height: 60px;
+  min-height: 80px;
 }
+
+/* SVG responsivo */
 .graphviz-placeholder.graphviz-rendered svg {
   display: block;
   width: 100%;
   height: auto;
   margin: 0 auto;
+  overflow: visible;
+  /* color: currentColor ereditato dai text:not([fill]) */
+  color: var(--color-text-primary);
 }
-.graphviz-placeholder.graphviz-rendered svg text {
-  fill: var(--color-text-primary);
+
+/* ── Font di sistema per tutti i testi SVG ── */
+.graphviz-placeholder.graphviz-rendered svg text,
+.graphviz-placeholder.graphviz-rendered svg tspan {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 13px;
 }
-/* Nodi bianchi default → sfondo secondario del tema */
-.graphviz-placeholder.graphviz-rendered svg [fill="white"],
-.graphviz-placeholder.graphviz-rendered svg [fill="#ffffff"],
-.graphviz-placeholder.graphviz-rendered svg [fill="#FFFFFF"] {
-  fill: var(--color-bg-secondary);
+
+/* ── Testo direttamente sul canvas (titolo grafo, label cluster) ── */
+/* Fallback CSS per i casi non catturati dall'inline style di applyThemeToSVG.
+   Il JS gestisce questi stessi elementi con inline style (priorità maggiore). */
+.graphviz-placeholder.graphviz-rendered svg .graph > text[fill="black"],
+.graphviz-placeholder.graphviz-rendered svg .graph > text[fill="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .graph > text[fill="#000"],
+.graphviz-placeholder.graphviz-rendered svg .cluster > text[fill="black"],
+.graphviz-placeholder.graphviz-rendered svg .cluster > text[fill="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .cluster > text[fill="#000"] {
+  fill: var(--color-text-primary);
 }
-/* Bordi neri default → border del tema */
-.graphviz-placeholder.graphviz-rendered svg [stroke="black"],
-.graphviz-placeholder.graphviz-rendered svg [stroke="#000000"],
-.graphviz-placeholder.graphviz-rendered svg [stroke="#000"] {
+
+/* ── Etichette archi senza fill esplicito → currentColor (= text-primary del tema) ── */
+.graphviz-placeholder.graphviz-rendered svg .edge text:not([fill]),
+.graphviz-placeholder.graphviz-rendered svg .edge tspan:not([fill]) {
+  fill: currentColor;
+}
+
+/* ── Etichette archi con fill="black" → text-primary del tema ── */
+/* Il contrasto di TUTTI i testi è gestito in applyThemeToSVG (JS) con
+   logica basata sulla luminanza WCAG. Il CSS è un fallback. */
+.graphviz-placeholder.graphviz-rendered svg .edge text[fill="black"],
+.graphviz-placeholder.graphviz-rendered svg .edge text[fill="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .edge text[fill="#000"],
+.graphviz-placeholder.graphviz-rendered svg .edge tspan[fill="black"],
+.graphviz-placeholder.graphviz-rendered svg .edge tspan[fill="#000000"] {
+  fill: var(--color-text-primary);
+}
+
+/* ── Nodi: bordi neri default → text-secondary (visibili su bg-tertiary) ── */
+.graphviz-placeholder.graphviz-rendered svg .node ellipse[stroke="black"],
+.graphviz-placeholder.graphviz-rendered svg .node ellipse[stroke="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .node ellipse[stroke="#000"],
+.graphviz-placeholder.graphviz-rendered svg .node rect[stroke="black"],
+.graphviz-placeholder.graphviz-rendered svg .node rect[stroke="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .node rect[stroke="#000"],
+.graphviz-placeholder.graphviz-rendered svg .node polygon[stroke="black"],
+.graphviz-placeholder.graphviz-rendered svg .node polygon[stroke="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .node polygon[stroke="#000"] {
   stroke: var(--color-text-secondary);
 }
-/* Testo nero default → text-primary del tema */
-.graphviz-placeholder.graphviz-rendered svg [fill="black"],
-.graphviz-placeholder.graphviz-rendered svg [fill="#000000"],
-.graphviz-placeholder.graphviz-rendered svg [fill="#000"] {
+
+/* ── Nodi: sfondo bianco default → bg-secondary (contrasto con container bg-tertiary) ── */
+.graphviz-placeholder.graphviz-rendered svg .node ellipse[fill="white"],
+.graphviz-placeholder.graphviz-rendered svg .node ellipse[fill="#ffffff"],
+.graphviz-placeholder.graphviz-rendered svg .node ellipse[fill="#FFFFFF"],
+.graphviz-placeholder.graphviz-rendered svg .node rect[fill="white"],
+.graphviz-placeholder.graphviz-rendered svg .node rect[fill="#ffffff"],
+.graphviz-placeholder.graphviz-rendered svg .node rect[fill="#FFFFFF"] {
+  fill: var(--color-bg-secondary);
+}
+
+/* ── Archi: linee nere default → text-secondary ── */
+.graphviz-placeholder.graphviz-rendered svg .edge path[stroke="black"],
+.graphviz-placeholder.graphviz-rendered svg .edge path[stroke="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .edge path[stroke="#000"],
+.graphviz-placeholder.graphviz-rendered svg .edge line[stroke="black"],
+.graphviz-placeholder.graphviz-rendered svg .edge line[stroke="#000000"] {
+  stroke: var(--color-text-secondary);
+}
+
+/* ── Punte frecce: fill nero → text-primary (frecce ben visibili) ── */
+.graphviz-placeholder.graphviz-rendered svg .edge polygon[fill="black"],
+.graphviz-placeholder.graphviz-rendered svg .edge polygon[fill="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .edge polygon[fill="#000"] {
   fill: var(--color-text-primary);
+}
+/* ── Punte frecce: stroke nero → text-secondary ── */
+.graphviz-placeholder.graphviz-rendered svg .edge polygon[stroke="black"],
+.graphviz-placeholder.graphviz-rendered svg .edge polygon[stroke="#000000"],
+.graphviz-placeholder.graphviz-rendered svg .edge polygon[stroke="#000"] {
+  stroke: var(--color-text-secondary);
 }
 
 /* ── Errori Graphviz ── */

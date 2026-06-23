@@ -1,48 +1,72 @@
 import { useMemo, useEffect, useRef } from "react";
 import renderMarkdown from "../../utils/markdownRenderer";
 
-// Singleton per l'istanza Viz — lazy-loaded la prima volta che serve,
-// poi riutilizzata per tutte le render successive.
-let vizPromise = null;
+// Cache del modulo @viz-js/viz — il file WASM viene scaricato e compilato
+// dal browser una sola volta, ma l'istanza Viz viene ricreata ad ogni rendering
+// per evitare problemi di stato tra aperture successive del viewer.
+let vizModulePromise = null;
 
 // Mappa per tenere traccia degli interval dei puntini animati (el → intervalId)
 const dotTimers = new Map();
 
-function getViz() {
-  if (!vizPromise) {
-    console.log(
-      "[Graphviz] 📦 Prima richiesta — avvio caricamento modulo WASM...",
-      new Date().toISOString(),
-    );
-    vizPromise = import("@viz-js/viz")
-      .then((mod) => {
-        console.log(
-          "[Graphviz] 🔧 Modulo JS caricato, inizializzazione istanza Graphviz...",
-          new Date().toISOString(),
-        );
-        return mod.instance();
-      })
-      .then((viz) => {
-        console.log(
-          "[Graphviz] ✅ Motore Graphviz pronto e in cache",
-          new Date().toISOString(),
-        );
-        return viz;
-      })
-      .catch((err) => {
-        // Reset promise in modo da riprovare al prossimo mount
-        vizPromise = null;
-        console.error(
-          "[Graphviz] 💥 Errore inizializzazione motore WASM:",
-          err,
-          new Date().toISOString(),
-        );
-        throw err;
-      });
-  } else {
-    console.log("[Graphviz] ♻️  Riutilizzo motore Graphviz già in cache");
+// ─── Utilità colori per il tema SVG ────────────────────────────────────────────
+
+/**
+ * Converte una stringa colore SVG/Graphviz in {r, g, b} o null.
+ * Supporta: "black", "white", #rrggbb, #rgb
+ */
+function parseHexColor(colorStr) {
+  if (!colorStr) return null;
+  const s = colorStr.toLowerCase().trim();
+  if (s === "black") return { r: 0, g: 0, b: 0 };
+  if (s === "white") return { r: 255, g: 255, b: 255 };
+  const m6 = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(s);
+  if (m6)
+    return {
+      r: parseInt(m6[1], 16),
+      g: parseInt(m6[2], 16),
+      b: parseInt(m6[3], 16),
+    };
+  const m3 = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(s);
+  if (m3)
+    return {
+      r: parseInt(m3[1] + m3[1], 16),
+      g: parseInt(m3[2] + m3[2], 16),
+      b: parseInt(m3[3] + m3[3], 16),
+    };
+  return null;
+}
+
+/**
+ * Calcola la luminanza relativa WCAG (0 = nero, 1 = bianco).
+ * Luminanza < 0.179 → sfondo scuro → il testo chiaro è necessario.
+ */
+function getLuminance({ r, g, b }) {
+  const lin = (c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+// Insiemi colori usati da Graphviz come default
+const FILL_NONE = new Set(["none", "transparent", ""]);
+const FILL_WHITE = new Set(["white", "#ffffff", "#FFFFFF", "#fff", "#FFF"]);
+const FILL_BLACK = new Set(["black", "#000000", "#000"]);
+
+/**
+ * Carica il modulo @viz-js/viz (cache: una sola richiesta di rete/compilazione WASM
+ * per sessione). NON cachea l'istanza Viz: ogni chiamata a .then(mod => mod.instance())
+ * crea un'istanza fresca, evitando problemi di stato tra aperture successive.
+ */
+function getVizModule() {
+  if (!vizModulePromise) {
+    vizModulePromise = import("@viz-js/viz").catch((err) => {
+      vizModulePromise = null; // reset per riprovare al prossimo tentativo
+      throw err;
+    });
   }
-  return vizPromise;
+  return vizModulePromise;
 }
 
 // Avvia animazione puntini ". .. ..." su un elemento <span class="graphviz-dots">
@@ -68,6 +92,111 @@ function stopDotsAnimation(el) {
     clearInterval(dotTimers.get(el));
     dotTimers.delete(el);
   }
+}
+
+/**
+ * Post-processa un SVGElement generato da Graphviz per adattarlo al tema UI.
+ *
+ * - Rende trasparente il polygon di sfondo canvas
+ * - Applica il font di sistema a tutti i testi
+ * - Corregge il contrasto di TUTTI i testi in base al colore di sfondo:
+ *   • Nodi trasparenti/bianchi → testo usa var(--color-text-primary) (segue il tema)
+ *   • Nodi con colore scuro personalizzato (luminanza < soglia WCAG) → testo bianco
+ *   • Titolo grafo e label cluster (sul canvas) → var(--color-text-primary)
+ *   • Etichette archi (sul canvas) → var(--color-text-primary)
+ * - Riduce leggermente il font delle etichette archi
+ */
+function applyThemeToSVG(svgElement) {
+  // 1. Background canvas → trasparente
+  const graphGroup = svgElement.querySelector("g.graph");
+  if (graphGroup) {
+    const canvasPolygon = graphGroup.querySelector(":scope > polygon");
+    if (canvasPolygon) {
+      canvasPolygon.setAttribute("fill", "transparent");
+      canvasPolygon.setAttribute("stroke", "transparent");
+    }
+  }
+
+  // 2. Font di sistema per tutti i testi
+  svgElement.querySelectorAll("text, tspan").forEach((el) => {
+    /** @type {HTMLElement} */ (el).style.fontFamily =
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  });
+
+  // 3. Colore testo dei nodi — calcolato in base al fillcolor del nodo.
+  //
+  //    Graphviz emette sempre fill="black" per il testo; il colore dello SFONDO
+  //    del nodo determina se quel testo è leggibile.
+  //
+  //    Casistica:
+  //    • fill="none" / trasparente  → testo sul canvas → usa text-primary
+  //    • fill="white" (default)     → CSS lo converte in bg-secondary in dark mode
+  //                                   → usa text-primary (si adatta al tema)
+  //    • fill personalizzato chiaro → testo nero già leggibile, non toccare
+  //    • fill personalizzato scuro  → luminanza < 0.179 (soglia WCAG 4.5:1 con bianco)
+  //                                   → testo bianco fisso
+  svgElement.querySelectorAll("g.node").forEach((nodeGroup) => {
+    const shape = nodeGroup.querySelector("ellipse, rect, polygon, circle");
+    const fillAttr = shape?.getAttribute("fill") ?? "";
+
+    let targetTextFill;
+
+    if (FILL_NONE.has(fillAttr)) {
+      // Nodo senza sfondo → testo è sul canvas → segue il tema
+      targetTextFill = "var(--color-text-primary)";
+    } else if (FILL_WHITE.has(fillAttr)) {
+      // Nodo bianco default → CSS lo scurirà in dark mode → segue il tema
+      targetTextFill = "var(--color-text-primary)";
+    } else {
+      // Colore personalizzato → calcola luminanza WCAG
+      const color = parseHexColor(fillAttr);
+      if (color && getLuminance(color) < 0.179) {
+        // Sfondo scuro → testo bianco (leggibile su tutti i temi)
+        targetTextFill = "#ffffff";
+      }
+      // Sfondo chiaro → testo nero già leggibile, nessuna modifica
+    }
+
+    if (targetTextFill) {
+      nodeGroup.querySelectorAll("text, tspan").forEach((el) => {
+        const tf = el.getAttribute("fill") ?? "";
+        // Modifica solo testo nero/non impostato; preserva colori personalizzati utente
+        if (FILL_BLACK.has(tf) || tf === "") {
+          /** @type {HTMLElement} */ (el).style.fill = targetTextFill;
+        }
+      });
+    }
+  });
+
+  // 4. Testo direttamente sul canvas: titolo del grafo e label dei cluster.
+  //    Graphviz li emette con fill="black" → invisibili in dark mode.
+  svgElement
+    .querySelectorAll("g.graph > text, g.cluster > text")
+    .forEach((el) => {
+      const tf = el.getAttribute("fill") ?? "";
+      if (FILL_BLACK.has(tf) || tf === "") {
+        /** @type {HTMLElement} */ (el).style.fill =
+          "var(--color-text-primary)";
+      }
+    });
+
+  // 5. Etichette archi → sempre sul canvas → usa text-primary
+  //    (Gestito anche da CSS, ma l'inline style ha priorità e vale come source of truth)
+  svgElement.querySelectorAll("g.edge text, g.edge tspan").forEach((el) => {
+    const tf = el.getAttribute("fill") ?? "";
+    if (FILL_BLACK.has(tf) || tf === "") {
+      /** @type {HTMLElement} */ (el).style.fill = "var(--color-text-primary)";
+    }
+  });
+
+  // 6. Riduzione font etichette archi per meno sovrapposizioni
+  svgElement.querySelectorAll("g.edge text").forEach((el) => {
+    const size = parseFloat(el.getAttribute("font-size") || "0");
+    if (size > 9) {
+      const reduced = Math.max(8, Math.round(size * 0.85 * 2) / 2);
+      if (reduced < size) el.setAttribute("font-size", String(reduced));
+    }
+  });
 }
 
 // Icona grafo inline SVG (usata nei placeholder preview)
@@ -99,6 +228,13 @@ const MarkdownRenderer = ({
   const html = useMemo(() => renderMarkdown(content || ""), [content]);
 
   // ── Graphviz ────────────────────────────────────────────────────────────────
+  //
+  // Il flag `cancelled` risolve il bug "secondo open non carica":
+  // quando vizPromise è già risolta (WASM in cache), il .then() si esegue come
+  // microtask. In React StrictMode il cleanup del primo run (cancelled=true)
+  // scatta PRIMA che il microtask giri, impedendo renderingi da run obsoleti.
+  // Il secondo run dell'effect crea un nuovo `cancelled=false` e renderizza
+  // correttamente.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -112,9 +248,6 @@ const MarkdownRenderer = ({
 
     if (!renderGraphviz) {
       // ── Preview mode: box statico, nessun WASM ──
-      console.log(
-        `[Graphviz] 👁️  Modalità anteprima — ${total} grafico/i (solo placeholder, nessun WASM)`,
-      );
       placeholders.forEach((el) => {
         el.className = "graphviz-placeholder graphviz-preview-mode";
         el.innerHTML =
@@ -130,13 +263,12 @@ const MarkdownRenderer = ({
     }
 
     // ── Viewer mode: loading box → SVG ──
-    console.log(
-      `[Graphviz] 🔄 Avvio rendering — ${total} grafo/i trovato/i`,
-      new Date().toISOString(),
-    );
+    let cancelled = false;
 
     placeholders.forEach((el, i) => {
-      if (el.classList.contains("graphviz-rendered")) return;
+      // Se ha già un SVG o è già renderizzato, NON toccare.
+      if (el.classList.contains("graphviz-rendered") || el.querySelector("svg"))
+        return;
       const label = total > 1 ? `Grafico ${i + 1} di ${total}` : "Grafico";
       el.innerHTML =
         `<div class="graphviz-loading-box">` +
@@ -145,53 +277,38 @@ const MarkdownRenderer = ({
         `Caricamento ${label}<span class="graphviz-dots"></span>` +
         `</div>` +
         `</div>`;
-      // Avvia animazione puntini via JS (compatibile con tutti i browser)
       const dotsEl = el.querySelector(".graphviz-dots");
       const timerId = startDotsAnimation(dotsEl);
       if (timerId !== undefined) dotTimers.set(el, timerId);
-      console.log(
-        `[Graphviz] ⏳ Loading box mostrato per grafico ${i + 1}/${total} — elemento in DOM: ${el.isConnected}`,
-      );
     });
 
-    let cancelled = false;
-
-    getViz()
+    // Nuova istanza Viz ad ogni rendering: mod.instance() è rapido (WASM già
+    // compilato in cache dal browser), ma garantisce stato pulito ad ogni apertura.
+    getVizModule()
+      .then((mod) => {
+        if (cancelled) return null;
+        return mod.instance();
+      })
       .then((viz) => {
-        // FIX per React 18 StrictMode: NON usare la `placeholders` NodeList dalla
-        // closure — React StrictMode stacca i nodi DOM prima che la Promise si risolva,
-        // anche se il cleanup non è ancora stato invocato (cancelled=false).
-        // Soluzione: ri-query containerRef.current al momento della risoluzione,
-        // che punta sempre al container del mount finale (live).
-        const liveContainer = containerRef.current;
-        if (!liveContainer) {
-          console.log(
-            "[Graphviz] ⚠️ Contenitore non nel DOM — componente smontato, skip",
-          );
-          return;
-        }
+        if (!viz || cancelled) return;
+
+        // Usa la variabile `container` dalla closure invece di containerRef.current:
+        // il ref può essere nullificato temporaneamente da React StrictMode durante
+        // la fase "fake unmount", mentre il DOM element rimane nel documento.
+        if (!container.isConnected) return;
 
         const toRender = /** @type {NodeListOf<HTMLElement>} */ (
-          liveContainer.querySelectorAll(
+          container.querySelectorAll(
             ".graphviz-placeholder:not(.graphviz-rendered):not(.graphviz-preview-mode)",
           )
         );
         const count = toRender.length;
-
-        if (count === 0) {
-          console.log(
-            "[Graphviz] ✅ Nessun grafico da renderizzare (già pronti o assenti)",
-          );
-          return;
-        }
-
-        console.log(
-          `[Graphviz] 🎨 Motore pronto — rendering ${count} grafico/i su container live`,
-          new Date().toISOString(),
-        );
+        if (count === 0) return;
 
         toRender.forEach((el, i) => {
-          // Se il DOM è stato ricreato da StrictMode il loading box potrebbe mancare
+          if (cancelled) return;
+
+          // Assicura che ci sia un loading box
           if (
             !el.querySelector(".graphviz-loading-box") &&
             !el.querySelector("svg")
@@ -208,47 +325,24 @@ const MarkdownRenderer = ({
           }
 
           const dot = decodeURIComponent(el.getAttribute("data-dot") || "");
-          if (!dot) {
-            console.warn(
-              `[Graphviz] ⚠️ Grafico ${i + 1}/${count} — data-dot vuoto, salto`,
-            );
-            return;
-          }
-          console.log(
-            `[Graphviz] 🖼 Rendering grafico ${i + 1}/${count} — DOT: ${dot.length} chars — in DOM: ${el.isConnected}`,
-          );
+          if (!dot) return;
 
           try {
-            // Usa renderSVGElement (invece di renderString + innerHTML) per ottenere
-            // direttamente un SVGElement nel namespace corretto, evitando problemi
-            // di parsing HTML che trasformano il contenuto SVG in testo.
             const svgElement = viz.renderSVGElement(dot);
-
-            // Fix dimensioni responsive prima dell'inserimento
+            applyThemeToSVG(svgElement);
             svgElement.setAttribute("width", "100%");
             svgElement.removeAttribute("height");
+            svgElement.style.overflow = "visible";
 
             stopDotsAnimation(el);
-            el.innerHTML = ""; // rimuove loading box
+            el.innerHTML = "";
             el.appendChild(svgElement);
             el.classList.add("graphviz-rendered");
-
-            console.log(
-              `[Graphviz] ✅ Grafico ${i + 1}/${count} — SVGElement inserito — viewBox: ${svgElement.getAttribute("viewBox")} — in DOM: ${el.isConnected}`,
-              new Date().toISOString(),
-            );
-            requestAnimationFrame(() => {
-              const rect = el.getBoundingClientRect();
-              console.log(
-                `[Graphviz] 📐 Grafico ${i + 1}/${count} — ${Math.round(rect.width)}×${Math.round(rect.height)}px — visibile: ${rect.width > 0 && rect.height > 0}`,
-              );
-            });
           } catch (err) {
             console.error(
               `[Graphviz] ❌ Grafico ${i + 1}/${count} — errore rendering:`,
               err,
             );
-            console.error(`[Graphviz]    DOT sorgente:\n${dot}`);
             stopDotsAnimation(el);
             const msg = String(err?.message ?? err)
               .replace(/&/g, "&amp;")
@@ -263,19 +357,14 @@ const MarkdownRenderer = ({
         });
       })
       .catch((err) => {
-        console.error(
-          "[Graphviz] ❌ Impossibile caricare il motore WASM:",
-          err,
-          new Date().toISOString(),
-        );
-        console.error("[Graphviz]    Stack:", err?.stack ?? err);
-        const liveContainer = containerRef.current;
-        if (!liveContainer) return;
+        if (cancelled) return;
+        console.error("[Graphviz] ❌ Impossibile caricare Graphviz:", err);
+        if (!container.isConnected) return;
         const msg = String(err?.message ?? err)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
-        liveContainer
+        container
           .querySelectorAll(
             ".graphviz-placeholder:not(.graphviz-rendered):not(.graphviz-preview-mode)",
           )
@@ -290,7 +379,6 @@ const MarkdownRenderer = ({
     return () => {
       cancelled = true;
       placeholders.forEach((el) => stopDotsAnimation(el));
-      console.log("[Graphviz] 🧹 Cleanup effect");
     };
   }, [html, renderGraphviz]);
 
