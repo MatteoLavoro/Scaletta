@@ -570,33 +570,117 @@ kbd {
 .graphviz-preview-box {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.75rem 1rem;
-  min-height: 60px;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  min-height: 56px;
 }
-.graphviz-preview-icon {
+/* Contenitore quadrato dell'icona grafo — bordo + sfondo per dare profondità */
+.graphviz-preview-icon-wrap {
   flex-shrink: 0;
-  opacity: 0.45;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.graphviz-preview-icon-wrap svg {
+  width: 16px;
+  height: 16px;
 }
 .graphviz-preview-body {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
+  flex: 1;
   min-width: 0;
 }
 .graphviz-preview-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   line-height: 1.3;
 }
 .graphviz-preview-sub {
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   color: var(--color-text-muted);
   line-height: 1.4;
+}
+.graphviz-preview-sub--cta {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ── PLACEHOLDER CLICCABILE (onGraphPreviewClick fornita) ── */
+.graphviz-placeholder.graphviz-preview-clickable {
+  cursor: pointer;
+  pointer-events: auto; /* override pointer-events:none del parent MarkdownRenderer nel box */
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.graphviz-placeholder.graphviz-preview-clickable:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 40%,
+    var(--color-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--color-primary) 5%,
+    var(--color-bg-tertiary)
+  );
+}
+.graphviz-placeholder.graphviz-preview-clickable:active {
+  background: color-mix(
+    in srgb,
+    var(--color-primary) 10%,
+    var(--color-bg-tertiary)
+  );
+}
+.graphviz-placeholder.graphviz-preview-clickable:hover
+  .graphviz-preview-icon-wrap {
+  background: color-mix(
+    in srgb,
+    var(--color-primary) 12%,
+    var(--color-bg-secondary)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 35%,
+    var(--color-border)
+  );
+  color: var(--color-primary);
+}
+.graphviz-placeholder.graphviz-preview-clickable:hover .graphviz-preview-title {
+  color: var(--color-primary);
+}
+.graphviz-placeholder.graphviz-preview-clickable:hover
+  .graphviz-preview-sub--cta {
+  color: var(--color-primary);
+}
+.graphviz-preview-cta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.graphviz-placeholder.graphviz-preview-clickable:hover .graphviz-preview-cta {
+  color: var(--color-primary);
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 /* ──────────────────────────────────────────────────────────────

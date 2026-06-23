@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { PencilIcon, FileTextIcon, ChevronDownIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { RichTextModal, NoteViewerModal } from "../modal";
+import { RichTextModal, NoteViewerModal, GraphViewerModal } from "../modal";
 import MarkdownRenderer from "../ui/MarkdownRenderer";
 
 // Altezza massima (px) prima di troncare il testo nel box.
@@ -42,6 +42,8 @@ const NoteBox = ({
   const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isNoteExpanded, setIsNoteExpanded] = useState(false);
+  const [isGraphViewerOpen, setIsGraphViewerOpen] = useState(false);
+  const [graphViewerDot, setGraphViewerDot] = useState("");
   // Traccia se il contenuto supera la soglia di altezza
   const [isTall, setIsTall] = useState(false);
   const contentMeasureRef = useRef(null);
@@ -111,6 +113,10 @@ const NoteBox = ({
                   <MarkdownRenderer
                     content={content}
                     className="note-markdown text-sm pointer-events-none"
+                    onGraphPreviewClick={(dot) => {
+                      setGraphViewerDot(dot);
+                      setIsGraphViewerOpen(true);
+                    }}
                   />
                 ) : (
                   <div
@@ -190,6 +196,13 @@ const NoteBox = ({
         title={title}
         content={content}
         contentType={contentType}
+      />
+
+      {/* Modale visualizzatore grafico singolo (aperto dai placeholder in preview) */}
+      <GraphViewerModal
+        isOpen={isGraphViewerOpen}
+        onClose={() => setIsGraphViewerOpen(false)}
+        dot={graphViewerDot}
       />
     </>
   );

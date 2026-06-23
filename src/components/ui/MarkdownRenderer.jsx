@@ -207,15 +207,25 @@ const GRAPH_ICON_HTML =
   `<line x1="8.59" y1="13.51" x2="15.42" y2="6.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="17.51"/>` +
   `</svg>`;
 
+// Icona chevron-right inline SVG (usata nei placeholder preview cliccabili — indica "tocca per aprire")
+const EXPAND_ICON_HTML =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" ` +
+  `fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">` +
+  `<path d="m9 18 6-6-6-6"/>` +
+  `</svg>`;
+
 /**
  * MarkdownRenderer — component React per contenuto Markdown.
  *
  * @param {string}   content                  - Testo Markdown da renderizzare
  * @param {string}   [className]              - Classi CSS aggiuntive sul wrapper
  * @param {object}   [style]                  - Style inline aggiuntivo sul wrapper
- * @param {boolean}  [enableAnchorLinks=false] - Abilita scroll su click #link
- * @param {boolean}  [renderGraphviz=false]   - Se true renderizza i grafi DOT via WASM;
- *                                              se false mostra un placeholder statico
+ * @param {boolean}  [enableAnchorLinks=false]    - Abilita scroll su click #link
+ * @param {boolean}  [renderGraphviz=false]        - Se true renderizza i grafi DOT via WASM;
+ *                                                   se false mostra un placeholder statico
+ * @param {function} [onGraphPreviewClick]          - Callback chiamata con il codice DOT quando
+ *                                                   si clicca su un grafico in modalità preview.
+ *                                                   Se fornita, i placeholder diventano cliccabili.
  */
 const MarkdownRenderer = ({
   content,
@@ -223,9 +233,62 @@ const MarkdownRenderer = ({
   style,
   enableAnchorLinks = false,
   renderGraphviz = false,
+  onGraphPreviewClick,
 }) => {
   const containerRef = useRef(null);
-  const html = useMemo(() => renderMarkdown(content || ""), [content]);
+  const rawHtml = useMemo(() => renderMarkdown(content || ""), [content]);
+
+  // Booleano stabile: true se siamo in preview mode con callback fornita.
+  // Usato come dep di displayHtml (boolean, non cambia reference ad ogni render).
+  const hasGraphPreviewCallback = !renderGraphviz && !!onGraphPreviewClick;
+
+  // Genera l'HTML finale incluso il contenuto dei placeholder graphviz.
+  //
+  // MODALITÀ PREVIEW (!renderGraphviz): i placeholder vengono sostituiti con le
+  // preview box GIÀ in questo useMemo (sincrono, prima del paint). In questo modo
+  // dangerouslySetInnerHTML contiene i bottoni fin dal primo render, eliminando
+  // il flash che si avrebbe facendolo in useEffect (asincrono, post-paint).
+  //
+  // MODALITÀ VIEWER (renderGraphviz): i placeholder restano vuoti perché l'effect
+  // WASM li sostituisce con gli SVG renderizzati.
+  const displayHtml = useMemo(() => {
+    if (renderGraphviz) return rawHtml;
+
+    return rawHtml.replace(
+      /<div class="graphviz-placeholder" data-dot="([^"]+)"><\/div>/g,
+      (_, encoded) => {
+        const extraClass = hasGraphPreviewCallback
+          ? " graphviz-preview-clickable"
+          : "";
+        const ctaHtml = hasGraphPreviewCallback
+          ? `<div class="graphviz-preview-cta">${EXPAND_ICON_HTML}</div>`
+          : "";
+        const titleText = "Grafico incorporato";
+        const subText = hasGraphPreviewCallback
+          ? "Tocca per aprire"
+          : "Apri la nota per visualizzare";
+        const subClass = hasGraphPreviewCallback
+          ? "graphviz-preview-sub graphviz-preview-sub--cta"
+          : "graphviz-preview-sub";
+        return (
+          `<div class="graphviz-placeholder graphviz-preview-mode${extraClass}" data-dot="${encoded}">` +
+          `<div class="graphviz-preview-box">` +
+          `<div class="graphviz-preview-icon-wrap">${GRAPH_ICON_HTML}</div>` +
+          `<div class="graphviz-preview-body">` +
+          `<span class="graphviz-preview-title">${titleText}</span>` +
+          `<span class="${subClass}">${subText}</span>` +
+          `</div>` +
+          ctaHtml +
+          `</div></div>`
+        );
+      },
+    );
+  }, [rawHtml, renderGraphviz, hasGraphPreviewCallback]);
+
+  // Ref per la callback di preview click: sempre aggiornato, utilizzabile
+  // nell'onClick React senza dipendenze da closure stale.
+  const onGraphPreviewClickRef = useRef(onGraphPreviewClick);
+  onGraphPreviewClickRef.current = onGraphPreviewClick;
 
   // ── Graphviz ────────────────────────────────────────────────────────────────
   //
@@ -237,7 +300,9 @@ const MarkdownRenderer = ({
   // correttamente.
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    // La modalità preview è gestita interamente da displayHtml (useMemo sincrono):
+    // nessuna manipolazione DOM necessaria in questo effect.
+    if (!container || !renderGraphviz) return;
 
     const placeholders = /** @type {NodeListOf<HTMLElement>} */ (
       container.querySelectorAll(".graphviz-placeholder")
@@ -245,22 +310,6 @@ const MarkdownRenderer = ({
     if (placeholders.length === 0) return;
 
     const total = placeholders.length;
-
-    if (!renderGraphviz) {
-      // ── Preview mode: box statico, nessun WASM ──
-      placeholders.forEach((el) => {
-        el.className = "graphviz-placeholder graphviz-preview-mode";
-        el.innerHTML =
-          `<div class="graphviz-preview-box">` +
-          `<div class="graphviz-preview-icon">${GRAPH_ICON_HTML}</div>` +
-          `<div class="graphviz-preview-body">` +
-          `<span class="graphviz-preview-title">Grafico</span>` +
-          `<span class="graphviz-preview-sub">Visualizzabile aprendo la nota in modalità visualizzazione</span>` +
-          `</div>` +
-          `</div>`;
-      });
-      return;
-    }
 
     // ── Viewer mode: loading box → SVG ──
     let cancelled = false;
@@ -380,29 +429,48 @@ const MarkdownRenderer = ({
       cancelled = true;
       placeholders.forEach((el) => stopDotsAnimation(el));
     };
-  }, [html, renderGraphviz]);
+  }, [rawHtml, renderGraphviz]);
 
   // ── Anchor links ─────────────────────────────────────────────────────────────
-  const handleClick = enableAnchorLinks
-    ? (e) => {
-        const anchor = e.target.closest("a");
-        if (!anchor) return;
-        const href = anchor.getAttribute("href");
-        if (!href?.startsWith("#")) return;
-        e.preventDefault();
-        const target = containerRef.current?.querySelector(
-          `[id="${CSS.escape(href.slice(1))}"]`,
-        );
-        target?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    : undefined;
+  // Gestisce sia anchor links che click sui placeholder grafico (event delegation).
+  const handleClick =
+    enableAnchorLinks || hasGraphPreviewCallback
+      ? (e) => {
+          // Anchor links (#sezione)
+          if (enableAnchorLinks) {
+            const anchor = e.target.closest("a");
+            if (anchor) {
+              const href = anchor.getAttribute("href");
+              if (href?.startsWith("#")) {
+                e.preventDefault();
+                const target = containerRef.current?.querySelector(
+                  `[id="${CSS.escape(href.slice(1))}"]`,
+                );
+                target?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+              }
+            }
+          }
+          // Click su placeholder grafico cliccabile
+          if (hasGraphPreviewCallback) {
+            const placeholder = e.target.closest(".graphviz-preview-clickable");
+            if (placeholder) {
+              e.stopPropagation();
+              const dot = decodeURIComponent(
+                placeholder.getAttribute("data-dot") || "",
+              );
+              if (dot) onGraphPreviewClickRef.current?.(dot);
+            }
+          }
+        }
+      : undefined;
 
   return (
     <div
       ref={containerRef}
       className={className}
       style={style}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: displayHtml }}
       onClick={handleClick}
     />
   );
