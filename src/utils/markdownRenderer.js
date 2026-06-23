@@ -1,15 +1,46 @@
-import { marked, Renderer } from "marked";
+﻿import { marked } from "marked";
 import katex from "katex";
 
-// Renderer personalizzato: sopprime l'HTML grezzo per sicurezza (XSS prevention).
-// Solo sintassi Markdown standard viene convertita in HTML.
-const safeRenderer = new Renderer();
-safeRenderer.html = () => "";
+// ===== Renderer customizations (via marked.use) =====
 
-// ===== KaTeX Extension personalizzata =====
-// Implementazione custom (senza marked-katex-extension) per avere pieno controllo
-// sulla regex di match. marked-katex-extension usa un lookahead restrittivo
-// (?=[\s?!.,:]|$) che blocca casi come ($Y$) dove la formula è seguita da ")".
+marked.use({
+  renderer: {
+    // 1. Sicurezza: blocca HTML raw per prevenire XSS
+    html() {
+      return "";
+    },
+
+    // 2. Heading con id auto-generato per anchor links (#sezione)
+    //    Segue la convenzione GitHub Flavored Markdown per gli slug.
+    heading(token) {
+      const content = marked.parseInline(token.text, { gfm: true });
+      const slug = token.text
+        .toLowerCase()
+        .replace(/!\[.*?\]\(.*?\)/g, "") // rimuove immagini inline
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // mantiene solo il testo dei link
+        .replace(/[*_`~]/g, "") // rimuove marcatori markdown
+        .replace(/[^\w\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+      return `<h${token.depth} id="${slug}">${content}</h${token.depth}>\n`;
+    },
+
+    // 3. Blocchi ```dot / ```graphviz → placeholder per rendering WASM asincrono
+    code(token) {
+      const lang = (token.lang || "").trim().toLowerCase();
+      if (lang === "dot" || lang === "graphviz") {
+        const encoded = encodeURIComponent(token.text.trim());
+        // Placeholder vuoto: l'effetto React sostituirà il contenuto
+        // con il preview box (NoteBox) o il loading box + SVG (viewer)
+        return `<div class="graphviz-placeholder" data-dot="${encoded}"></div>\n`;
+      }
+      return false; // fallback al renderer default per gli altri linguaggi
+    },
+  },
+});
+
+// ===== KaTeX: supporto LaTeX =====
+// $...$ per inline, $$...$$ per display block.
 
 function renderKatex(formula, displayMode) {
   try {
@@ -29,7 +60,6 @@ function renderKatex(formula, displayMode) {
   }
 }
 
-// Blocco display: $$...$$ (supporta formule su più righe)
 const mathBlockExt = {
   name: "mathBlock",
   level: "block",
@@ -45,20 +75,17 @@ const mathBlockExt = {
     `<div class="katex-display-wrap">${renderKatex(token.formula, true)}</div>\n`,
 };
 
-// Inline: $...$ senza lookahead restrittivo — funziona in ($Y$), [$x$], ecc.
 const mathInlineExt = {
   name: "mathInline",
   level: "inline",
   start(src) {
-    // Cerca il primo $ che non faccia parte di $$ (lasciato al blocco)
     for (let i = 0; i < src.length; i++) {
       if (src[i] === "$" && src[i + 1] !== "$") return i;
     }
     return undefined;
   },
   tokenizer(src) {
-    if (src.startsWith("$$")) return undefined; // gestito dal blocco
-    // Matcha $...$ dove il contenuto non contiene $ né newline
+    if (src.startsWith("$$")) return undefined;
     const m = /^\$([^$\n]+?)\$/.exec(src);
     if (m) return { type: "mathInline", raw: m[0], formula: m[1].trim() };
   },
@@ -68,20 +95,18 @@ const mathInlineExt = {
 marked.use({ extensions: [mathBlockExt, mathInlineExt] });
 
 /**
- * Converte testo Markdown in HTML sicuro (senza raw-HTML pass-through).
- * Supporta LaTeX standard: $formula$ per inline, $$formula$$ per display block.
- * Funziona anche in contesti come ($Y$), [$x$], ecc.
- * @param {string} markdown - Testo in formato Markdown
- * @returns {string} - HTML risultante pronto per dangerouslySetInnerHTML
+ * Converte Markdown in HTML sicuro. Supporta:
+ * - LaTeX: $formula$ (inline) e $$formula$$ (display block) via KaTeX
+ * - Grafici Graphviz: blocchi ```dot / ```graphviz → placeholder per MarkdownRenderer
+ * - Anchor links: heading con id auto-generati (convenzione GFM)
+ *
+ * @param {string} markdown
+ * @returns {string} HTML pronto per dangerouslySetInnerHTML
  */
 const renderMarkdown = (markdown) => {
   if (!markdown || typeof markdown !== "string" || !markdown.trim()) return "";
   try {
-    return marked.parse(markdown, {
-      renderer: safeRenderer,
-      gfm: true,
-      breaks: true,
-    });
+    return marked.parse(markdown, { gfm: true, breaks: true });
   } catch {
     return "";
   }

@@ -1,4 +1,5 @@
 export { default as Badge } from "./Badge";
+export { default as MarkdownRenderer } from "./MarkdownRenderer";
 export { default as Button } from "./Button";
 export { default as ColorPicker } from "./ColorPicker";
 export { default as CopyableInfoBox } from "./CopyableInfoBox";

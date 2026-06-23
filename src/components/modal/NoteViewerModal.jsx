@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import Modal from "./Modal";
-import renderMarkdown from "../../utils/markdownRenderer";
+import MarkdownRenderer from "../ui/MarkdownRenderer";
 
 /**
  * NoteViewerModal - Visualizzatore nota a lettura
@@ -42,10 +42,12 @@ const NoteViewerModal = ({
       maxWidth="max-w-[992px]"
     >
       {contentType === "markdown" ? (
-        <div
+        <MarkdownRenderer
+          content={content || ""}
           className="note-markdown text-sm"
           style={{ userSelect: "text" }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(content || "") }}
+          enableAnchorLinks
+          renderGraphviz
         />
       ) : (
         <div

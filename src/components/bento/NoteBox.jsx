@@ -2,7 +2,7 @@ import { useState, useRef, useLayoutEffect } from "react";
 import { PencilIcon, FileTextIcon, ChevronDownIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
 import { RichTextModal, NoteViewerModal } from "../modal";
-import renderMarkdown from "../../utils/markdownRenderer";
+import MarkdownRenderer from "../ui/MarkdownRenderer";
 
 // Altezza massima (px) prima di troncare il testo nel box.
 // Corrisponde a 2 bento box (2 × 320px = 640px).
@@ -108,11 +108,9 @@ const NoteBox = ({
                 className={`note-box-content${isTall ? " tall" : ""}${isNoteExpanded ? " expanded" : ""}`}
               >
                 {contentType === "markdown" ? (
-                  <div
+                  <MarkdownRenderer
+                    content={content}
                     className="note-markdown text-sm pointer-events-none"
-                    dangerouslySetInnerHTML={{
-                      __html: renderMarkdown(content),
-                    }}
                   />
                 ) : (
                   <div
