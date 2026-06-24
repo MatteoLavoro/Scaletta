@@ -187,6 +187,7 @@ const NoteBox = ({
         onConfirm={handleNoteConfirm}
         initialContent={content}
         contentType={contentType}
+        noteTitle={title}
       />
 
       {/* Modale visualizzatore nota (sola lettura, larghezza 3 bento box) */}

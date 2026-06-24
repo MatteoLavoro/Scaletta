@@ -6,7 +6,9 @@ import {
   InfoIcon,
   ChevronDownIcon,
   CopyIcon,
+  DownloadIcon,
 } from "../icons";
+import { exportNoteToPdf } from "../../services/pdfExport";
 
 // ─── Costanti ─────────────────────────────────────────────────────────────────
 // Altezza fissa del container editor (px).
@@ -85,6 +87,7 @@ const RichTextModal = ({
   onConfirm,
   initialContent = "",
   contentType = "txt",
+  noteTitle = "",
 }) => {
   // ─── Refs ─────────────────────────────────────────────────────────────────
   const editorRef = useRef(null); // contentEditable TXT
@@ -102,6 +105,7 @@ const RichTextModal = ({
   const [activeColor, setActiveColor] = useState("#000000");
   const [showMdHelp, setShowMdHelp] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // ─── Inizializzazione al mount / riapertura ───────────────────────────────
   useEffect(() => {
@@ -283,6 +287,22 @@ const RichTextModal = ({
   const activeColorName =
     TEXT_COLORS.find((c) => c.hex.toLowerCase() === activeColor.toLowerCase())
       ?.name || "Colore";
+
+  // ─── Esporta PDF dalla nota Markdown ──────────────────────────────────────
+  const handleExportPdf = async () => {
+    if (isExporting || mdContent.trim().length === 0) return;
+    setIsExporting(true);
+    try {
+      await exportNoteToPdf(noteTitle || "Nota", mdContent);
+    } catch (err) {
+      // Mostra l'errore all'utente solo se è un problema bloccante (popup bloccati)
+      if (err?.message) {
+        alert(err.message);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // ─── Copia testo Markdown ─────────────────────────────────────────────────
   const handleCopyMd = () => {
@@ -505,6 +525,27 @@ const RichTextModal = ({
                   className={`text-sm ${isCopied ? "text-primary font-medium" : "text-text-primary"}`}
                 >
                   {isCopied ? "Copiato!" : "Copia testo"}
+                </span>
+              </button>
+
+              {/* Separatore */}
+              <div className="w-px h-6 bg-border mx-0.5 shrink-0" />
+
+              {/* Esporta PDF */}
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                disabled={isExporting || mdContent.trim().length === 0}
+                className="flex items-center gap-2 px-3 py-2 rounded hover:bg-bg-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Esporta come PDF"
+              >
+                <DownloadIcon
+                  className={`w-5 h-5 ${isExporting ? "text-primary animate-pulse" : "text-text-primary"}`}
+                />
+                <span
+                  className={`text-sm ${isExporting ? "text-primary font-medium" : "text-text-primary"}`}
+                >
+                  {isExporting ? "Generazione…" : "Esporta PDF"}
                 </span>
               </button>
 
