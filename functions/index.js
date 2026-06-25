@@ -2,11 +2,14 @@
  * Firebase Cloud Functions per Scaletta
  *
  * Questo file contiene le Cloud Functions necessarie per il funzionamento
- * delle notifiche push nell'app Scaletta.
+ * delle notifiche push e dell'esportazione PDF nell'app Scaletta.
  */
 
 const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer-core");
 
 // Inizializza Firebase Admin
 admin.initializeApp();
@@ -283,3 +286,135 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
 // Richiede firebase-functions v2 con sintassi diversa:
 // const {onSchedule} = require("firebase-functions/v2/scheduler");
 // exports.sendScheduledNotifications = onSchedule("every 1 minutes", async (event) => { ... });
+
+// ============================================================
+// Cloud Function: generatePdf
+// ============================================================
+/**
+ * Genera un PDF da una stringa HTML tramite Puppeteer headless (Chromium).
+ * Usata dal frontend per esportare le note Markdown come PDF scaricabile.
+ *
+ * Endpoint: POST /generatePdf
+ * Headers:  Authorization: Bearer <Firebase ID Token>
+ * Body:     { html: string, title: string }
+ * Response: application/pdf  (binary)
+ *
+ * Nota: usa firebase-functions/v2 per poter configurare memoria (1 GiB)
+ * e timeout (120 s) necessari per avviare Chromium headless.
+ */
+exports.generatePdf = onRequest(
+  {
+    memory: "1GiB",
+    timeoutSeconds: 120,
+    // cors è gestito manualmente per restituire binary (non JSON)
+  },
+  async (req, res) => {
+    // ── CORS ────────────────────────────────────────────────────────────────
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.status(204).send("");
+    }
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method Not Allowed. Use POST." });
+    }
+
+    // ── Verifica Firebase Auth token ─────────────────────────────────────────
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        error: "Autorizzazione mancante. Accedi all'app prima di esportare.",
+      });
+    }
+    try {
+      await admin.auth().verifyIdToken(authHeader.slice(7));
+    } catch {
+      return res
+        .status(401)
+        .json({ error: "Token di autorizzazione non valido." });
+    }
+
+    // ── Validazione body ─────────────────────────────────────────────────────
+    const { html, title } = req.body || {};
+    if (!html || typeof html !== "string" || html.length < 20) {
+      return res
+        .status(400)
+        .json({ error: "Campo 'html' mancante o non valido nel body." });
+    }
+
+    // ── Generazione PDF con Puppeteer ────────────────────────────────────────
+    let browser = null;
+    try {
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
+      });
+
+      const page = await browser.newPage();
+
+      // Carica il documento HTML (include CDN KaTeX CSS + SVG Graphviz inline)
+      // networkidle0: attende che tutte le risorse esterne (font KaTeX, CSS) siano caricate
+      await page.setContent(html, {
+        waitUntil: "networkidle0",
+        timeout: 25000,
+      });
+
+      // Genera il PDF — i margini corrispondono a quelli del CSS .pdf-body
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "20mm",
+          right: "22mm",
+          bottom: "22mm",
+          left: "22mm",
+        },
+        // Numerazione pagine affidata a Puppeteer (più affidabile di CSS @page)
+        displayHeaderFooter: true,
+        headerTemplate: "<div></div>",
+        footerTemplate:
+          '<div style="width:100%;font-size:7pt;color:#9ca3af;' +
+          "text-align:center;padding:0 22mm;box-sizing:border-box;" +
+          "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">" +
+          '<span class="pageNumber"></span> di <span class="totalPages"></span>' +
+          "</div>",
+      });
+
+      // Nome file sicuro per Content-Disposition
+      const safeName =
+        (title || "nota")
+          .replace(/[^\w\u00C0-\u024F\s\-]/g, "")
+          .trim()
+          .slice(0, 100) || "nota";
+
+      res.set("Content-Type", "application/pdf");
+      res.set(
+        "Content-Disposition",
+        `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}.pdf`,
+      );
+      res.set("Content-Length", pdfBuffer.length.toString());
+      return res.status(200).end(Buffer.from(pdfBuffer));
+    } catch (err) {
+      console.error(
+        "[generatePdf] Errore generazione PDF:",
+        err.message,
+        err.stack,
+      );
+      return res.status(500).json({
+        error: "Generazione PDF non riuscita.",
+        message: err.message,
+      });
+    } finally {
+      if (browser) {
+        try {
+          await browser.close();
+        } catch {}
+      }
+    }
+  },
+);

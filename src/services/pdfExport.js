@@ -17,6 +17,7 @@
  *  - Compatibile con tutte le piattaforme (Chrome, Firefox, Safari, Edge)
  */
 
+import { getAuth } from "firebase/auth";
 import renderMarkdown from "../utils/markdownRenderer";
 
 // ─── Cache modulo @viz-js/viz (condivisa con MarkdownRenderer) ──────────────
@@ -219,80 +220,85 @@ async function renderGraphvizInHtml(html) {
 
       if (!svgEl) continue;
 
-      // ── Scaling grafi ──────────────────────────────────────────────────────
-      // Graphviz emette le dimensioni in pt (es. "400pt").
-      // Applichiamo DUE fattori di scala (il più restrittivo vince):
+      // ── Scaling grafi ────────────────────────────────────────────────────────
       //
-      // 1) FONT-SIZE: se il testo supera il default Graphviz (14pt) il grafo
-      //    verrebbe enorme nel PDF. Riduciamo finché il font è ~11pt.
-      //    Grafi con font piccolo (≤14pt) restano invariati.
+      // Obiettivo: il testo nei nodi deve essere circa uguale al corpo del
+      // documento PDF (~10pt). I grafi non devono occupare più di ~55% della
+      // pagina in altezza.
       //
-      // 2) DIMENSIONI: un grafo più alto che largo può occupare più pagine.
-      //    Limitiamo l'altezza a PDF_MAX_H pt e la larghezza a PDF_MAX_W pt.
-      //    Grafi più larghi che alti (landscape) non vengono scalati per altezza.
-      //    La larghezza massima è comunque garantita da max-width:100% nel CSS.
+      // Due fattori di scala vengono calcolati; vince il più restrittivo:
+      //
+      // 1) FONT-SIZE — riduce se testo > TARGET_MAX_FONT (11pt).
+      //    Copre sia font custom (es. fontsize=24) sia il default Graphviz
+      //    (14pt), che è il 40% più grande del corpo documento.
+      //
+      // 2) DIMENSIONI — limita larghezza (PDF_MAX_W) e altezza (PDF_MAX_H).
+      //    Applicato a TUTTI i grafi, non solo a quelli portrait.
+      //
+      // BUG STORICO CORRETTO: la larghezza viene SEMPRE impostata esplicitamente.
+      // Senza style.width, un SVG senza attributi width/height si espande al 100%
+      // del container → per grafi stretti e alti l'altezza si moltiplica
+      // drasticamente, causando grafici che occupano 5-6 pagine inutilmente.
 
-      const DEFAULT_GV_FONT = 14; // pt, default Graphviz
-      const TARGET_MAX_FONT = 11; // pt, circa corpo PDF (10pt base)
+      const TARGET_MAX_FONT = 11; // pt, dimensione testo corpo PDF (base 10pt)
+      const PDF_MAX_W = 450; // pt, ~96% larghezza utile A4 (~470pt)
+      const PDF_MAX_H = 400; // pt, ~55% altezza utile A4 (~723pt)
+      const MIN_GRAPH_W = 50; // pt, larghezza minima leggibile
 
-      // A4 con margini 20/22mm → area utile ~166×255mm → ~470×722pt
-      // Limitiamo i grafi a valori confortevoli: larghezza piena, altezza ~60% pagina
-      const PDF_MAX_W = 450; // pt
-      const PDF_MAX_H = 480; // pt (circa 2/3 della pagina A4)
-
-      // Leggi dimensioni originali (Graphviz: "NNpt")
+      // Dimensioni native (Graphviz emette "NNpt", es. "200pt")
       const rawW = svgEl.getAttribute("width") || "";
       const rawH = svgEl.getAttribute("height") || "";
-      const naturalW = parseFloat(rawW); // 0 se non presente
-      const naturalH = parseFloat(rawH); // 0 se non presente
+      const naturalW = parseFloat(rawW); // es. "200pt" → 200; 0 se assente
+      const naturalH = parseFloat(rawH);
 
-      // Font-size massimo tra tutti i testi del grafo
-      let maxFontSize = DEFAULT_GV_FONT;
+      // Font-size massimo tra tutti i <text> del grafo
+      // Graphviz emette font-size come attributo su ogni elemento testo
+      let maxFontSize = 0;
       svgEl.querySelectorAll("text").forEach((el) => {
         const fs = parseFloat(el.getAttribute("font-size") || "0");
         if (fs > maxFontSize) maxFontSize = fs;
       });
+      // Se nessun testo ha font-size esplicito, assume default Graphviz (14pt)
+      if (maxFontSize <= 0) maxFontSize = 14;
 
-      // Scala per font-size: solo se font > default Graphviz
+      // Scala 1 — font-size: porta il testo a TARGET_MAX_FONT
+      // Include il caso default 14pt → 11/14 ≈ 0.786
       const fontScale =
-        maxFontSize > DEFAULT_GV_FONT
-          ? Math.max(0.3, TARGET_MAX_FONT / maxFontSize)
-          : 1;
+        maxFontSize > TARGET_MAX_FONT ? TARGET_MAX_FONT / maxFontSize : 1;
 
-      // Scala per altezza: solo se il grafo è più alto che largo (portrait)
-      // e supera il limite di altezza
+      // Scala 2 — dimensioni: applica a TUTTI i grafi (non solo portrait)
       let dimScale = 1;
       if (naturalW > 0 && naturalH > 0) {
-        const isPortrait = naturalH > naturalW;
-        if (isPortrait && naturalH > PDF_MAX_H) {
-          // Scala per altezza (mantiene aspect ratio)
-          dimScale = PDF_MAX_H / naturalH;
-          // Verifica che dopo la scala non superi neanche la larghezza
-          if (naturalW * dimScale > PDF_MAX_W) {
-            dimScale = PDF_MAX_W / naturalW;
-          }
-        } else if (!isPortrait && naturalW > PDF_MAX_W) {
-          // Grafo landscape molto largo: max-width CSS lo gestisce,
-          // ma impostiamo comunque la larghezza per coerenza con il calcolo
-          dimScale = PDF_MAX_W / naturalW;
-        }
+        const scaleByW = naturalW > PDF_MAX_W ? PDF_MAX_W / naturalW : 1;
+        const scaleByH = naturalH > PDF_MAX_H ? PDF_MAX_H / naturalH : 1;
+        dimScale = Math.min(scaleByW, scaleByH);
       }
 
-      // Scala finale: la più restrittiva tra font-scale e dim-scale
+      // Scala finale: il vincolo più restrittivo vince
       const scale = Math.min(fontScale, dimScale);
 
-      // Applica il tema chiaro per PDF
+      // Applica tema chiaro per PDF (colori fissi, bordi visibili su carta)
       applyPdfThemeToSVG(svgEl);
 
-      // Rimuovi attributi nativi e applica sizing con scala
+      // Rimuovi attributi nativi
       svgEl.removeAttribute("width");
       svgEl.removeAttribute("height");
-      if (scale < 1 && naturalW > 0) {
-        svgEl.style.width = `${Math.round(naturalW * scale)}pt`;
-        // height:auto deriva dall'aspect ratio del viewBox (non serve impostarlo)
+
+      // FONDAMENTALE: imposta SEMPRE la larghezza esplicita sull'SVG.
+      // Se non c'è width esplicita, l'SVG usa il 100% del container → per
+      // grafi stretti e alti, l'altezza risultante può essere enorme.
+      // MIN_GRAPH_W garantisce una larghezza minima leggibile; l'altezza
+      // viene poi calcolata automaticamente dal viewBox (height: auto).
+      let finalW;
+      if (naturalW > 0) {
+        finalW = `${Math.min(Math.max(Math.round(naturalW * scale), MIN_GRAPH_W), PDF_MAX_W)}pt`;
+      } else {
+        finalW = "100%"; // fallback: nessuna dimensione nota
       }
-      svgEl.style.maxWidth = "100%";
-      svgEl.style.height = "auto";
+
+      svgEl.style.width = finalW;
+      svgEl.style.maxWidth = "100%"; // non supera mai il container
+      svgEl.style.height = "auto"; // aspect ratio dal viewBox
       svgEl.style.display = "inline-block";
 
       // Costruisci il wrapper
@@ -690,13 +696,7 @@ function buildPdfCss() {
       pre, blockquote, table, .pdf-graphviz-wrap, .katex-display {
         break-inside: avoid;
       }
-
-      a[href]::after {
-        content: " (" attr(href) ")";
-        font-size: 8pt;
-        color: var(--pdf-text-muted);
-        font-style: italic;
-      }
+    }
     }
   `;
 }
@@ -731,29 +731,29 @@ function buildHtmlDocument(title, bodyHtml) {
   <style>${buildPdfCss()}</style>
 </head>
 <body>
-  <div class="pdf-document">
-    <main class="pdf-body">
-      ${bodyHtml}
-    </main>
-  </div>
-
-  <script>
-    // Attende che KaTeX CSS e i suoi font siano caricati prima di stampare
-    window.addEventListener('load', function () {
-      setTimeout(function () { window.print(); }, 400);
-    });
-  </script>
+  <main class="pdf-body">
+    ${bodyHtml}
+  </main>
 </body>
 </html>`;
 }
 
 // ─── Funzione principale di esportazione ─────────────────────────────────────
 
+// URL della Cloud Function generatePdf (progetto Firebase: scaletta-1).
+const GENERATE_PDF_URL = "https://generatepdf-3ujl6wiqia-uc.a.run.app";
+
 /**
- * Esporta una nota Markdown come PDF aprendo una finestra di stampa.
+ * Esporta una nota Markdown come PDF tramite Cloud Function server-side.
+ *
+ * Flusso:
+ *  1. Ottiene il token Firebase Auth dell'utente corrente
+ *  2. Renderizza Markdown -> HTML + SVG Graphviz (client-side)
+ *  3. Invia l'HTML completo alla Cloud Function generatePdf via POST
+ *  4. Riceve il PDF binario e lo scarica direttamente (nessun dialogo)
  *
  * @param {string} title           - Titolo della nota
- * @param {string} markdownContent - Contenuto della nota in formato Markdown
+ * @param {string} markdownContent - Contenuto in formato Markdown
  * @returns {Promise<void>}
  */
 export async function exportNoteToPdf(title, markdownContent) {
@@ -761,74 +761,60 @@ export async function exportNoteToPdf(title, markdownContent) {
     throw new Error("Il contenuto della nota è vuoto.");
   }
 
-  // 1. Markdown → HTML (sincrono, usa il renderer esistente)
+  // 1. Token Firebase Auth per autorizzare la Cloud Function
+  const auth = getAuth();
+  if (!auth.currentUser) {
+    throw new Error(
+      "Utente non autenticato. Accedi all'app prima di esportare.",
+    );
+  }
+  const token = await auth.currentUser.getIdToken();
+
+  // 2. Costruisci l'HTML completo (Markdown -> HTML + SVG Graphviz inline)
   const rawHtml = renderMarkdown(markdownContent);
-
-  // 2. Sostituisci i placeholder Graphviz con SVG reali
   const htmlWithGraphviz = await renderGraphvizInHtml(rawHtml);
-
-  // 3. Costruisci il documento HTML completo
   const htmlDocument = buildHtmlDocument(title, htmlWithGraphviz);
 
-  // 4. Stampa via iframe nascosto — nessuna nuova scheda aperta
-  //    Il Blob URL viene usato come src dell'iframe.
-  //    Il dialogo di stampa si apre nel tab corrente.
-  //    Cleanup (rimozione iframe + revoca URL) avviene alla chiusura del dialogo.
-  const blob = new Blob([htmlDocument], { type: "text/html;charset=utf-8" });
-  const blobUrl = URL.createObjectURL(blob);
-
-  await new Promise((resolve) => {
-    const iframe = document.createElement("iframe");
-    iframe.setAttribute("aria-hidden", "true");
-    Object.assign(iframe.style, {
-      position: "fixed",
-      top: "-9999px",
-      left: "-9999px",
-      width: "1px",
-      height: "1px",
-      border: "none",
-      visibility: "hidden",
-      pointerEvents: "none",
+  // 3. Invia alla Cloud Function e ricevi il PDF binario
+  let response;
+  try {
+    response = await fetch(GENERATE_PDF_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ html: htmlDocument, title: title || "Nota" }),
     });
+  } catch {
+    throw new Error(
+      "Impossibile contattare il servizio di generazione PDF. " +
+        "Controlla la connessione e riprova.",
+    );
+  }
 
-    const cleanup = () => {
-      URL.revokeObjectURL(blobUrl);
-      try {
-        document.body.removeChild(iframe);
-      } catch {
-        /* già rimosso */
-      }
-    };
+  if (!response.ok) {
+    let errMsg = `Errore server ${response.status}`;
+    try {
+      const errData = await response.json();
+      errMsg = errData.error || errData.message || errMsg;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`Generazione PDF non riuscita: ${errMsg}`);
+  }
 
-    iframe.onload = () => {
-      const win = iframe.contentWindow;
-      if (!win) {
-        cleanup();
-        resolve();
-        return;
-      }
-
-      // Ascolta la chiusura del dialogo (Stampa o Annulla)
-      win.addEventListener("afterprint", cleanup, { once: true });
-
-      // Piccolo ritardo per garantire il caricamento dei font KaTeX dal CDN
-      setTimeout(() => {
-        try {
-          win.print();
-        } catch {
-          cleanup();
-        }
-        // Risolvi subito: l'utente vede il dialogo, il bottone torna normale
-        resolve();
-      }, 500);
-    };
-
-    iframe.onerror = () => {
-      cleanup();
-      resolve();
-    };
-
-    document.body.appendChild(iframe);
-    iframe.src = blobUrl;
-  });
+  // 4. Download diretto del PDF (nessun dialogo di stampa)
+  const pdfBlob = await response.blob();
+  const downloadUrl = URL.createObjectURL(pdfBlob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download =
+    ((title || "nota").replace(/[^\w\u00C0-\u024F\s-]/g, "").trim() || "nota") +
+    ".pdf";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
 }
