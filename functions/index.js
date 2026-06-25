@@ -377,12 +377,13 @@ exports.generatePdf = onRequest(
         // Numerazione pagine affidata a Puppeteer (più affidabile di CSS @page)
         displayHeaderFooter: true,
         headerTemplate: "<div></div>",
-        footerTemplate:
-          '<div style="width:100%;font-size:7pt;color:#9ca3af;' +
-          "text-align:center;padding:0 22mm;box-sizing:border-box;" +
-          "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\">" +
-          '<span class="pageNumber"></span> di <span class="totalPages"></span>' +
+        footerTemplate: [
+          "<div style='width:100%;font-size:7pt;color:#9ca3af;",
+          "text-align:center;padding:0 22mm;box-sizing:border-box;",
+          "font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif'>",
+          "<span class='pageNumber'></span> di <span class='totalPages'></span>",
           "</div>",
+        ].join(""),
       });
 
       // Nome file sicuro per Content-Disposition

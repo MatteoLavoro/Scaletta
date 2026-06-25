@@ -199,6 +199,77 @@ function applyThemeToSVG(svgElement) {
   });
 }
 
+/**
+ * Scala un SVGElement reso nel viewer delle note per adattarne le dimensioni
+ * allo schermo — stessa logica dell'esportazione PDF, parametri per schermo.
+ *
+ * Obiettivi (identici al PDF export):
+ *  1. FONT-SIZE — il testo dei nodi è circa uguale al corpo dell'app
+ *     (TARGET_MAX_FONT = 11pt ≈ 14.7px a 96dpi ≈ body text dell'app).
+ *     Scala ogni grafo con testo > 11pt, incluso il default Graphviz (14pt).
+ *
+ *  2. DIMENSIONI — limita larghezza e altezza per non saturare lo schermo.
+ *     Più generosi del PDF (il viewer è scrollabile).
+ *
+ *  3. WIDTH ESPLICITA — imposta SEMPRE style.width esplicitamente.
+ *     Senza width esplicita, un SVG senza attributi width/height usa il 100%
+ *     del container: per grafi stretti e alti il risultato è enorme.
+ */
+function scaleViewerSVG(svgElement) {
+  const TARGET_MAX_FONT = 11; // pt — dimensione corpo app (14.7px @ 96dpi)
+  const VIEWER_MAX_W = 700; // pt — larghezza max viewer (~933px, modal 992px)
+  const VIEWER_MAX_H = 700; // pt — altezza max viewer (~933px, poi scroll)
+  const MIN_GRAPH_W = 50; // pt — larghezza minima leggibile
+
+  // Dimensioni native (Graphviz emette "NNpt", es. "200pt")
+  const rawW = svgElement.getAttribute("width") || "";
+  const rawH = svgElement.getAttribute("height") || "";
+  const naturalW = parseFloat(rawW);
+  const naturalH = parseFloat(rawH);
+
+  // Font-size massimo tra tutti i <text> del grafo
+  let maxFontSize = 0;
+  svgElement.querySelectorAll("text").forEach((el) => {
+    const fs = parseFloat(el.getAttribute("font-size") || "0");
+    if (fs > maxFontSize) maxFontSize = fs;
+  });
+  // Se nessun testo ha font-size esplicito, assume default Graphviz (14pt)
+  if (maxFontSize <= 0) maxFontSize = 14;
+
+  // Scala 1 — font-size: porta il testo a TARGET_MAX_FONT
+  const fontScale =
+    maxFontSize > TARGET_MAX_FONT ? TARGET_MAX_FONT / maxFontSize : 1;
+
+  // Scala 2 — dimensioni: applicata a TUTTI i grafi
+  let dimScale = 1;
+  if (naturalW > 0 && naturalH > 0) {
+    const scaleByW = naturalW > VIEWER_MAX_W ? VIEWER_MAX_W / naturalW : 1;
+    const scaleByH = naturalH > VIEWER_MAX_H ? VIEWER_MAX_H / naturalH : 1;
+    dimScale = Math.min(scaleByW, scaleByH);
+  }
+
+  // Scala finale: il vincolo più restrittivo vince
+  const scale = Math.min(fontScale, dimScale);
+
+  // Rimuovi attributi nativi
+  svgElement.removeAttribute("width");
+  svgElement.removeAttribute("height");
+
+  // FONDAMENTALE: imposta SEMPRE width esplicita.
+  // Senza di essa l'SVG usa il 100% del container → grafi alti/stretti enormi.
+  // max-width: 100% nel CSS garantisce che non superi mai il container.
+  if (naturalW > 0) {
+    const finalW = Math.min(
+      Math.max(Math.round(naturalW * scale), MIN_GRAPH_W),
+      VIEWER_MAX_W,
+    );
+    svgElement.style.width = `${finalW}pt`;
+  } else {
+    svgElement.style.width = "auto"; // fallback: nessuna dimensione nota
+  }
+  // height: auto è gestito dal CSS (.graphviz-rendered svg)
+}
+
 // Icona grafo inline SVG (usata nei placeholder preview)
 const GRAPH_ICON_HTML =
   `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" ` +
@@ -379,8 +450,7 @@ const MarkdownRenderer = ({
           try {
             const svgElement = viz.renderSVGElement(dot);
             applyThemeToSVG(svgElement);
-            svgElement.setAttribute("width", "100%");
-            svgElement.removeAttribute("height");
+            scaleViewerSVG(svgElement); // scaling font + dimensioni (stesso algoritmo PDF)
             svgElement.style.overflow = "visible";
 
             stopDotsAnimation(el);

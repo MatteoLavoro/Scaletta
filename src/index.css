@@ -730,10 +730,11 @@ kbd {
   min-height: 80px;
 }
 
-/* SVG responsivo */
+/* SVG scalato proporzionalmente: la width esplicita è impostata da scaleViewerSVG() in JS.
+   max-width: 100% garantisce che non superi mai il container (overflow-x: auto sopra). */
 .graphviz-placeholder.graphviz-rendered svg {
   display: block;
-  width: 100%;
+  max-width: 100%;
   height: auto;
   margin: 0 auto;
   overflow: visible;
