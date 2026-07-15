@@ -80,6 +80,13 @@ const Modal = ({
     if (isOpen) {
       // Solo se non è un modale annidato (skipHistory false significa che è gestito dal context)
       if (!onClose || skipHistory) {
+        // Compensa la larghezza della scrollbar per evitare lo scatto del layout.
+        if (document.body.style.overflow !== "hidden") {
+          const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+          if (scrollbarWidth > 0) {
+            document.body.style.paddingRight = `${scrollbarWidth}px`;
+          }
+        }
         document.body.style.overflow = "hidden";
         hasSetOverflowRef.current = true;
       }
@@ -88,6 +95,7 @@ const Modal = ({
         // e non ci sono modali annidati aperti
         if (hasSetOverflowRef.current && !hasNestedModals()) {
           document.body.style.overflow = "";
+          document.body.style.paddingRight = "";
           hasSetOverflowRef.current = false;
         }
       };

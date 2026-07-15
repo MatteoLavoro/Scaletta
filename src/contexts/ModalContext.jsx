@@ -47,7 +47,14 @@ export const ModalProvider = ({ children }) => {
     (callback) => {
       nestedCloseCallbacksRef.current.push(callback);
       setNestedModalCount(nestedCloseCallbacksRef.current.length);
-      // Blocca scroll quando si aggiunge un modale annidato
+      // Blocca scroll quando si aggiunge un modale annidato.
+      // Compensa la larghezza della scrollbar per evitare lo scatto del layout.
+      if (document.body.style.overflow !== "hidden") {
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        if (scrollbarWidth > 0) {
+          document.body.style.paddingRight = `${scrollbarWidth}px`;
+        }
+      }
       document.body.style.overflow = "hidden";
 
       // Ritorna una funzione per rimuovere la callback
@@ -63,6 +70,7 @@ export const ModalProvider = ({ children }) => {
           modalStack.length === 0
         ) {
           document.body.style.overflow = "";
+          document.body.style.paddingRight = "";
         }
       };
     },
