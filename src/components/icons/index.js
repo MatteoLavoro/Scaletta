@@ -17,6 +17,7 @@ export { default as CodeIcon } from "./CodeIcon";
 export { default as CopyIcon } from "./CopyIcon";
 export { default as CrownIcon } from "./CrownIcon";
 export { default as DownloadIcon } from "./DownloadIcon";
+export { default as ExternalLinkIcon } from "./ExternalLinkIcon";
 export { default as EyeIcon } from "./EyeIcon";
 export { default as EyeOffIcon } from "./EyeOffIcon";
 export { default as FileArchiveIcon } from "./FileArchiveIcon";
@@ -55,6 +56,8 @@ export { default as UserPlusIcon } from "./UserPlusIcon";
 export { default as UsersIcon } from "./UsersIcon";
 export { default as VideoIcon } from "./VideoIcon";
 export { default as ZapIcon } from "./ZapIcon";
+export { default as ZoomInIcon } from "./ZoomInIcon";
+export { default as ZoomOutIcon } from "./ZoomOutIcon";
 
 // Icone stati progetto
 export { default as PlayIcon } from "./PlayIcon";

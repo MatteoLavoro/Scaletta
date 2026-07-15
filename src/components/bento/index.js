@@ -8,6 +8,7 @@ export {
   DesktopAddFab,
 } from "./AddBentoBoxButton";
 export { default as NoteBox } from "./NoteBox";
+export { default as MarkdownBox } from "./MarkdownBox";
 export { default as PhotoBox } from "./PhotoBox";
 export { default as PdfBox } from "./PdfBox";
 export { default as FileBox } from "./FileBox";

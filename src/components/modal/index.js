@@ -10,6 +10,7 @@ export { default as FileUploadModal } from "./FileUploadModal";
 export { default as VersionUploadModal } from "./VersionUploadModal";
 export { default as MoreBoxesModal } from "./MoreBoxesModal";
 export { default as ImageModal } from "./ImageModal";
+export { default as PdfViewerModal } from "./PdfViewerModal";
 export { default as RichTextModal } from "./RichTextModal";
 export { default as NoteViewerModal } from "./NoteViewerModal";
 export { default as GraphViewerModal } from "./GraphViewerModal";

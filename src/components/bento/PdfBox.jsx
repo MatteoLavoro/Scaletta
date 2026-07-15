@@ -10,8 +10,7 @@ import {
   TrashIcon,
 } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { PdfUploadModal } from "../modal";
-import { ConfirmModal } from "../modal";
+import { PdfUploadModal, ConfirmModal, PdfViewerModal } from "../modal";
 import { uploadPdfs, deletePdf } from "../../services/pdfs";
 
 // Configura il worker per react-pdf
@@ -54,7 +53,7 @@ class PdfErrorBoundary extends Component {
 /**
  * PdfThumbnail - Anteprima di un singolo PDF
  */
-const PdfThumbnail = ({ pdf, containerWidth }) => {
+const PdfThumbnail = ({ pdf, containerWidth, onOpen }) => {
   const [numPages, setNumPages] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -76,8 +75,8 @@ const PdfThumbnail = ({ pdf, containerWidth }) => {
   const pageWidth = containerWidth ? containerWidth - 16 : 280;
 
   const handleClick = () => {
-    if (pdf?.url) {
-      window.open(pdf.url, "_blank");
+    if (pdf && onOpen) {
+      onOpen(pdf);
     }
   };
 
@@ -219,6 +218,10 @@ const PdfBox = ({
   const [isUploadingInternal, setIsUploadingInternal] = useState(false);
   const [uploadProgressInternal, setUploadProgressInternal] = useState(0);
 
+  // Modale visualizzazione PDF
+  const [isPdfViewerModalOpen, setIsPdfViewerModalOpen] = useState(false);
+  const [selectedPdfForViewer, setSelectedPdfForViewer] = useState(null);
+
   // Combina stati upload interno ed esterno
   const isUploading = isUploadingExternal || isUploadingInternal;
   const uploadProgress = isUploadingExternal
@@ -269,6 +272,17 @@ const PdfBox = ({
   const goToNext = useCallback(() => {
     setCurrentIndex((prev) => (prev < localPdfs.length - 1 ? prev + 1 : 0));
   }, [localPdfs.length]);
+
+  // Apri il modale visualizzatore PDF
+  const handleOpenPdfViewer = useCallback((pdf) => {
+    setSelectedPdfForViewer(pdf);
+    setIsPdfViewerModalOpen(true);
+  }, []);
+
+  // Chiudi il modale visualizzatore PDF
+  const handleClosePdfViewer = useCallback(() => {
+    setIsPdfViewerModalOpen(false);
+  }, []);
 
   // Touch handlers per swipe
   const handleTouchStart = (e) => {
@@ -419,6 +433,7 @@ const PdfBox = ({
                 key={localPdfs[currentIndex]?.id}
                 pdf={localPdfs[currentIndex]}
                 containerWidth={containerWidth}
+                onOpen={handleOpenPdfViewer}
               />
 
               {/* Frecce navigazione (solo se più di 1 PDF) */}
@@ -551,6 +566,13 @@ const PdfBox = ({
           setIsDeletePdfConfirmOpen(false);
           setPdfToDelete(null);
         }}
+      />
+
+      {/* Modale visualizzatore PDF fullscreen */}
+      <PdfViewerModal
+        isOpen={isPdfViewerModalOpen}
+        onClose={handleClosePdfViewer}
+        pdf={selectedPdfForViewer}
       />
     </>
   );

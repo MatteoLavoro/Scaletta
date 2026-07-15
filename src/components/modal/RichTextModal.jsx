@@ -88,6 +88,7 @@ const RichTextModal = ({
   initialContent = "",
   contentType = "txt",
   noteTitle = "",
+  lockedMode = null, // null | "txt" | "markdown" — se impostato, blocca la modalità e nasconde il toggle
 }) => {
   // ─── Refs ─────────────────────────────────────────────────────────────────
   const editorRef = useRef(null); // contentEditable TXT
@@ -111,7 +112,7 @@ const RichTextModal = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const m = contentType || "txt";
+    const m = lockedMode || contentType || "txt";
     setMode(m);
     setShowColors(false);
     setShowMdHelp(false);
@@ -178,6 +179,7 @@ const RichTextModal = ({
 
   // ─── Cambio modalità (TXT ↔ Markdown) ───────────────────────────────────
   const switchMode = (newMode) => {
+    if (lockedMode) return; // bloccato — cambio modalità disabilitato
     if (newMode === mode) return;
 
     if (newMode === "markdown") {
@@ -362,7 +364,10 @@ const RichTextModal = ({
     >
       <div className="flex flex-col gap-3">
         {/* ── Selettore modalità TXT / Markdown ─────────────────────────── */}
-        <div className="flex items-center gap-1 p-1 bg-bg-tertiary rounded-lg border border-border">
+        {/* nascosto quando la modalità è bloccata (lockedMode) */}
+        <div
+          className={`flex items-center gap-1 p-1 bg-bg-tertiary rounded-lg border border-border${lockedMode ? " hidden" : ""}`}
+        >
           <button
             type="button"
             onClick={() => switchMode("txt")}

@@ -1,22 +1,21 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { PencilIcon, FileTextIcon, ChevronDownIcon } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { RichTextModal, NoteViewerModal, GraphViewerModal } from "../modal";
-import MarkdownRenderer from "../ui/MarkdownRenderer";
+import { RichTextModal, NoteViewerModal } from "../modal";
 
 // Altezza massima (px) prima di troncare il testo nel box.
 // Corrisponde a 2 bento box (2 × 320px = 640px).
 const NOTE_MAX_HEIGHT = 640;
 
 /**
- * NoteBox - Bento Box per le note
+ * NoteBox - Bento Box per le note in formato testo (TXT)
  *
- * Box specializzato per contenere una nota di testo.
+ * Box specializzato per contenere una nota di testo formattato (grassetto,
+ * corsivo, colori). Solo modalità TXT — per Markdown usare MarkdownBox.
  * Si auto-dimensiona in base al contenuto.
- * Ha un kebab menu con l'opzione per modificare la nota.
  *
  * @param {string} title - Titolo del box
- * @param {string} content - Contenuto della nota
+ * @param {string} content - Contenuto HTML della nota
  * @param {boolean} isPinned - Se il box è fissato in alto
  * @param {string} createdByName - Nome utente che ha creato il box
  * @param {Date|Timestamp} createdAt - Data creazione box
@@ -29,7 +28,6 @@ const NOTE_MAX_HEIGHT = 640;
 const NoteBox = ({
   title = "Nota",
   content = "",
-  contentType = "txt",
   isPinned = false,
   createdByName = null,
   createdAt = null,
@@ -42,8 +40,6 @@ const NoteBox = ({
   const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isNoteExpanded, setIsNoteExpanded] = useState(false);
-  const [isGraphViewerOpen, setIsGraphViewerOpen] = useState(false);
-  const [graphViewerDot, setGraphViewerDot] = useState("");
   // Traccia se il contenuto supera la soglia di altezza
   const [isTall, setIsTall] = useState(false);
   const contentMeasureRef = useRef(null);
@@ -54,7 +50,7 @@ const NoteBox = ({
     if (!el) return;
     const tall = el.scrollHeight > NOTE_MAX_HEIGHT;
     setIsTall((prev) => (prev !== tall ? tall : prev));
-  }, [content, contentType]);
+  }, [content]);
   // Menu aggiuntivo per il box nota
   const noteMenuItems = [
     {
@@ -109,22 +105,11 @@ const NoteBox = ({
                 ref={contentMeasureRef}
                 className={`note-box-content${isTall ? " tall" : ""}${isNoteExpanded ? " expanded" : ""}`}
               >
-                {contentType === "markdown" ? (
-                  <MarkdownRenderer
-                    content={content}
-                    className="note-markdown text-sm pointer-events-none"
-                    onGraphPreviewClick={(dot) => {
-                      setGraphViewerDot(dot);
-                      setIsGraphViewerOpen(true);
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="text-sm text-text-secondary leading-relaxed pointer-events-none"
-                    dangerouslySetInnerHTML={{ __html: content }}
-                    style={{ wordWrap: "break-word", whiteSpace: "pre-wrap" }}
-                  />
-                )}
+                <div
+                  className="text-sm text-text-secondary leading-relaxed pointer-events-none"
+                  dangerouslySetInnerHTML={{ __html: content }}
+                  style={{ wordWrap: "break-word", whiteSpace: "pre-wrap" }}
+                />
               </div>
             </button>
 
@@ -180,13 +165,14 @@ const NoteBox = ({
         )}
       </BaseBentoBox>
 
-      {/* Modale modifica nota con editor rich text */}
+      {/* Modale modifica nota con editor rich text — bloccato in modalità TXT */}
       <RichTextModal
         isOpen={isEditNoteOpen}
         onClose={() => setIsEditNoteOpen(false)}
         onConfirm={handleNoteConfirm}
         initialContent={content}
-        contentType={contentType}
+        contentType="txt"
+        lockedMode="txt"
         noteTitle={title}
       />
 
@@ -196,14 +182,7 @@ const NoteBox = ({
         onClose={() => setIsViewerOpen(false)}
         title={title}
         content={content}
-        contentType={contentType}
-      />
-
-      {/* Modale visualizzatore grafico singolo (aperto dai placeholder in preview) */}
-      <GraphViewerModal
-        isOpen={isGraphViewerOpen}
-        onClose={() => setIsGraphViewerOpen(false)}
-        dot={graphViewerDot}
+        contentType="txt"
       />
     </>
   );

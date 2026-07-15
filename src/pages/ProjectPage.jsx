@@ -17,6 +17,7 @@ import {
   MobileAddFab,
   DesktopAddFab,
   NoteBox,
+  MarkdownBox,
   PhotoBox,
   PdfBox,
   FileBox,
@@ -143,6 +144,9 @@ const ProjectPage = ({
     if (box.boxType === "note") {
       return !box.content || box.content.trim().length === 0;
     }
+    if (box.boxType === "markdown") {
+      return !box.content || box.content.trim().length === 0;
+    }
     if (box.boxType === "photo") {
       return !box.photos || box.photos.length === 0;
     }
@@ -219,6 +223,26 @@ const ProjectPage = ({
       // Non serve setBentoBoxes - il listener lo farà automaticamente
     } catch (error) {
       console.error("Errore creazione nota:", error);
+    }
+  };
+
+  // Funzione per aggiungere un MarkdownBox
+  const handleAddMarkdown = async () => {
+    if (!project?.id) return;
+
+    try {
+      const markdownCount =
+        bentoBoxes.filter((b) => b.boxType === "markdown").length + 1;
+      await createBentoBox(project.id, {
+        title: `Markdown ${markdownCount}`,
+        boxType: "markdown",
+        content: "",
+        contentType: "markdown",
+        createdBy: currentUser?.uid,
+        createdByName: currentUser?.displayName || currentUser?.email,
+      });
+    } catch (error) {
+      console.error("Errore creazione markdown box:", error);
     }
   };
 
@@ -1264,7 +1288,45 @@ const ProjectPage = ({
                         <NoteBox
                           title={item.title}
                           content={item.content || ""}
-                          contentType={item.contentType || "txt"}
+                          isPinned={item.isPinned || false}
+                          createdByName={item.createdByName}
+                          createdAt={item.createdAt}
+                          onPinToggle={() =>
+                            handleBoxPinToggle(item.id, item.isPinned)
+                          }
+                          onTitleChange={(newTitle) =>
+                            handleBoxTitleChange(item.id, newTitle)
+                          }
+                          onContentChange={(newContent, newContentType) =>
+                            handleBoxContentChange(
+                              item.id,
+                              newContent,
+                              newContentType,
+                            )
+                          }
+                          onDelete={() => handleDeleteBox(item.id)}
+                          onSendMessageFromBox={() =>
+                            handleSendMessageFromBox(
+                              item.id,
+                              item.title,
+                              item.boxType,
+                            )
+                          }
+                        />
+                      </div>
+                    );
+                  }
+                  // Render MarkdownBox per box di tipo "markdown"
+                  if (item.boxType === "markdown") {
+                    return (
+                      <div
+                        key={item.id}
+                        data-bento-id={item.id}
+                        style={itemStyle}
+                      >
+                        <MarkdownBox
+                          title={item.title}
+                          content={item.content || ""}
                           isPinned={item.isPinned || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
@@ -1649,6 +1711,7 @@ const ProjectPage = ({
         onAddAnagrafica={handleAddAnagrafica}
         onAddPdf={handleAddPdf}
         onAddVersion={handleAddVersion}
+        onAddMarkdown={handleAddMarkdown}
       />
 
       {/* Chat Sidebar - per tutti i dispositivi */}

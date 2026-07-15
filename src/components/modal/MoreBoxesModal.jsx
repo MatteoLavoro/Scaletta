@@ -1,5 +1,11 @@
 import Modal from "./Modal";
-import { ListChecksIcon, UserIcon, FileTextIcon, ClockIcon } from "../icons";
+import {
+  ListChecksIcon,
+  UserIcon,
+  FileTextIcon,
+  ClockIcon,
+  CodeIcon,
+} from "../icons";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
@@ -62,6 +68,7 @@ const MoreBoxesModal = ({
   onAddAnagrafica,
   onAddPdf,
   onAddVersion,
+  onAddMarkdown,
   zIndex,
 }) => {
   const { colors, accentColor, isDark } = useTheme();
@@ -96,6 +103,12 @@ const MoreBoxesModal = ({
     onClose?.();
   };
 
+  // Handler per aggiungere markdown
+  const handleAddMarkdown = () => {
+    onAddMarkdown?.();
+    onClose?.();
+  };
+
   // Lista di opzioni box disponibili
   const boxOptions = [
     {
@@ -125,6 +138,14 @@ const MoreBoxesModal = ({
       title: "Controllo Versioni File",
       description: "Traccia versioni di un file con descrizione modifiche",
       onClick: handleAddVersion,
+    },
+    {
+      id: "markdown",
+      icon: <CodeIcon className="w-6 h-6" />,
+      title: "Markdown",
+      description:
+        "Nota con sintassi Markdown: titoli, elenchi, codice, grafici",
+      onClick: handleAddMarkdown,
     },
   ];
 
