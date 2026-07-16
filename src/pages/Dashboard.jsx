@@ -9,7 +9,7 @@ import {
   JoinGroupButton,
   EmptyGroupsCard,
 } from "../components/groups";
-import { InputModal } from "../components/modal";
+import { InputModal, SplitModalDemo } from "../components/modal";
 import { Spinner } from "../components/ui";
 import {
   getUserGroups,
@@ -41,6 +41,7 @@ const Dashboard = ({ onProjectClick, deletingProjectIds }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
 
   // Sottoscrizione real-time ai gruppi dell'utente
   useEffect(() => {
@@ -117,14 +118,26 @@ const Dashboard = ({ onProjectClick, deletingProjectIds }) => {
         {/* Logo - Left */}
         <span className="text-lg font-bold text-primary">Scaletta</span>
 
-        {/* Profile Button - Right (tondo) */}
-        <button
-          onClick={() => openModal(MODAL_PROFILE)}
-          className="flex items-center justify-center w-10 h-10 text-text-secondary bg-bg-tertiary rounded-full hover:bg-divider hover:text-text-primary transition-colors"
-          aria-label="Apri profilo"
-        >
-          <UserIcon className="w-5 h-5" />
-        </button>
+        {/* Pulsanti destra: Demo + Profilo */}
+        <div className="flex items-center gap-2">
+          {/* Demo SplitModal */}
+          <button
+            onClick={() => setIsDemoOpen(true)}
+            className="h-8 px-3 text-xs font-semibold text-text-secondary bg-bg-tertiary rounded-lg hover:bg-divider hover:text-text-primary border border-border/50 hover:border-border transition-colors"
+            aria-label="Apri demo SplitModal"
+          >
+            Demo
+          </button>
+
+          {/* Profile Button */}
+          <button
+            onClick={() => openModal(MODAL_PROFILE)}
+            className="flex items-center justify-center w-10 h-10 text-text-secondary bg-bg-tertiary rounded-full hover:bg-divider hover:text-text-primary transition-colors"
+            aria-label="Apri profilo"
+          >
+            <UserIcon className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       {/* Main */}
@@ -199,6 +212,12 @@ const Dashboard = ({ onProjectClick, deletingProjectIds }) => {
         loading={isJoining}
         zIndex={1000}
         exactLength={8}
+      />
+
+      {/* Demo SplitModal */}
+      <SplitModalDemo
+        isOpen={isDemoOpen}
+        onClose={() => setIsDemoOpen(false)}
       />
     </div>
   );

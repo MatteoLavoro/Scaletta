@@ -16,3 +16,5 @@ export { default as NoteViewerModal } from "./NoteViewerModal";
 export { default as GraphViewerModal } from "./GraphViewerModal";
 export { default as MessageModal } from "./NotificationModal";
 export { default as BoxTagModal } from "./BoxTagModal";
+export { default as SplitModal } from "./SplitModal";
+export { default as SplitModalDemo } from "./SplitModalDemo";

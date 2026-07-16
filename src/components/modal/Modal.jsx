@@ -82,7 +82,8 @@ const Modal = ({
       if (!onClose || skipHistory) {
         // Compensa la larghezza della scrollbar per evitare lo scatto del layout.
         if (document.body.style.overflow !== "hidden") {
-          const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+          const scrollbarWidth =
+            window.innerWidth - document.documentElement.clientWidth;
           if (scrollbarWidth > 0) {
             document.body.style.paddingRight = `${scrollbarWidth}px`;
           }

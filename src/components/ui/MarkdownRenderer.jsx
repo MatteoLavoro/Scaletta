@@ -297,6 +297,10 @@ const EXPAND_ICON_HTML =
  * @param {function} [onGraphPreviewClick]          - Callback chiamata con il codice DOT quando
  *                                                   si clicca su un grafico in modalità preview.
  *                                                   Se fornita, i placeholder diventano cliccabili.
+ * @param {number}   [scale]                        - Fattore di zoom visivo (es. 1.5 = 150%).
+ *                                                   Applicato via CSS zoom al container: non
+ *                                                   resetta mai l'innerHTML, i grafi SVG
+ *                                                   già renderizzati restano in DOM.
  */
 const MarkdownRenderer = ({
   content,
@@ -305,6 +309,7 @@ const MarkdownRenderer = ({
   enableAnchorLinks = false,
   renderGraphviz = false,
   onGraphPreviewClick,
+  scale,
 }) => {
   const containerRef = useRef(null);
   const rawHtml = useMemo(() => renderMarkdown(content || ""), [content]);
@@ -539,7 +544,10 @@ const MarkdownRenderer = ({
     <div
       ref={containerRef}
       className={className}
-      style={style}
+      // zoom è applicato QUI (non in un wrapper esterno) così React aggiorna solo
+      // l'attributo style senza mai rimpiazzare innerHTML: i grafi SVG già
+      // renderizzati da Graphviz restano in DOM a prescindere dal cambio di scala.
+      style={scale != null ? { ...style, zoom: scale } : style}
       dangerouslySetInnerHTML={{ __html: displayHtml }}
       onClick={handleClick}
     />
