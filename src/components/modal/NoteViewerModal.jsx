@@ -4,43 +4,69 @@ import SplitModal from "./SplitModal";
 import MarkdownRenderer from "../ui/MarkdownRenderer";
 import renderMarkdown from "../../utils/markdownRenderer";
 
-// ─── Estrazione anchor link interni dal markdown renderizzato ────────────────
+// ─── Estrazione Table of Contents dal markdown renderizzato ────────────────
 
 /**
- * Estrae gli anchor link interni (#slug) dall'HTML già renderizzato.
- * Vengono inclusi SOLO i link che puntano a sezioni interne del documento
- * (href="#..."), nell'ordine in cui compaiono nel sorgente — tipicamente
- * quelli elencati nella sezione "Indice" del file markdown.
- * I titoli non linkati esplicitamente vengono ignorati.
+ * Estrae il table of contents dal markdown renderizzato.
  *
- * La profondità (depth) viene ricavata dall'heading corrispondente per
- * preservare l'indentazione visiva nel pannello TOC.
+ * Strategia:
+ * 1. Estrae TUTTI gli heading h1-h6[id] dal documento
+ * 2. Identifica la "sezione indice" come i primi heading che contengono SOLO link
+ *    interni (<a href="#...">) — questi vengono esclusi dal TOC finale
+ * 3. Ritorna gli heading rimanenti (il contenuto vero del documento)
  *
+ * Questo consente di:
+ * - Supportare documenti con o senza sezione indice
+ * - Usare il testo dagli heading del documento come label nel TOC
+ * - Escludere la sezione indice dal tracking della posizione di lettura
+ *
+ * @param {string} markdown - Sorgente markdown
  * @returns {{ depth: number, text: string, slug: string }[]}
  */
-function extractAnchorLinks(markdown) {
+function extractTableOfContents(markdown) {
   if (!markdown || typeof DOMParser === "undefined") return [];
   try {
     const html = renderMarkdown(markdown);
     const doc = new DOMParser().parseFromString(html, "text/html");
 
-    // Mappa slug → profondità heading per preservare l'indentazione
-    const depthMap = new Map();
-    doc
-      .querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]")
-      .forEach((el) => depthMap.set(el.id, parseInt(el.tagName[1])));
+    // Estrai TUTTI gli heading h1-h6 con id
+    const allHeadings = Array.from(
+      doc.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]"),
+    ).map((el) => {
+      // Verifica se l'heading contiene SOLO link interni (sezione indice)
+      const hasOnlyInternalLinks = Array.from(el.childNodes).every(
+        (node) =>
+          (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) ||
+          (node.nodeType === Node.ELEMENT_NODE &&
+            node.tagName === "A" &&
+            (node.getAttribute("href") || "").startsWith("#")),
+      );
 
-    // Estrai anchor link interni, deduplicati, nell'ordine del documento
-    const seen = new Set();
-    const result = [];
-    doc.querySelectorAll('a[href^="#"]').forEach((el) => {
-      const slug = (el.getAttribute("href") || "").slice(1);
-      if (!slug || seen.has(slug)) return;
-      seen.add(slug);
-      const text = el.textContent?.trim() || "";
-      if (text) result.push({ depth: depthMap.get(slug) ?? 1, text, slug });
+      return {
+        id: el.id,
+        text: el.textContent?.trim() || "",
+        depth: parseInt(el.tagName[1]),
+        hasOnlyInternalLinks,
+      };
     });
-    return result;
+
+    // Identifica dove finisce la sezione indice:
+    // i primi heading CONSECUTIVI che contengono solo link interni
+    let indexSectionEnd = 0;
+    for (let i = 0; i < allHeadings.length; i++) {
+      if (allHeadings[i].hasOnlyInternalLinks) {
+        indexSectionEnd = i + 1;
+      } else {
+        break; // Fine della sezione indice
+      }
+    }
+
+    // Ritorna solo gli heading dopo la sezione indice
+    return allHeadings.slice(indexSectionEnd).map(({ id, text, depth }) => ({
+      slug: id,
+      text,
+      depth,
+    }));
   } catch {
     return [];
   }
@@ -53,7 +79,13 @@ function extractAnchorLinks(markdown) {
  * Evidenzia la voce corrispondente alla sezione attualmente visibile nel
  * pannello centrale e scorre automaticamente per tenerla visibile nel TOC.
  */
-const TocContent = ({ headings, onHeadingClick, activeSlug }) => {
+const TocContent = ({
+  headings,
+  onHeadingClick,
+  activeSlug,
+  favorites,
+  onFavoriteToggle,
+}) => {
   const activeItemRef = useRef(null);
 
   // Scorre il TOC per mantenere visibile la voce attiva.
@@ -78,6 +110,7 @@ const TocContent = ({ headings, onHeadingClick, activeSlug }) => {
     <nav className="flex flex-col gap-0.5" aria-label="Indice del documento">
       {headings.map((h, i) => {
         const isActive = h.slug === activeSlug;
+        const isFavorite = favorites.has(h.slug);
         return (
           <button
             key={i}
@@ -85,8 +118,8 @@ const TocContent = ({ headings, onHeadingClick, activeSlug }) => {
             onClick={() => onHeadingClick(h.slug)}
             title={h.text}
             className={`
-              text-left text-xs leading-snug rounded-lg py-1.5 w-full truncate
-              transition-colors duration-150
+              group text-left text-xs leading-snug rounded-lg py-1.5 px-2 w-full
+              transition-colors duration-150 flex items-center justify-between
               ${
                 isActive
                   ? "text-primary bg-primary/15 font-semibold"
@@ -98,7 +131,29 @@ const TocContent = ({ headings, onHeadingClick, activeSlug }) => {
               paddingRight: "8px",
             }}
           >
-            {h.text}
+            <span className="truncate flex-1">{h.text}</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onFavoriteToggle(h.slug);
+              }}
+              type="button"
+              className={`ml-1 flex-shrink-0 leading-none h-5 w-5 flex items-center justify-center text-lg transition-opacity duration-150 ${
+                isFavorite ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
+              aria-label={
+                isFavorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"
+              }
+            >
+              {isFavorite ? (
+                <span className="text-yellow-400">★</span>
+              ) : (
+                <span className="text-text-secondary hover:text-primary">
+                  ☆
+                </span>
+              )}
+            </button>
           </button>
         );
       })}
@@ -141,11 +196,29 @@ const NoteViewerModal = ({
     }
   }, [isOpen]);
 
-  // Estrae gli anchor link interni dal markdown renderizzato (solo per markdown)
-  const headings = useMemo(
-    () => (contentType === "markdown" ? extractAnchorLinks(content) : []),
-    [content, contentType],
-  );
+  // Estrae il table of contents dal markdown renderizzato (solo per markdown)
+  const headings = useMemo(() => {
+    if (contentType !== "markdown") return [];
+    const allHeadings = extractTableOfContents(content);
+    // Filtra per mostrare solo i titoli principali (h1 e h2)
+    // Questo riduce il rumore nel TOC e mostra solo le sezioni principali
+    return allHeadings.filter((h) => h.depth <= 2);
+  }, [content, contentType]);
+
+  // Stato per i paragrafi preferiti (salvati solo durante la sessione)
+  const [favorites, setFavorites] = useState(new Set());
+
+  const toggleFavorite = useCallback((slug) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) {
+        next.delete(slug);
+      } else {
+        next.add(slug);
+      }
+      return next;
+    });
+  }, []);
 
   // Slug del titolo attivo (evidenziato nel TOC)
   const [activeSlug, setActiveSlug] = useState(null);
@@ -167,17 +240,19 @@ const NoteViewerModal = ({
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  // Traccia la posizione di lettura: evidenzia nel TOC la sezione corrente.
+  // Traccia la posizione di lettura: evidenzia nel TOC la sezione attualmente visibile.
   //
-  // Algoritmo: scroll-listener + rAF throttle.
-  //   • Selettore h1-h6[id="slug"]: trova le DESTINAZIONI dei link (gli heading),
-  //     non gli anchor <a href="#..."> della sezione Indice (le sorgenti).
-  //   • Semantica "ultimo heading passato in cima": l'heading attivo è l'ultimo
-  //     in ordine DOM la cui distanza dal bordo superiore del pannello è <= 8px.
-  //     Non c'è break: si itera tutto l'array così l'ultimo valido vince sempre.
-  //   • scale nei dep: quando cambia lo zoom il contenuto si sposta, l'effetto
-  //     si riavvia e ricalcola subito la voce attiva con le nuove posizioni.
-  //   • Alla chiusura del modale si azzera il slug (no stato stale alla riapertura).
+  // Algoritmo:
+  //   1. Se il titolo (heading) di una sezione è visibile nel viewport,
+  //      evidenzia QUELLA sezione (scegli il primo titolo se più di uno).
+  //   2. Se nessun titolo è visibile, evidenzia la sezione che occupa
+  //      più spazio nel viewport.
+  //   3. Ogni "sezione" va dal suo titolo al titolo successivo (o fine doc).
+  //
+  // Questo funziona sempre anche quando si salta tra paragrafi.
+  // scale nei dep: quando cambia lo zoom il contenuto si sposta e il tracking
+  // si riavvia per ricalcolare la posizione con le nuove coordinate.
+  // Alla chiusura del modale si azzera il slug (evita stato stale).
   useEffect(() => {
     if (!isOpen) {
       setActiveSlug(null);
@@ -191,7 +266,8 @@ const NoteViewerModal = ({
       return;
     }
 
-    // Selettore che cerca SOLO h1-h6 con quegli id (la destinazione del link)
+    // Selettore che cerca SOLO gli h1-h6 con gli id del TOC
+    // (esclude gli heading della sezione indice, che non sono nel TOC)
     const sel = headings
       .flatMap(({ slug }) => {
         const e = CSS.escape(slug);
@@ -206,7 +282,21 @@ const NoteViewerModal = ({
       })
       .join(", ");
 
-    const headingEls = Array.from(container.querySelectorAll(sel));
+    // Filtra gli heading che contengono solo link interni: sono heading dell'indice
+    // (es. "## [Sezione 1](#sezione-1)") e hanno lo stesso id degli heading del contenuto.
+    // Senza questo filtro il tracking si inceppa su di essi perché sono in cima al DOM.
+    const headingEls = Array.from(container.querySelectorAll(sel)).filter(
+      (el) => {
+        const hasOnlyInternalLinks = Array.from(el.childNodes).every(
+          (node) =>
+            (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) ||
+            (node.nodeType === Node.ELEMENT_NODE &&
+              node.tagName === "A" &&
+              (node.getAttribute("href") || "").startsWith("#")),
+        );
+        return !hasOnlyInternalLinks;
+      },
+    );
     if (!headingEls.length) {
       setActiveSlug(null);
       return;
@@ -218,19 +308,41 @@ const NoteViewerModal = ({
       if (rafId !== null) return; // già in coda un frame
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        const containerTop = scrollEl.getBoundingClientRect().top;
-        // Cerca l'ultimo heading (ordine DOM) la cui top viewport è entro
-        // 8px dal bordo superiore del pannello = sezione che il lettore ha
-        // appena superato / sta leggendo.
-        // Senza break: tutti gli elementi vengono controllati, l'ultimo
-        // valido vince anche se i successivi non sono strettamente ordinati
-        // per posizione Y (es. dopo un cambio di zoom).
-        let activeEl = null;
-        for (const el of headingEls) {
-          if (el.getBoundingClientRect().top - containerTop <= 8) {
-            activeEl = el;
+
+        const viewportTop = scrollEl.getBoundingClientRect().top;
+        const viewportBottom = scrollEl.getBoundingClientRect().bottom;
+
+        let firstVisibleHeading = null;
+        let mostRecentPassedHeading = null;
+        let maxTopPassedHeading = -Infinity; // traccia il top massimo tra heading passati
+
+        // Itera through all headings per trovare:
+        // 1. Il primo heading VISIBILE nel viewport
+        // 2. L'heading SOPRA al viewport il cui top è MASSIMO
+        //    (quello più vicino al top del viewport = paragrafo più recente letto)
+        for (const heading of headingEls) {
+          const headingRect = heading.getBoundingClientRect();
+          const headingTop = headingRect.top;
+
+          // Se il titolo è visibile nel viewport
+          if (headingTop >= viewportTop && headingTop < viewportBottom) {
+            if (!firstVisibleHeading) {
+              firstVisibleHeading = heading;
+            }
+          }
+
+          // Se il titolo è SOPRA al top del viewport (lo hai già passato):
+          // Scegli l'heading il cui top è MASSIMO (più vicino al top del viewport).
+          // Questo è il paragrafo che stai attualmente leggendo.
+          if (headingTop < viewportTop && headingTop > maxTopPassedHeading) {
+            maxTopPassedHeading = headingTop;
+            mostRecentPassedHeading = heading;
           }
         }
+
+        // Priorità: se un titolo è visibile nel viewport, usalo.
+        // Altrimenti, usa il paragrafo più recente che hai letto (il cui titolo è più vicino).
+        const activeEl = firstVisibleHeading || mostRecentPassedHeading;
         setActiveSlug(activeEl?.id ?? null);
       });
     };
@@ -298,6 +410,8 @@ const NoteViewerModal = ({
                 headings={headings}
                 onHeadingClick={handleHeadingClick}
                 activeSlug={activeSlug}
+                favorites={favorites}
+                onFavoriteToggle={toggleFavorite}
               />
             ),
           },
