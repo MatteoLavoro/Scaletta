@@ -139,7 +139,7 @@ const TocContent = ({
                 onFavoriteToggle(h.slug);
               }}
               type="button"
-              className={`ml-1 flex-shrink-0 leading-none h-5 w-5 flex items-center justify-center text-lg transition-opacity duration-150 ${
+              className={`ml-1 shrink-0 leading-none h-5 w-5 flex items-center justify-center text-lg transition-opacity duration-150 ${
                 isFavorite ? "opacity-100" : "opacity-0 group-hover:opacity-100"
               }`}
               aria-label={
