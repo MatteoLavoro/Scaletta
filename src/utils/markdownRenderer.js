@@ -25,7 +25,7 @@ marked.use({
       return `<h${token.depth} id="${slug}">${content}</h${token.depth}>\n`;
     },
 
-    // 3. Blocchi ```dot / ```graphviz → placeholder per rendering WASM asincrono
+    // 3. Blocchi ```dot / ```graphviz / ```mermaid → placeholder per rendering asincrono
     code(token) {
       const lang = (token.lang || "").trim().toLowerCase();
       if (lang === "dot" || lang === "graphviz") {
@@ -33,6 +33,10 @@ marked.use({
         // Placeholder vuoto: l'effetto React sostituirà il contenuto
         // con il preview box (NoteBox) o il loading box + SVG (viewer)
         return `<div class="graphviz-placeholder" data-dot="${encoded}"></div>\n`;
+      }
+      if (lang === "mermaid") {
+        const encoded = encodeURIComponent(token.text.trim());
+        return `<div class="mermaid-placeholder" data-mermaid="${encoded}"></div>\n`;
       }
       return false; // fallback al renderer default per gli altri linguaggi
     },

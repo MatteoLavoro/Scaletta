@@ -8,8 +8,6 @@
 const functions = require("firebase-functions");
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-const chromium = require("@sparticuz/chromium");
-const puppeteer = require("puppeteer-core");
 
 // Inizializza Firebase Admin
 admin.initializeApp();
@@ -345,6 +343,10 @@ exports.generatePdf = onRequest(
     }
 
     // ── Generazione PDF con Puppeteer ────────────────────────────────────────
+    // Import dinamico: carica puppeteer/chromium solo quando la funzione è invocata
+    const chromium = require("@sparticuz/chromium");
+    const puppeteer = require("puppeteer-core");
+
     let browser = null;
     try {
       browser = await puppeteer.launch({

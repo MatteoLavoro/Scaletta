@@ -1,10 +1,27 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import renderMarkdown from "../../utils/markdownRenderer";
 
 // Cache del modulo @viz-js/viz — il file WASM viene scaricato e compilato
 // dal browser una sola volta, ma l'istanza Viz viene ricreata ad ogni rendering
 // per evitare problemi di stato tra aperture successive del viewer.
 let vizModulePromise = null;
+
+// Cache del modulo mermaid — caricato una volta sola per sessione.
+let mermaidModulePromise = null;
+// Contatore globale per garantire ID univoci ad ogni chiamata mermaid.render().
+let mermaidRenderCounter = 0;
+
+function getMermaidModule() {
+  if (!mermaidModulePromise) {
+    mermaidModulePromise = import("mermaid")
+      .then((mod) => mod.default)
+      .catch((err) => {
+        mermaidModulePromise = null;
+        throw err;
+      });
+  }
+  return mermaidModulePromise;
+}
 
 // Mappa per tenere traccia degli interval dei puntini animati (el → intervalId)
 const dotTimers = new Map();
@@ -270,6 +287,17 @@ function scaleViewerSVG(svgElement) {
   // height: auto è gestito dal CSS (.graphviz-rendered svg)
 }
 
+// Icona diagramma Mermaid inline SVG (flowchart a due rami)
+const MERMAID_ICON_HTML =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" ` +
+  `fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+  `<rect x="3" y="3" width="6" height="5" rx="1"/>` +
+  `<rect x="15" y="3" width="6" height="5" rx="1"/>` +
+  `<rect x="9" y="16" width="6" height="5" rx="1"/>` +
+  `<polyline points="6,8 6,13 12,13 12,16"/>` +
+  `<polyline points="18,8 18,13 12,13"/>` +
+  `</svg>`;
+
 // Icona grafo inline SVG (usata nei placeholder preview)
 const GRAPH_ICON_HTML =
   `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" ` +
@@ -314,6 +342,11 @@ const MarkdownRenderer = ({
   const containerRef = useRef(null);
   const rawHtml = useMemo(() => renderMarkdown(content || ""), [content]);
 
+  // Incrementato dal ResizeObserver per forzare il re-check dei diagrammi.
+  // Quando il container cambia dimensione (resize finestra, cambio scala, ecc.)
+  // gli effect si rieseguono e rilevano placeholder non ancora renderizzati.
+  const [renderVersion, setRenderVersion] = useState(0);
+
   // Booleano stabile: true se siamo in preview mode con callback fornita.
   // Usato come dep di displayHtml (boolean, non cambia reference ad ogni render).
   const hasGraphPreviewCallback = !renderGraphviz && !!onGraphPreviewClick;
@@ -330,7 +363,8 @@ const MarkdownRenderer = ({
   const displayHtml = useMemo(() => {
     if (renderGraphviz) return rawHtml;
 
-    return rawHtml.replace(
+    // Sostituisce i placeholder Graphviz con preview box statiche
+    let html = rawHtml.replace(
       /<div class="graphviz-placeholder" data-dot="([^"]+)"><\/div>/g,
       (_, encoded) => {
         const extraClass = hasGraphPreviewCallback
@@ -359,12 +393,63 @@ const MarkdownRenderer = ({
         );
       },
     );
+
+    // Sostituisce i placeholder Mermaid con preview box statiche
+    html = html.replace(
+      /<div class="mermaid-placeholder" data-mermaid="([^"]+)"><\/div>/g,
+      (_, encoded) =>
+        `<div class="mermaid-placeholder mermaid-preview-mode" data-mermaid="${encoded}">` +
+        `<div class="graphviz-preview-box">` +
+        `<div class="graphviz-preview-icon-wrap">${MERMAID_ICON_HTML}</div>` +
+        `<div class="graphviz-preview-body">` +
+        `<span class="graphviz-preview-title">Diagramma Mermaid</span>` +
+        `<span class="graphviz-preview-sub">Apri la nota per visualizzare</span>` +
+        `</div>` +
+        `</div></div>`,
+    );
+
+    return html;
   }, [rawHtml, renderGraphviz, hasGraphPreviewCallback]);
 
   // Ref per la callback di preview click: sempre aggiornato, utilizzabile
   // nell'onClick React senza dipendenze da closure stale.
   const onGraphPreviewClickRef = useRef(onGraphPreviewClick);
   onGraphPreviewClickRef.current = onGraphPreviewClick;
+
+  // ── ResizeObserver: ri-triggera il rendering dei diagrammi al cambio di dimensione ──────
+  //
+  // Scenario tipico: l'utente preme +/− scala oppure ridimensiona la finestra.
+  // Il container cambia dimensione, l'observer lo rileva e incrementa renderVersion
+  // (con debounce 150ms). Gli effect di Graphviz e Mermaid hanno renderVersion nei dep:
+  // si rieseguono, trovano i placeholder già con classe "*-rendered" o SVG figlio,
+  // e terminano immediatamente senza nessun flash visivo.
+  // Se invece i placeholder non sono più renderizzati (innerHTML resettato da React),
+  // gli effect li ridisegnano mostrando il loading box.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !renderGraphviz) return;
+
+    let timer = null;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer);
+      // Scatta solo se ci sono placeholder "persi" (né rendered né in caricamento).
+      // Impedisce il feedback loop: loading box → resize → cancel → restart → loop.
+      timer = setTimeout(() => {
+        const hasLost =
+          container.querySelectorAll(
+            ".graphviz-placeholder:not(.graphviz-rendered):not(.graphviz-preview-mode):not([data-loading])," +
+              ".mermaid-placeholder:not(.mermaid-rendered):not([data-loading])",
+          ).length > 0;
+        if (hasLost) setRenderVersion((v) => v + 1);
+      }, 150);
+    });
+    observer.observe(container);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [renderGraphviz]);
 
   // ── Graphviz ────────────────────────────────────────────────────────────────
   //
@@ -391,9 +476,14 @@ const MarkdownRenderer = ({
     let cancelled = false;
 
     placeholders.forEach((el, i) => {
-      // Se ha già un SVG o è già renderizzato, NON toccare.
-      if (el.classList.contains("graphviz-rendered") || el.querySelector("svg"))
+      // Salta se già renderizzato o già in caricamento (data-loading previene loop)
+      if (
+        el.classList.contains("graphviz-rendered") ||
+        el.querySelector("svg") ||
+        el.hasAttribute("data-loading")
+      )
         return;
+      el.setAttribute("data-loading", "true");
       const label = total > 1 ? `Grafico ${i + 1} di ${total}` : "Grafico";
       el.innerHTML =
         `<div class="graphviz-loading-box">` +
@@ -462,6 +552,7 @@ const MarkdownRenderer = ({
             el.innerHTML = "";
             el.appendChild(svgElement);
             el.classList.add("graphviz-rendered");
+            el.removeAttribute("data-loading");
           } catch (err) {
             console.error(
               `[Graphviz] ❌ Grafico ${i + 1}/${count} — errore rendering:`,
@@ -477,6 +568,7 @@ const MarkdownRenderer = ({
               `<strong>Errore Graphviz</strong><pre>${msg}</pre>` +
               `</div>`;
             el.classList.add("graphviz-rendered");
+            el.removeAttribute("data-loading");
           }
         });
       })
@@ -497,14 +589,139 @@ const MarkdownRenderer = ({
             /** @type {HTMLElement} */ (el).innerHTML =
               `<div class="graphviz-error">Impossibile caricare Graphviz: ${msg}</div>`;
             /** @type {HTMLElement} */ (el).classList.add("graphviz-rendered");
+            /** @type {HTMLElement} */ (el).removeAttribute("data-loading");
           });
       });
 
     return () => {
       cancelled = true;
-      placeholders.forEach((el) => stopDotsAnimation(el));
+      placeholders.forEach((el) => {
+        stopDotsAnimation(el);
+        el.removeAttribute("data-loading");
+      });
     };
-  }, [rawHtml, renderGraphviz]);
+  }, [rawHtml, renderGraphviz, renderVersion]);
+
+  // ── Mermaid ─────────────────────────────────────────────────────────────────
+  //
+  // Stesso pattern del blocco Graphviz: `cancelled` previene rendering da
+  // effect obsoleti (React StrictMode double-invoke + chiusure su rawHtml).
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !renderGraphviz) return;
+
+    const placeholders = /** @type {NodeListOf<HTMLElement>} */ (
+      container.querySelectorAll(".mermaid-placeholder")
+    );
+    if (placeholders.length === 0) return;
+
+    const total = placeholders.length;
+    let cancelled = false;
+
+    // Mostra loading box in attesa del modulo
+    placeholders.forEach((el, i) => {
+      if (
+        el.classList.contains("mermaid-rendered") ||
+        el.querySelector("svg") ||
+        el.hasAttribute("data-loading")
+      )
+        return;
+      el.setAttribute("data-loading", "true");
+      const label = total > 1 ? `Diagramma ${i + 1} di ${total}` : "Diagramma";
+      el.innerHTML =
+        `<div class="graphviz-loading-box">` +
+        `<div class="graphviz-loading-icon">${MERMAID_ICON_HTML}</div>` +
+        `<div class="graphviz-loading-text">` +
+        `Caricamento ${label}<span class="graphviz-dots"></span>` +
+        `</div>` +
+        `</div>`;
+      const dotsEl = el.querySelector(".graphviz-dots");
+      const timerId = startDotsAnimation(dotsEl);
+      if (timerId !== undefined) dotTimers.set(el, timerId);
+    });
+
+    const isDark = localStorage.getItem("theme") !== "light";
+
+    getMermaidModule()
+      .then(async (mermaid) => {
+        if (cancelled) return;
+
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: isDark ? "dark" : "default",
+          securityLevel: "strict",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        });
+
+        if (!container.isConnected) return;
+
+        const toRender = /** @type {NodeListOf<HTMLElement>} */ (
+          container.querySelectorAll(
+            ".mermaid-placeholder:not(.mermaid-rendered)",
+          )
+        );
+
+        for (const el of Array.from(toRender)) {
+          if (cancelled) return;
+
+          const code = decodeURIComponent(
+            el.getAttribute("data-mermaid") || "",
+          );
+          if (!code) continue;
+
+          try {
+            const id = `mermaid-svg-${++mermaidRenderCounter}`;
+            const { svg } = await mermaid.render(id, code);
+            if (cancelled) return;
+            stopDotsAnimation(el);
+            el.innerHTML = svg;
+            el.classList.add("mermaid-rendered");
+            el.removeAttribute("data-loading");
+          } catch (err) {
+            if (cancelled) return;
+            console.error("[Mermaid] ❌ Errore rendering:", err);
+            stopDotsAnimation(el);
+            const msg = String(err?.message ?? err)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
+            el.innerHTML =
+              `<div class="graphviz-error">` +
+              `<strong>Errore Mermaid</strong><pre>${msg}</pre>` +
+              `</div>`;
+            el.classList.add("mermaid-rendered");
+            el.removeAttribute("data-loading");
+          }
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[Mermaid] ❌ Impossibile caricare Mermaid:", err);
+        if (!container.isConnected) return;
+        const msg = String(err?.message ?? err)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        container
+          .querySelectorAll(".mermaid-placeholder:not(.mermaid-rendered)")
+          .forEach((el) => {
+            stopDotsAnimation(el);
+            /** @type {HTMLElement} */ (el).innerHTML =
+              `<div class="graphviz-error">Impossibile caricare Mermaid: ${msg}</div>`;
+            /** @type {HTMLElement} */ (el).classList.add("mermaid-rendered");
+            /** @type {HTMLElement} */ (el).removeAttribute("data-loading");
+          });
+      });
+
+    return () => {
+      cancelled = true;
+      placeholders.forEach((el) => {
+        stopDotsAnimation(el);
+        el.removeAttribute("data-loading");
+      });
+    };
+  }, [rawHtml, renderGraphviz, renderVersion]);
 
   // ── Anchor links ─────────────────────────────────────────────────────────────
   // Gestisce sia anchor links che click sui placeholder grafico (event delegation).

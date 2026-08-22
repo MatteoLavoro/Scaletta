@@ -840,3 +840,39 @@ kbd {
   word-break: break-all;
   color: var(--color-text-secondary);
 }
+
+/* ===== Mermaid Styles ===== */
+/* Stili per il rendering dei diagrammi Mermaid nelle note markdown */
+
+.mermaid-placeholder {
+  margin: 0.75rem 0;
+}
+
+/* Preview mode (NoteBox) — stessa struttura interna dei graphviz-preview-* */
+.mermaid-placeholder.mermaid-preview-mode {
+  background: var(--color-bg-tertiary);
+  border: 1px dashed var(--color-border);
+  border-radius: 0.625rem;
+  overflow: hidden;
+}
+
+/* Diagramma renderizzato nel viewer modale */
+.mermaid-placeholder.mermaid-rendered {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  overflow-x: auto;
+  min-height: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+/* L'SVG prodotto da Mermaid ha uno sfondo inline — lo rendiamo trasparente
+   così il container bg-tertiary funge da sfondo in entrambi i temi. */
+.mermaid-placeholder.mermaid-rendered svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: transparent !important;
+}
