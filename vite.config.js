@@ -14,16 +14,35 @@ export default defineConfig({
     },
   },
   build: {
+    // viz/mermaid/cynefin are lazy-loaded — only fetched when diagrams are rendered
+    chunkSizeWarningLimit: 1400,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks - librerie esterne
-          "vendor-react": ["react", "react-dom"],
-          "vendor-firebase-core": ["firebase/app", "firebase/auth"],
-          "vendor-firebase-db": ["firebase/firestore"],
-          "vendor-firebase-storage": ["firebase/storage"],
-          "vendor-pdf": ["react-pdf", "pdfjs-dist"],
-          "vendor-icons": ["lucide-react"],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (
+            id.includes("@firebase/messaging") ||
+            id.includes("firebase/messaging")
+          )
+            return "vendor-firebase-messaging";
+          if (
+            id.includes("@firebase/firestore") ||
+            id.includes("firebase/firestore")
+          )
+            return "vendor-firebase-db";
+          if (
+            id.includes("@firebase/storage") ||
+            id.includes("firebase/storage")
+          )
+            return "vendor-firebase-storage";
+          if (id.includes("@firebase") || id.includes("firebase"))
+            return "vendor-firebase-core";
+          if (id.includes("react-pdf") || id.includes("pdfjs-dist"))
+            return "vendor-pdf";
+          if (id.includes("lucide-react")) return "vendor-icons";
+          if (id.includes("react-dom") || id.includes("/react/"))
+            return "vendor-react";
+          if (id.includes("/marked/")) return "vendor-marked";
         },
       },
     },

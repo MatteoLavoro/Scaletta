@@ -1,19 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ModalProvider, useModal } from "./contexts/ModalContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { WelcomePage, Dashboard, LoadingPage, ProjectPage } from "./pages";
+import { LoadingPage } from "./pages";
 import { AuthModal } from "./components/auth";
 import { ProfileModal } from "./components/profile";
 import InstallPopup from "./components/pwa/InstallModal";
 import { usePWAInstall } from "./hooks/usePWAInstall";
-import { initializeNotifications } from "./utils/notificationInit";
 import {
   updateProjectName,
   updateProjectColor,
   updateProjectStatus,
   deleteProject,
 } from "./services/projects";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const WelcomePage = lazy(() => import("./pages/WelcomePage"));
+const ProjectPage = lazy(() => import("./pages/ProjectPage"));
 
 const MODAL_AUTH = "auth";
 export const MODAL_PROFILE = "profile";
@@ -63,7 +66,10 @@ const AppContent = () => {
   // Inizializza le notifiche quando l'utente è autenticato
   useEffect(() => {
     if (isAuthenticated && user?.uid) {
-      initializeNotifications(user.uid);
+      const uid = user.uid;
+      import("./utils/notificationInit").then(({ initializeNotifications }) => {
+        initializeNotifications(uid);
+      });
     }
   }, [isAuthenticated, user?.uid]);
 
@@ -207,67 +213,71 @@ const AppContent = () => {
     const isFounder = currentGroup?.founderId === user?.uid;
 
     return (
+      <Suspense fallback={<LoadingPage />}>
+        <>
+          {/* Dashboard - nascosta quando c’è un progetto selezionato */}
+          <div className={currentProject ? "hidden" : ""}>
+            <Dashboard
+              key={dashboardRefreshKey}
+              onProjectClick={handleProjectClick}
+              deletingProjectIds={deletingProjectIds}
+            />
+          </div>
+
+          {/* ProjectPage - mostrata quando c'è un progetto selezionato */}
+          {currentProject && (
+            <ProjectPage
+              project={currentProject}
+              group={currentGroup}
+              isFounder={isFounder}
+              currentUser={{
+                uid: user?.uid,
+                displayName: user?.displayName,
+                email: user?.email,
+              }}
+              onBack={handleBackFromProject}
+              onUpdateName={handleUpdateProjectName}
+              onUpdateColor={handleUpdateProjectColor}
+              onUpdateStatus={handleUpdateProjectStatus}
+              onDelete={handleDeleteProject}
+            />
+          )}
+
+          <ProfileModal isOpen={currentModal?.id === MODAL_PROFILE} />
+          <InstallPopup
+            isOpen={showInstallPopup}
+            onClose={() => setShowInstallPopup(false)}
+            onInstall={install}
+          />
+        </>
+      </Suspense>
+    );
+  }
+
+  return (
+    <Suspense fallback={<LoadingPage />}>
       <>
-        {/* Dashboard - nascosta quando c’è un progetto selezionato */}
-        <div className={currentProject ? "hidden" : ""}>
-          <Dashboard
-            key={dashboardRefreshKey}
-            onProjectClick={handleProjectClick}
-            deletingProjectIds={deletingProjectIds}
-          />
-        </div>
-
-        {/* ProjectPage - mostrata quando c'è un progetto selezionato */}
-        {currentProject && (
-          <ProjectPage
-            project={currentProject}
-            group={currentGroup}
-            isFounder={isFounder}
-            currentUser={{
-              uid: user?.uid,
-              displayName: user?.displayName,
-              email: user?.email,
-            }}
-            onBack={handleBackFromProject}
-            onUpdateName={handleUpdateProjectName}
-            onUpdateColor={handleUpdateProjectColor}
-            onUpdateStatus={handleUpdateProjectStatus}
-            onDelete={handleDeleteProject}
-          />
-        )}
-
-        <ProfileModal isOpen={currentModal?.id === MODAL_PROFILE} />
+        <WelcomePage
+          onLogin={() => {
+            setAuthMode("login");
+            openModal(MODAL_AUTH);
+          }}
+          onRegister={() => {
+            setAuthMode("register");
+            openModal(MODAL_AUTH);
+          }}
+        />
+        <AuthModal
+          isOpen={currentModal?.id === MODAL_AUTH}
+          initialMode={authMode}
+        />
         <InstallPopup
           isOpen={showInstallPopup}
           onClose={() => setShowInstallPopup(false)}
           onInstall={install}
         />
       </>
-    );
-  }
-
-  return (
-    <>
-      <WelcomePage
-        onLogin={() => {
-          setAuthMode("login");
-          openModal(MODAL_AUTH);
-        }}
-        onRegister={() => {
-          setAuthMode("register");
-          openModal(MODAL_AUTH);
-        }}
-      />
-      <AuthModal
-        isOpen={currentModal?.id === MODAL_AUTH}
-        initialMode={authMode}
-      />
-      <InstallPopup
-        isOpen={showInstallPopup}
-        onClose={() => setShowInstallPopup(false)}
-        onInstall={install}
-      />
-    </>
+    </Suspense>
   );
 };
 
