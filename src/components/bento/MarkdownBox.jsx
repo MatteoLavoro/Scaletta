@@ -181,6 +181,10 @@ const MarkdownBox = ({
         title={title}
         content={content}
         contentType="markdown"
+        onEdit={() => {
+          setIsViewerOpen(false);
+          setIsEditNoteOpen(true);
+        }}
       />
     </>
   );

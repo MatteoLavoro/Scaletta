@@ -3,6 +3,8 @@ import Modal from "./Modal";
 import SplitModal from "./SplitModal";
 import MarkdownRenderer from "../ui/MarkdownRenderer";
 import renderMarkdown from "../../utils/markdownRenderer";
+import { exportNoteToPdf } from "../../services/pdfExport";
+import { DownloadIcon, FileTextIcon, PencilIcon, ZoomInIcon } from "../icons";
 
 // ─── Estrazione Table of Contents dal markdown renderizzato ────────────────
 
@@ -183,6 +185,7 @@ const NoteViewerModal = ({
   title,
   content,
   contentType = "txt",
+  onEdit,
 }) => {
   // ── Tutti gli hook prima di qualsiasi return condizionale ────────────────
 
@@ -231,6 +234,31 @@ const NoteViewerModal = ({
 
   // Scala di visualizzazione del contenuto markdown (50%–250%, step 25%)
   const [scale, setScale] = useState(100);
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (isExporting || !content?.trim()) return;
+    setIsExporting(true);
+    try {
+      await exportNoteToPdf(title || "Nota", content);
+    } catch (err) {
+      if (err?.message) alert(err.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportMd = () => {
+    if (!content?.trim()) return;
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title || "nota"}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Click su voce TOC → scorre SOLO nel pannello centrale (non nel documento)
   const handleHeadingClick = useCallback((slug) => {
@@ -422,31 +450,85 @@ const NoteViewerModal = ({
             title: "Strumenti",
             flex: 1,
             content: (
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Scala
-                </p>
-                <div className="flex items-center bg-bg-tertiary rounded-2xl p-1">
-                  <button
-                    onClick={() => setScale((s) => Math.max(50, s - 25))}
-                    disabled={scale <= 50}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold text-text-primary hover:bg-divider active:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
-                    aria-label="Riduci scala"
-                  >
-                    −
-                  </button>
-                  <span className="text-sm font-semibold text-text-primary min-w-16 text-center tabular-nums">
-                    {scale}%
-                  </span>
-                  <button
-                    onClick={() => setScale((s) => Math.min(250, s + 25))}
-                    disabled={scale >= 250}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold text-text-primary hover:bg-divider active:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
-                    aria-label="Aumenta scala"
-                  >
-                    +
-                  </button>
+              <div className="flex flex-col gap-1">
+                {/* Zoom */}
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2 text-text-secondary">
+                    <ZoomInIcon className="w-4 h-4 shrink-0" />
+                    <span className="text-sm">Zoom</span>
+                  </div>
+                  <div className="flex items-center bg-bg-tertiary rounded-xl p-0.5">
+                    <button
+                      onClick={() => setScale((s) => Math.max(50, s - 25))}
+                      disabled={scale <= 50}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-base font-bold text-text-primary hover:bg-divider active:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                      aria-label="Riduci scala"
+                    >
+                      −
+                    </button>
+                    <span className="text-xs font-semibold text-text-primary min-w-12 text-center tabular-nums">
+                      {scale}%
+                    </span>
+                    <button
+                      onClick={() => setScale((s) => Math.min(250, s + 25))}
+                      disabled={scale >= 250}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-base font-bold text-text-primary hover:bg-divider active:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                      aria-label="Aumenta scala"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+
+                {/* Divisore */}
+                <div className="h-px bg-divider my-1" />
+
+                {/* Esporta PDF */}
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isExporting || !content?.trim()}
+                  className="flex items-center gap-2 w-full px-2 py-2 rounded-xl hover:bg-bg-tertiary active:bg-divider disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-text-primary"
+                >
+                  <DownloadIcon
+                    className={`w-4 h-4 shrink-0 ${
+                      isExporting ? "text-primary animate-pulse" : ""
+                    }`}
+                  />
+                  <span
+                    className={`text-sm ${
+                      isExporting ? "text-primary font-medium" : ""
+                    }`}
+                  >
+                    {isExporting ? "Generazione…" : "Esporta PDF"}
+                  </span>
+                </button>
+
+                {/* Esporta MD */}
+                <button
+                  type="button"
+                  onClick={handleExportMd}
+                  disabled={!content?.trim()}
+                  className="flex items-center gap-2 w-full px-2 py-2 rounded-xl hover:bg-bg-tertiary active:bg-divider disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-text-primary"
+                >
+                  <FileTextIcon className="w-4 h-4 shrink-0" />
+                  <span className="text-sm">Esporta MD</span>
+                </button>
+
+                {/* Modifica */}
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onEdit();
+                    }}
+                    className="flex items-center gap-2 w-full px-2 py-2 rounded-xl hover:bg-bg-tertiary active:bg-divider transition-colors text-text-primary"
+                  >
+                    <PencilIcon className="w-4 h-4 shrink-0" />
+                    <span className="text-sm">Modifica</span>
+                  </button>
+                )}
               </div>
             ),
           },
