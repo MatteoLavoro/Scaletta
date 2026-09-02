@@ -13,6 +13,8 @@ import {
   onSnapshot,
   serverTimestamp,
   runTransaction,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { getStorage, ref, listAll, deleteObject } from "firebase/storage";
 import app from "./config";
@@ -71,6 +73,7 @@ export const getRandomAvailableColor = async (groupId) => {
 export const createProject = async (name, groupId, creator, color = null) => {
   // Se non viene fornito un colore, assegna uno random non usato
   const projectColor = color || (await getRandomAvailableColor(groupId));
+  const shareCode = await generateUniqueProjectShareCode();
 
   const projectId = doc(collection(db, PROJECTS_COLLECTION)).id;
 
@@ -79,7 +82,10 @@ export const createProject = async (name, groupId, creator, color = null) => {
     name: name.trim(),
     groupId,
     color: projectColor,
-    status: DEFAULT_PROJECT_STATUS, // Stato di default: "in-corso"
+    status: DEFAULT_PROJECT_STATUS,
+    shareCode,
+    sharedGroups: [],
+    sharedGroupIds: [],
     createdAt: serverTimestamp(),
     createdBy: creator.uid,
     createdByName: creator.displayName || creator.email,
@@ -186,25 +192,59 @@ const sortProjects = (projects) => {
  * @returns {function} - Funzione per annullare la sottoscrizione
  */
 export const subscribeToGroupProjects = (groupId, onUpdate) => {
-  const q = query(
+  // Stato locale per merge dei due listener
+  let ownProjects = null;
+  let sharedProjects = null;
+  let initialized = 0;
+
+  const emitIfReady = () => {
+    if (initialized < 2) return;
+    const ownMapped = (ownProjects || []).map((p) => ({
+      ...p,
+      _sharedRole: null,
+    }));
+    const sharedMapped = (sharedProjects || []).map((p) => {
+      const entry = p.sharedGroups?.find((g) => g.groupId === groupId);
+      return { ...p, _sharedRole: entry?.role || "viewer" };
+    });
+    onUpdate(sortProjects([...ownMapped, ...sharedMapped]));
+  };
+
+  const q1 = query(
     collection(db, PROJECTS_COLLECTION),
     where("groupId", "==", groupId),
   );
-
-  return onSnapshot(
-    q,
+  const unsub1 = onSnapshot(
+    q1,
     (snapshot) => {
-      const projects = [];
-      snapshot.forEach((doc) => {
-        projects.push({ id: doc.id, ...doc.data() });
-      });
-
-      onUpdate(sortProjects(projects));
+      ownProjects = [];
+      snapshot.forEach((d) => ownProjects.push({ id: d.id, ...d.data() }));
+      if (initialized < 2) initialized++;
+      emitIfReady();
     },
-    (error) => {
-      console.error("Errore sincronizzazione progetti gruppo:", error);
-    },
+    (error) => console.error("Errore sincronizzazione progetti propri:", error),
   );
+
+  const q2 = query(
+    collection(db, PROJECTS_COLLECTION),
+    where("sharedGroupIds", "array-contains", groupId),
+  );
+  const unsub2 = onSnapshot(
+    q2,
+    (snapshot) => {
+      sharedProjects = [];
+      snapshot.forEach((d) => sharedProjects.push({ id: d.id, ...d.data() }));
+      if (initialized < 2) initialized++;
+      emitIfReady();
+    },
+    (error) =>
+      console.error("Errore sincronizzazione progetti condivisi:", error),
+  );
+
+  return () => {
+    unsub1();
+    unsub2();
+  };
 };
 
 /**
@@ -351,6 +391,140 @@ export const projectNameExists = async (
   return projects.some(
     (p) => p.name.toLowerCase() === normalizedName && p.id !== excludeProjectId,
   );
+};
+
+// ===== PROJECT SHARING FUNCTIONS =====
+
+const SHARE_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+const generateProjectShareCode = () => {
+  let code = "";
+  for (let i = 0; i < 10; i++) {
+    code += SHARE_CODE_CHARS.charAt(
+      Math.floor(Math.random() * SHARE_CODE_CHARS.length),
+    );
+  }
+  return code;
+};
+
+const isShareCodeInUse = async (code) => {
+  const q = query(
+    collection(db, PROJECTS_COLLECTION),
+    where("shareCode", "==", code),
+  );
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
+};
+
+const generateUniqueProjectShareCode = async () => {
+  let code = generateProjectShareCode();
+  let attempts = 0;
+  while ((await isShareCodeInUse(code)) && attempts < 10) {
+    code = generateProjectShareCode();
+    attempts++;
+  }
+  return code;
+};
+
+export const ensureProjectShareCode = async (projectId) => {
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const snap = await getDoc(projectRef);
+  if (!snap.exists()) throw new Error("Progetto non trovato");
+  const data = snap.data();
+  if (data.shareCode) return data.shareCode;
+  const code = await generateUniqueProjectShareCode();
+  await updateDoc(projectRef, {
+    shareCode: code,
+    sharedGroups: data.sharedGroups || [],
+    sharedGroupIds: data.sharedGroupIds || [],
+  });
+  return code;
+};
+
+export const getProjectByShareCode = async (shareCode) => {
+  const q = query(
+    collection(db, PROJECTS_COLLECTION),
+    where("shareCode", "==", shareCode.trim().toUpperCase()),
+  );
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  const d = snapshot.docs[0];
+  return { id: d.id, ...d.data() };
+};
+
+export const requestJoinSharedProject = async (
+  projectId,
+  requestingGroup,
+  requestingUser,
+) => {
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const snap = await getDoc(projectRef);
+  if (!snap.exists()) throw new Error("Progetto non trovato");
+
+  const data = snap.data();
+  const alreadyPresent = data.sharedGroups?.some(
+    (g) => g.groupId === requestingGroup.groupId,
+  );
+  if (alreadyPresent)
+    throw new Error("Questo gruppo ha già richiesto o ottenuto l'accesso.");
+
+  const entry = {
+    groupId: requestingGroup.groupId,
+    groupName: requestingGroup.groupName,
+    role: "pending",
+    requestedAt: new Date().toISOString(),
+    requestedBy: requestingUser.uid,
+    requestedByName: requestingUser.displayName || requestingUser.email,
+    members: requestingGroup.members || [],
+  };
+
+  await updateDoc(projectRef, {
+    sharedGroups: arrayUnion(entry),
+    sharedGroupIds: arrayUnion(requestingGroup.groupId),
+  });
+};
+
+export const acceptSharedGroup = async (projectId, groupId) => {
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const snap = await getDoc(projectRef);
+  if (!snap.exists()) throw new Error("Progetto non trovato");
+
+  const data = snap.data();
+  const entry = data.sharedGroups?.find((g) => g.groupId === groupId);
+  if (!entry) throw new Error("Gruppo non trovato tra le richieste");
+
+  const updated = data.sharedGroups.map((g) =>
+    g.groupId === groupId ? { ...g, role: "viewer" } : g,
+  );
+  await updateDoc(projectRef, { sharedGroups: updated });
+};
+
+export const updateSharedGroupRole = async (projectId, groupId, role) => {
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const snap = await getDoc(projectRef);
+  if (!snap.exists()) throw new Error("Progetto non trovato");
+
+  const data = snap.data();
+  const updated = data.sharedGroups.map((g) =>
+    g.groupId === groupId ? { ...g, role } : g,
+  );
+  await updateDoc(projectRef, { sharedGroups: updated });
+};
+
+export const removeSharedGroup = async (projectId, groupId) => {
+  const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
+  const snap = await getDoc(projectRef);
+  if (!snap.exists()) throw new Error("Progetto non trovato");
+
+  const data = snap.data();
+  const entry = data.sharedGroups?.find((g) => g.groupId === groupId);
+  if (!entry) return;
+
+  const updatedGroups = data.sharedGroups.filter((g) => g.groupId !== groupId);
+  await updateDoc(projectRef, {
+    sharedGroups: updatedGroups,
+    sharedGroupIds: arrayRemove(groupId),
+  });
 };
 
 // ===== BENTO BOX FUNCTIONS =====

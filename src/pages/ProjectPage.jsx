@@ -5,13 +5,18 @@ import {
   SettingsIcon,
   BellIcon,
   MessageSquareIcon,
+  LinkIcon,
 } from "../components/icons";
 import useColumnCount, { BOX_WIDTH, GAP } from "../hooks/useColumnCount";
 import useBentoAnimation from "../hooks/useBentoAnimation";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useTheme } from "../contexts/ThemeContext";
 import { useModal } from "../contexts/ModalContext";
-import { ProjectInfoModal, StatusModal } from "../components/projects";
+import {
+  ProjectInfoModal,
+  StatusModal,
+  ProjectShareModal,
+} from "../components/projects";
 import { DropdownMenu } from "../components/ui";
 import {
   MobileAddFab,
@@ -59,11 +64,11 @@ import {
 
 /**
  * ProjectPage - Pagina di un singolo progetto
- * Gestisce la history del browser come i modali
  *
  * @param {object} project - Dati del progetto
  * @param {object} group - Dati del gruppo
  * @param {boolean} isFounder - Se l'utente è il founder del gruppo
+ * @param {string} userRole - Ruolo nel progetto: "owner"|"editor"|"viewer"
  * @param {object} currentUser - Dati dell'utente corrente { uid, displayName, email }
  * @param {function} onBack - Callback per tornare indietro
  * @param {function} onUpdateName - Callback per aggiornare il nome del progetto
@@ -75,6 +80,7 @@ const ProjectPage = ({
   project,
   group,
   isFounder,
+  userRole = "owner",
   currentUser,
   onBack,
   onUpdateName,
@@ -88,12 +94,15 @@ const ProjectPage = ({
   const [initialTaggedBoxes, setInitialTaggedBoxes] = useState([]);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isMoreBoxesModalOpen, setIsMoreBoxesModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dragCounterRef = useRef(0);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
+
+  const isViewer = userRole === "viewer";
 
   // Stato per i bento box del progetto
   const [bentoBoxes, setBentoBoxes] = useState([]);
@@ -171,6 +180,8 @@ const ProjectPage = ({
 
   // Funzione per pulire i box vuoti e non modificati (chiamata quando si torna alla home)
   const cleanupEmptyBoxes = useCallback(async () => {
+    // I viewer non creano box, non c'è nulla da pulire
+    if (isViewer) return;
     if (!project?.id || bentoBoxes.length === 0) return;
 
     const boxesToDelete = bentoBoxes.filter((box) => {
@@ -535,6 +546,9 @@ const ProjectPage = ({
   const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // I viewer non possono fare upload
+    if (isViewer) return;
 
     // Ignora il drag se ci sono modali aperti
     if (
@@ -1080,21 +1094,33 @@ const ProjectPage = ({
     }, 2000);
   }, []);
 
-  // Costruisci il menu kebab - solo info e gestisci stato
+  // Costruisci il menu kebab in base al ruolo
   const menuItems = [
-    // Info progetto
     {
       label: "Info progetto",
       icon: <InfoIcon className="w-5 h-5" />,
       onClick: () => setIsInfoModalOpen(true),
     },
-    { separator: true },
-    // Gestisci stato
-    {
-      label: "Gestisci stato",
-      icon: <SettingsIcon className="w-5 h-5" />,
-      onClick: () => setIsStatusModalOpen(true),
-    },
+    ...(!isViewer
+      ? [
+          { separator: true },
+          {
+            label: "Gestisci stato",
+            icon: <SettingsIcon className="w-5 h-5" />,
+            onClick: () => setIsStatusModalOpen(true),
+          },
+        ]
+      : []),
+    ...(userRole === "owner"
+      ? [
+          { separator: true },
+          {
+            label: "Gestione condivisione",
+            icon: <LinkIcon className="w-5 h-5" />,
+            onClick: () => setIsShareModalOpen(true),
+          },
+        ]
+      : []),
   ];
 
   if (!project) return null;
@@ -1291,20 +1317,33 @@ const ProjectPage = ({
                           isPinned={item.isPinned || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onContentChange={(newContent, newContentType) =>
-                            handleBoxContentChange(
-                              item.id,
-                              newContent,
-                              newContentType,
-                            )
+                          onContentChange={
+                            isViewer
+                              ? undefined
+                              : (newContent, newContentType) =>
+                                  handleBoxContentChange(
+                                    item.id,
+                                    newContent,
+                                    newContentType,
+                                  )
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1330,20 +1369,33 @@ const ProjectPage = ({
                           isPinned={item.isPinned || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onContentChange={(newContent, newContentType) =>
-                            handleBoxContentChange(
-                              item.id,
-                              newContent,
-                              newContentType,
-                            )
+                          onContentChange={
+                            isViewer
+                              ? undefined
+                              : (newContent, newContentType) =>
+                                  handleBoxContentChange(
+                                    item.id,
+                                    newContent,
+                                    newContentType,
+                                  )
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1380,16 +1432,29 @@ const ProjectPage = ({
                           uploadTotal={item.uploadTotal || 0}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onPhotosChange={(newPhotos) =>
-                            handlePhotosChange(item.id, newPhotos)
+                          onPhotosChange={
+                            isViewer
+                              ? undefined
+                              : (newPhotos) =>
+                                  handlePhotosChange(item.id, newPhotos)
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1426,16 +1491,28 @@ const ProjectPage = ({
                           uploadTotal={item.uploadTotal || 0}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onPdfsChange={(newPdfs) =>
-                            handlePdfsChange(item.id, newPdfs)
+                          onPdfsChange={
+                            isViewer
+                              ? undefined
+                              : (newPdfs) => handlePdfsChange(item.id, newPdfs)
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1472,16 +1549,29 @@ const ProjectPage = ({
                           uploadTotal={item.uploadTotal || 0}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onFilesChange={(newFiles) =>
-                            handleFilesChange(item.id, newFiles)
+                          onFilesChange={
+                            isViewer
+                              ? undefined
+                              : (newFiles) =>
+                                  handleFilesChange(item.id, newFiles)
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1507,16 +1597,29 @@ const ProjectPage = ({
                           isPinned={item.isPinned || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onItemsChange={(newItems) =>
-                            handleChecklistItemsChange(item.id, newItems)
+                          onItemsChange={
+                            isViewer
+                              ? undefined
+                              : (newItems) =>
+                                  handleChecklistItemsChange(item.id, newItems)
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1543,22 +1646,41 @@ const ProjectPage = ({
                           isPinned={item.isPinned || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onFieldsChange={(newFields) =>
-                            handleAnagraficaFieldsChange(item.id, newFields)
+                          onFieldsChange={
+                            isViewer
+                              ? undefined
+                              : (newFields) =>
+                                  handleAnagraficaFieldsChange(
+                                    item.id,
+                                    newFields,
+                                  )
                           }
-                          onCustomFieldsChange={(newCustomFields) =>
-                            handleAnagraficaCustomFieldsChange(
-                              item.id,
-                              newCustomFields,
-                            )
+                          onCustomFieldsChange={
+                            isViewer
+                              ? undefined
+                              : (newCustomFields) =>
+                                  handleAnagraficaCustomFieldsChange(
+                                    item.id,
+                                    newCustomFields,
+                                  )
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1587,19 +1709,32 @@ const ProjectPage = ({
                           isExpanded={item.isExpanded || false}
                           createdByName={item.createdByName}
                           createdAt={item.createdAt}
-                          onPinToggle={() =>
-                            handleBoxPinToggle(item.id, item.isPinned)
+                          isViewer={isViewer}
+                          onPinToggle={
+                            isViewer
+                              ? undefined
+                              : () => handleBoxPinToggle(item.id, item.isPinned)
                           }
-                          onTitleChange={(newTitle) =>
-                            handleBoxTitleChange(item.id, newTitle)
+                          onTitleChange={
+                            isViewer
+                              ? undefined
+                              : (newTitle) =>
+                                  handleBoxTitleChange(item.id, newTitle)
                           }
-                          onVersionsChange={(newVersions) =>
-                            handleVersionsChange(item.id, newVersions)
+                          onVersionsChange={
+                            isViewer
+                              ? undefined
+                              : (newVersions) =>
+                                  handleVersionsChange(item.id, newVersions)
                           }
                           onExpandedChange={(newExpanded) =>
                             handleVersionBoxExpandedChange(item.id, newExpanded)
                           }
-                          onDelete={() => handleDeleteBox(item.id)}
+                          onDelete={
+                            isViewer
+                              ? undefined
+                              : () => handleDeleteBox(item.id)
+                          }
                           onSendMessageFromBox={() =>
                             handleSendMessageFromBox(
                               item.id,
@@ -1644,8 +1779,8 @@ const ProjectPage = ({
           </div>
         </main>
 
-        {/* FAB aggiunta box - mobile */}
-        {isReallyMobile && !isLoading && (
+        {/* FAB aggiunta box - mobile (nascosti per viewer) */}
+        {isReallyMobile && !isLoading && !isViewer && (
           <div className={isDraggingFiles ? "-z-10" : ""}>
             <MobileAddFab
               onAddNote={handleAddNote}
@@ -1656,8 +1791,8 @@ const ProjectPage = ({
           </div>
         )}
 
-        {/* FAB aggiunta box - desktop */}
-        {!isReallyMobile && !isLoading && (
+        {/* FAB aggiunta box - desktop (nascosti per viewer) */}
+        {!isReallyMobile && !isLoading && !isViewer && (
           <div
             className={isDraggingFiles ? "-z-10" : ""}
             style={{
@@ -1674,8 +1809,8 @@ const ProjectPage = ({
           </div>
         )}
 
-        {/* FAB fotocamera rapida - solo mobile, nascosto quando chat aperta */}
-        {isReallyMobile && !isLoading && !isChatSidebarOpen && (
+        {/* FAB fotocamera rapida - solo mobile, nascosto per viewer */}
+        {isReallyMobile && !isLoading && !isChatSidebarOpen && !isViewer && (
           <div className={isDraggingFiles ? "-z-10" : ""}>
             <CameraFab onCapture={handleCameraCapture} />
           </div>
@@ -1687,6 +1822,7 @@ const ProjectPage = ({
         isOpen={isInfoModalOpen}
         project={project}
         isFounder={isFounder}
+        isOwner={userRole === "owner"}
         onClose={() => setIsInfoModalOpen(false)}
         onUpdateName={onUpdateName}
         onUpdateColor={onUpdateColor}
@@ -1696,12 +1832,21 @@ const ProjectPage = ({
       <StatusModal
         isOpen={isStatusModalOpen}
         project={project}
-        isFounder={isFounder}
-        currentUserId={currentUser?.uid}
+        isFounder={userRole === "owner" ? isFounder : false}
+        currentUserId={userRole === "owner" ? currentUser?.uid : null}
         onClose={() => setIsStatusModalOpen(false)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
       />
+
+      {/* Modale gestione condivisione - solo owner */}
+      {userRole === "owner" && (
+        <ProjectShareModal
+          isOpen={isShareModalOpen}
+          project={project}
+          onClose={() => setIsShareModalOpen(false)}
+        />
+      )}
 
       {/* Modale altri box */}
       <MoreBoxesModal

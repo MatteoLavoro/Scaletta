@@ -10,26 +10,33 @@ import {
 } from "../../utils/projectStatuses";
 import { subscribeToUnreadCount } from "../../services/notifications";
 import { hasProjectNews } from "../../utils/projectViews";
-import { ZapIcon, BellIcon } from "../icons";
+import { ZapIcon, BellIcon, LinkIcon, ClockIcon } from "../icons";
 
 /**
  * ProjectCard - Quadrato cliccabile per un progetto
- * Icona stato centrata (solo icona senza sfondo), nome sopra, data sotto
- * Badge "News" in alto a sinistra se ci sono attività recenti
- * Badge "Notifiche" in alto a destra se ci sono notifiche non lette
  *
  * @param {object} project - Dati del progetto
  * @param {string} currentUserId - ID dell'utente corrente
  * @param {function} onClick - Callback quando viene cliccato
+ * @param {boolean} isShared - Se il progetto è condiviso (non appartiene al gruppo corrente)
+ * @param {string} sharedRole - Ruolo del gruppo corrente ("pending"|"viewer"|"editor")
  */
-const ProjectCard = ({ project, currentUserId, onClick }) => {
+const ProjectCard = ({
+  project,
+  currentUserId,
+  onClick,
+  isShared = false,
+  sharedRole = null,
+}) => {
   const { isDark } = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNews, setShowNews] = useState(false);
 
-  // Sottoscrizione notifiche non lette
+  const isPending = isShared && sharedRole === "pending";
+
+  // Sottoscrizione notifiche non lette (solo se non pending)
   useEffect(() => {
-    if (!project?.id || !currentUserId) return;
+    if (!project?.id || !currentUserId || isPending) return;
 
     const unsubscribe = subscribeToUnreadCount(
       project.id,
@@ -40,13 +47,13 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
     );
 
     return () => unsubscribe();
-  }, [project?.id, currentUserId]);
+  }, [project?.id, currentUserId, isPending]);
 
   // Controlla se ci sono news (attività recenti)
   useEffect(() => {
-    if (!project || !currentUserId) return;
+    if (!project || !currentUserId || isPending) return;
     setShowNews(hasProjectNews(project, currentUserId));
-  }, [project, currentUserId]);
+  }, [project, currentUserId, isPending]);
 
   // Ottieni il colore del progetto
   const projectColor = getProjectColor(
@@ -73,12 +80,14 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
 
   return (
     <button
-      onClick={onClick}
-      className="
+      onClick={isPending ? undefined : onClick}
+      disabled={isPending}
+      className={`
         aspect-square min-w-0 w-full flex flex-col p-2.5
         rounded-xl relative
-        transition-all duration-200 active:scale-95
-      "
+        transition-all duration-200
+        ${isPending ? "cursor-default opacity-70" : "active:scale-95"}
+      `}
       style={{
         backgroundColor: `${projectColor.bg}20`,
         borderWidth: "1px",
@@ -86,6 +95,7 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
         borderColor: `${projectColor.bg}50`,
       }}
       onMouseEnter={(e) => {
+        if (isPending) return;
         e.currentTarget.style.backgroundColor = `${projectColor.bg}35`;
         e.currentTarget.style.borderColor = `${projectColor.bg}70`;
       }}
@@ -95,19 +105,17 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
       }}
     >
       {/* Badge News - in alto a sinistra */}
-      {showNews && (
+      {showNews && !isPending && (
         <div
           className="absolute top-1.5 left-1.5 flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
-          style={{
-            backgroundColor: projectColor.bg,
-          }}
+          style={{ backgroundColor: projectColor.bg }}
         >
           <ZapIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
         </div>
       )}
 
       {/* Badge Notifiche - in alto a destra */}
-      {unreadCount > 0 && (
+      {unreadCount > 0 && !isPending && !isShared && (
         <div className="absolute top-1.5 right-1.5 flex items-center justify-center gap-1 px-1.5 h-5 bg-red-500 rounded-md shadow-lg">
           <BellIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
           {unreadCount > 1 && (
@@ -118,19 +126,40 @@ const ProjectCard = ({ project, currentUserId, onClick }) => {
         </div>
       )}
 
+      {/* Badge Condiviso (catena) - in alto a destra per viewer/editor */}
+      {isShared && !isPending && (
+        <div
+          className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
+          style={{ backgroundColor: projectColor.bg }}
+        >
+          <LinkIcon className="w-3 h-3 text-white" />
+        </div>
+      )}
+
+      {/* Badge In attesa - in alto a destra per pending */}
+      {isPending && (
+        <div className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-md bg-orange-500 shadow-lg">
+          <ClockIcon className="w-3 h-3 text-white" />
+        </div>
+      )}
+
       {/* Nome progetto - in alto */}
       <span className="text-[11px] text-text-primary font-semibold text-center line-clamp-2 leading-tight">
         {project.name}
       </span>
 
-      {/* Icona stato - centrata nella card */}
+      {/* Icona: orologio se pending, altrimenti icona stato */}
       <div className="flex-1 flex items-center justify-center">
-        <StatusIcon className="w-7 h-7" style={{ color: status.bg }} />
+        {isPending ? (
+          <ClockIcon className="w-7 h-7 text-orange-500" />
+        ) : (
+          <StatusIcon className="w-7 h-7" style={{ color: status.bg }} />
+        )}
       </div>
 
       {/* Data creazione - in basso */}
       <span className="text-[10px] text-text-secondary text-center">
-        {formatDate(project.createdAt)}
+        {isPending ? "In attesa" : formatDate(project.createdAt)}
       </span>
     </button>
   );

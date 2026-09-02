@@ -58,6 +58,7 @@ export { default as VideoIcon } from "./VideoIcon";
 export { default as ZapIcon } from "./ZapIcon";
 export { default as ZoomInIcon } from "./ZoomInIcon";
 export { default as ZoomOutIcon } from "./ZoomOutIcon";
+export { default as LinkIcon } from "./LinkIcon";
 
 // Icone stati progetto
 export { default as PlayIcon } from "./PlayIcon";

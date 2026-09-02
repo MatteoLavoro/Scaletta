@@ -212,6 +212,15 @@ const AppContent = () => {
   if (isAuthenticated) {
     const isFounder = currentGroup?.founderId === user?.uid;
 
+    // Calcola il ruolo dell'utente nel progetto corrente
+    const computeUserRole = (project, group) => {
+      if (!project || !group) return "owner";
+      if (project.groupId === group.id) return "owner";
+      const entry = project.sharedGroups?.find((g) => g.groupId === group.id);
+      return entry?.role || "viewer";
+    };
+    const userProjectRole = computeUserRole(currentProject, currentGroup);
+
     return (
       <Suspense fallback={<LoadingPage />}>
         <>
@@ -230,6 +239,7 @@ const AppContent = () => {
               project={currentProject}
               group={currentGroup}
               isFounder={isFounder}
+              userRole={userProjectRole}
               currentUser={{
                 uid: user?.uid,
                 displayName: user?.displayName,

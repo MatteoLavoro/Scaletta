@@ -1,21 +1,24 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Modal, InputModal } from "../modal";
 import InfoBox from "../ui/InfoBox";
 import EditableInfoBox from "../ui/EditableInfoBox";
+import CopyableInfoBox from "../ui/CopyableInfoBox";
 import ProjectColorPicker from "../ui/ProjectColorPicker";
 import { validateProjectName } from "../../utils/projectValidation";
-import { projectNameExists } from "../../services/projects";
+import {
+  projectNameExists,
+  ensureProjectShareCode,
+} from "../../services/projects";
 
 /**
  * ProjectInfoModal - Modale informazioni progetto
- * Stile simile a ProfileModal
- * Nota: L'eliminazione è stata spostata nel menu kebab (solo per progetti cestinati)
  *
- * @param {boolean} isOpen - Se il modale è aperto
- * @param {object} project - Dati del progetto
- * @param {function} onClose - Callback chiusura
- * @param {function} onUpdateName - Callback per aggiornare il nome
- * @param {function} onUpdateColor - Callback per aggiornare il colore
+ * @param {boolean} isOpen
+ * @param {object} project
+ * @param {function} onClose
+ * @param {function} onUpdateName
+ * @param {function} onUpdateColor
+ * @param {boolean} isOwner - Se l'utente è nel gruppo originale
  */
 const ProjectInfoModal = ({
   isOpen,
@@ -23,9 +26,27 @@ const ProjectInfoModal = ({
   onClose,
   onUpdateName,
   onUpdateColor,
+  isOwner = true,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [shareCode, setShareCode] = useState(project?.shareCode || null);
+  const [loadingCode, setLoadingCode] = useState(false);
+
+  // Genera shareCode in modo lazy se mancante (solo per owner)
+  useEffect(() => {
+    if (!isOpen || !project?.id || !isOwner) return;
+    if (project.shareCode) {
+      setShareCode(project.shareCode);
+      return;
+    }
+    if (shareCode) return;
+    setLoadingCode(true);
+    ensureProjectShareCode(project.id)
+      .then((code) => setShareCode(code))
+      .catch(console.error)
+      .finally(() => setLoadingCode(false));
+  }, [isOpen, project?.id, project?.shareCode, isOwner, shareCode]);
 
   // Validazione nome progetto con controllo duplicati
   const validateProjectNameWithDuplicate = useCallback(
@@ -39,7 +60,7 @@ const ProjectInfoModal = ({
         const exists = await projectNameExists(
           project.groupId,
           name,
-          project.id
+          project.id,
         );
         if (exists) {
           return "Esiste già un progetto con questo nome nel gruppo";
@@ -48,7 +69,7 @@ const ProjectInfoModal = ({
 
       return null;
     },
-    [project?.groupId, project?.id]
+    [project?.groupId, project?.id],
   );
 
   if (!project) return null;
@@ -132,6 +153,29 @@ const ProjectInfoModal = ({
               onChange={handleColorChange}
             />
           </InfoBox>
+
+          {/* Codice condivisione - solo per owner */}
+          {isOwner && (
+            <div className="flex flex-col gap-1.5">
+              {loadingCode ? (
+                <InfoBox title="Codice condivisione" color="indigo">
+                  <span className="text-xs text-text-secondary">
+                    Generazione in corso...
+                  </span>
+                </InfoBox>
+              ) : (
+                <CopyableInfoBox
+                  title="Codice condivisione"
+                  value={shareCode || ""}
+                  color="purple"
+                />
+              )}
+              <p className="text-xs text-text-secondary text-center px-1">
+                Condividendo questo codice dai accesso al progetto ad altri
+                gruppi
+              </p>
+            </div>
+          )}
         </div>
       </Modal>
 

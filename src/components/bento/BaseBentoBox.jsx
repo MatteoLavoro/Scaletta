@@ -39,6 +39,7 @@ import { useTheme } from "../../contexts/ThemeContext";
  * @param {string} props.createdByName - Nome dell'utente che ha creato il box
  * @param {Date|Timestamp} props.createdAt - Data di creazione del box
  * @param {function} props.onSendMessageFromBox - Callback per inviare un messaggio taggando questo box
+ * @param {boolean} props.isViewer - Se true, mostra solo messaggio da box e info creazione
  */
 const BaseBentoBox = ({
   title = "Box",
@@ -55,6 +56,7 @@ const BaseBentoBox = ({
   createdByName = null,
   createdAt = null,
   onSendMessageFromBox,
+  isViewer = false,
 }) => {
   const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -67,53 +69,63 @@ const BaseBentoBox = ({
   const primaryColor = themeColors.primary;
 
   // Costruisci il menu kebab
-  // Ordine: items specifici -> separatore -> universali (cambia titolo, elimina)
+  // In modalità viewer: solo "Messaggio da box" e "Creato da"
   const buildMenuItems = () => {
     const items = [];
 
-    // Prima aggiungi items specifici del box (passati come props)
-    if (menuItems.length > 0) {
-      items.push(...menuItems);
+    if (isViewer) {
+      // Solo messaggio da box e info creazione
+      if (onSendMessageFromBox) {
+        items.push({
+          label: "Messaggio da box",
+          icon: <MessageSquareIcon className="w-5 h-5" />,
+          onClick: onSendMessageFromBox,
+        });
+      }
+    } else {
+      // Prima aggiungi items specifici del box (passati come props)
+      if (menuItems.length > 0) {
+        items.push(...menuItems);
+      }
+
+      // Costruisci items universali (sempre in fondo)
+      const universalItems = [];
+
+      // Opzione "Messaggio da box" (se callback fornita)
+      if (onSendMessageFromBox) {
+        universalItems.push({
+          label: "Messaggio da box",
+          icon: <MessageSquareIcon className="w-5 h-5" />,
+          onClick: onSendMessageFromBox,
+        });
+      }
+
+      // Opzione modifica titolo
+      if (onTitleChange) {
+        universalItems.push({
+          label: "Cambia titolo",
+          icon: <PencilIcon className="w-5 h-5" />,
+          onClick: () => setIsEditTitleOpen(true),
+        });
+      }
+
+      // Opzione elimina (sempre per ultima)
+      if (onDelete) {
+        universalItems.push({
+          label: "Elimina box",
+          icon: <TrashIcon className="w-5 h-5" />,
+          onClick: () => setIsDeleteConfirmOpen(true),
+          danger: true,
+        });
+      }
+
+      // Aggiungi separatore tra specifici e universali se entrambi presenti
+      if (items.length > 0 && universalItems.length > 0) {
+        items.push({ separator: true });
+      }
+
+      items.push(...universalItems);
     }
-
-    // Costruisci items universali (sempre in fondo)
-    const universalItems = [];
-
-    // Opzione "Messaggio da box" (se callback fornita)
-    if (onSendMessageFromBox) {
-      universalItems.push({
-        label: "Messaggio da box",
-        icon: <MessageSquareIcon className="w-5 h-5" />,
-        onClick: onSendMessageFromBox,
-      });
-    }
-
-    // Opzione modifica titolo
-    if (onTitleChange) {
-      universalItems.push({
-        label: "Cambia titolo",
-        icon: <PencilIcon className="w-5 h-5" />,
-        onClick: () => setIsEditTitleOpen(true),
-      });
-    }
-
-    // Opzione elimina (sempre per ultima)
-    if (onDelete) {
-      universalItems.push({
-        label: "Elimina box",
-        icon: <TrashIcon className="w-5 h-5" />,
-        onClick: () => setIsDeleteConfirmOpen(true),
-        danger: true,
-      });
-    }
-
-    // Aggiungi separatore tra specifici e universali se entrambi presenti
-    if (items.length > 0 && universalItems.length > 0) {
-      items.push({ separator: true });
-    }
-
-    // Aggiungi items universali
-    items.push(...universalItems);
 
     // Aggiungi info creazione (sempre per ultima, se disponibile)
     if (createdByName || createdAt) {
