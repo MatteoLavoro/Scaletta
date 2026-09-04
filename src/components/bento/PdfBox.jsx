@@ -220,7 +220,7 @@ const PdfBox = ({
 
   // Modale visualizzazione PDF
   const [isPdfViewerModalOpen, setIsPdfViewerModalOpen] = useState(false);
-  const [selectedPdfForViewer, setSelectedPdfForViewer] = useState(null);
+  const [selectedPdfForViewer, setSelectedPdfForViewer] = useState(0);
 
   // Combina stati upload interno ed esterno
   const isUploading = isUploadingExternal || isUploadingInternal;
@@ -273,10 +273,10 @@ const PdfBox = ({
     setCurrentIndex((prev) => (prev < localPdfs.length - 1 ? prev + 1 : 0));
   }, [localPdfs.length]);
 
-  // Apri il modale visualizzatore PDF
-  const handleOpenPdfViewer = useCallback((pdf) => {
-    setSelectedPdfForViewer(pdf);
+  // Apri il modale visualizzatore PDF all'indice corretto
+  const handleOpenPdfViewer = useCallback((index) => {
     setIsPdfViewerModalOpen(true);
+    setSelectedPdfForViewer(index);
   }, []);
 
   // Chiudi il modale visualizzatore PDF
@@ -433,7 +433,7 @@ const PdfBox = ({
                 key={localPdfs[currentIndex]?.id}
                 pdf={localPdfs[currentIndex]}
                 containerWidth={containerWidth}
-                onOpen={handleOpenPdfViewer}
+                onOpen={() => handleOpenPdfViewer(currentIndex)}
               />
 
               {/* Frecce navigazione (solo se più di 1 PDF) */}
@@ -572,7 +572,8 @@ const PdfBox = ({
       <PdfViewerModal
         isOpen={isPdfViewerModalOpen}
         onClose={handleClosePdfViewer}
-        pdf={selectedPdfForViewer}
+        pdfs={localPdfs}
+        initialIndex={selectedPdfForViewer ?? 0}
       />
     </>
   );
