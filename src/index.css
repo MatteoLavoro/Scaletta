@@ -876,3 +876,21 @@ kbd {
   height: auto;
   background: transparent !important;
 }
+/* ===== Drag & Drop Box =====
+/* Cursore grab sull'area drag handle quando il box è trascinabile */
+[data-draggable="true"] [data-drag-handle] {
+  cursor: grab;
+}
+[data-draggable="true"] [data-drag-handle]:active {
+  cursor: grabbing;
+}
+/* Cursore grabbing globale + nessun hover sui box durante il drag */
+body.is-dragging-box,
+body.is-dragging-box * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+body.is-dragging-box [data-bento-id],
+body.is-dragging-box [data-bento-id] * {
+  pointer-events: none !important;
+}

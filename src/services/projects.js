@@ -15,6 +15,7 @@ import {
   runTransaction,
   arrayUnion,
   arrayRemove,
+  writeBatch,
 } from "firebase/firestore";
 import { getStorage, ref, listAll, deleteObject } from "firebase/storage";
 import app from "./config";
@@ -922,6 +923,20 @@ export const updateBentoBoxPin = async (
 };
 
 /**
+ * Aggiorna il sortOrder di più bento boxes in batch
+ * @param {string} projectId - ID del progetto
+ * @param {Array} updates - Array di { boxId, sortOrder }
+ */
+export const updateBoxesSortOrders = async (projectId, updates) => {
+  const batch = writeBatch(db);
+  for (const { boxId, sortOrder } of updates) {
+    const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
+    batch.update(boxRef, { sortOrder });
+  }
+  await batch.commit();
+};
+
+/**
  * Aggiorna lo stato expanded di un VersionBox
  * @param {string} projectId - ID del progetto
  * @param {string} boxId - ID del box
@@ -996,25 +1011,17 @@ export const subscribeToBentoBoxes = (projectId, onUpdate) => {
         if (a.isPinned) return -1;
         if (b.isPinned) return 1;
 
-        // Non-pinnati ordinati per createdAt
-        // IMPORTANTE: i box con createdAt null (appena creati, in attesa del serverTimestamp)
-        // vanno messi ALLA FINE per evitare che appaiano per primi e poi si spostino
+        // Non-pinnati: sortOrder esplicito prima, poi createdAt come fallback
+        if (a.sortOrder != null && b.sortOrder != null)
+          return a.sortOrder - b.sortOrder;
+        if (a.sortOrder != null) return -1;
+        if (b.sortOrder != null) return 1;
+
         const dateA = a.createdAt?.toDate?.() || null;
         const dateB = b.createdAt?.toDate?.() || null;
-
-        // Se entrambi hanno timestamp, ordina normalmente
-        if (dateA && dateB) {
-          return dateA - dateB;
-        }
-        // Se solo A ha timestamp null, mettilo DOPO B
-        if (!dateA && dateB) {
-          return 1;
-        }
-        // Se solo B ha timestamp null, mettilo DOPO A
-        if (dateA && !dateB) {
-          return -1;
-        }
-        // Se entrambi null, mantieni l'ordine
+        if (dateA && dateB) return dateA - dateB;
+        if (!dateA && dateB) return 1;
+        if (dateA && !dateB) return -1;
         return 0;
       });
 

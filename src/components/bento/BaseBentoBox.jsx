@@ -230,8 +230,11 @@ const BaseBentoBox = ({
             <div className="w-7" />
           )}
 
-          {/* Titolo centrato con badge opzionale */}
-          <div className="flex-1 flex items-center justify-center min-w-0 px-1">
+          {/* Titolo centrato con badge opzionale - zona drag handle */}
+          <div
+            className="flex-1 flex items-center justify-center min-w-0 px-1"
+            data-drag-handle="true"
+          >
             {onTitleChange ? (
               <button
                 type="button"

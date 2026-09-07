@@ -32,8 +32,8 @@ const getColumnCount = (viewportWidth, isChatOpen = false, chatWidth = 340) => {
     (availableWidth + GAP - 24) / (BOX_WIDTH + GAP),
   );
 
-  // Limita tra 1 e 4 colonne
-  return Math.max(1, Math.min(4, maxColumns));
+  // Nessun limite superiore: tante colonne quante ne entrano
+  return Math.max(1, maxColumns);
 };
 
 /**

@@ -53,6 +53,7 @@ import {
   updateBentoBoxExpanded,
   deleteBentoBox,
   subscribeToBentoBoxes,
+  updateBoxesSortOrders,
 } from "../services/projects";
 import { deletePhotos, uploadPhoto, uploadPhotos } from "../services/photos";
 import { deleteFiles, uploadFiles } from "../services/files";
@@ -99,6 +100,22 @@ const ProjectPage = ({
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dragCounterRef = useRef(0);
+
+  // Stato drag & drop riordinamento box
+  const [isDraggingBox, setIsDraggingBox] = useState(false);
+  const [draggedBoxId, setDraggedBoxId] = useState(null);
+  const [dropIndicator, setDropIndicator] = useState(null); // { targetId, before }
+  const ghostRef = useRef(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const dragBoxInfoRef = useRef({
+    width: BOX_WIDTH,
+    height: 200,
+    title: "",
+    initialLeft: 0,
+    initialTop: 0,
+  });
+  const dragStateRef = useRef({ hoveredId: null });
+  const handleReorderRef = useRef(null);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
 
@@ -892,39 +909,194 @@ const ProjectPage = ({
     }
   };
 
-  // I box ordinati: pinnati prima (per pinnedAt), poi gli altri (per createdAt)
-  const sortedBoxes = [...bentoBoxes].sort((a, b) => {
-    // Se entrambi pinnati, ordina per pinnedAt (prima chi è stato pinnato prima)
-    if (a.isPinned && b.isPinned) {
-      const pinA = a.pinnedAt?.toDate?.() || new Date(a.pinnedAt || 0);
-      const pinB = b.pinnedAt?.toDate?.() || new Date(b.pinnedAt || 0);
-      return pinA - pinB;
-    }
-    // Pinnati prima dei non-pinnati
-    if (a.isPinned) return -1;
-    if (b.isPinned) return 1;
+  // ── Drag & Drop riordinamento box ──────────────────────────────────────────
 
-    // Non-pinnati ordinati per createdAt
-    // IMPORTANTE: i box con createdAt null (appena creati, in attesa del serverTimestamp)
-    // vanno messi ALLA FINE per evitare che appaiano per primi e poi si spostino
-    const dateA = a.createdAt?.toDate?.() || null;
-    const dateB = b.createdAt?.toDate?.() || null;
+  // Box ordinati: pinnati prima (per pinnedAt), poi per sortOrder esplicito, poi per createdAt
+  const sortedBoxes = useMemo(() => {
+    return [...bentoBoxes].sort((a, b) => {
+      if (a.isPinned && b.isPinned) {
+        const pinA = a.pinnedAt?.toDate?.() || new Date(a.pinnedAt || 0);
+        const pinB = b.pinnedAt?.toDate?.() || new Date(b.pinnedAt || 0);
+        return pinA - pinB;
+      }
+      if (a.isPinned) return -1;
+      if (b.isPinned) return 1;
+      if (a.sortOrder != null && b.sortOrder != null)
+        return a.sortOrder - b.sortOrder;
+      if (a.sortOrder != null) return -1;
+      if (b.sortOrder != null) return 1;
+      const dateA = a.createdAt?.toDate?.() || null;
+      const dateB = b.createdAt?.toDate?.() || null;
+      if (dateA && dateB) return dateA - dateB;
+      if (!dateA && dateB) return 1;
+      if (dateA && !dateB) return -1;
+      return 0;
+    });
+  }, [bentoBoxes]);
 
-    // Se entrambi hanno timestamp, ordina normalmente
-    if (dateA && dateB) {
-      return dateA - dateB;
-    }
-    // Se solo A ha timestamp null, mettilo DOPO B
-    if (!dateA && dateB) {
-      return 1;
-    }
-    // Se solo B ha timestamp null, mettilo DOPO A
-    if (dateA && !dateB) {
-      return -1;
-    }
-    // Se entrambi null, mantieni l'ordine
-    return 0;
-  });
+  // Avvia il drag: salva info box, imposta stato
+  const handleDragStart = useCallback((boxId, boxTitle, originalEvent) => {
+    const boxEl = containerRef.current?.querySelector(
+      `[data-bento-id="${boxId}"]`,
+    );
+    if (!boxEl) return;
+
+    const rect = boxEl.getBoundingClientRect();
+    const offsetX = originalEvent.clientX - rect.left;
+    const offsetY = originalEvent.clientY - rect.top;
+
+    dragOffsetRef.current = { x: offsetX, y: offsetY };
+    dragBoxInfoRef.current = {
+      width: rect.width,
+      height: rect.height,
+      title: boxTitle,
+      initialLeft: originalEvent.clientX - offsetX,
+      initialTop: originalEvent.clientY - offsetY,
+    };
+    dragStateRef.current = { hoveredId: null };
+
+    setIsDraggingBox(true);
+    setDraggedBoxId(boxId);
+    setDropIndicator(null);
+  }, []);
+
+  // Gestisce il pointerdown sul wrapper del box: rileva la soglia di movimento prima di avviare il drag
+  const handleWrapperPointerDown = useCallback(
+    (item, e) => {
+      if (isViewer || item.isPinned || item.type === "tutorial") return;
+      if (e.button !== undefined && e.button !== 0) return; // solo tasto sinistro
+      if (!e.target.closest("[data-drag-handle]")) return;
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const DRAG_THRESHOLD = 8;
+      let dragInitiated = false;
+
+      const onMove = (moveEvent) => {
+        if (dragInitiated) return;
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+          dragInitiated = true;
+          cleanup();
+          // Intercetta il prossimo click in capture-phase per non aprire il modal titolo
+          document.addEventListener("click", cancelClick, {
+            capture: true,
+            once: true,
+          });
+          handleDragStart(item.id, item.title, e);
+        }
+      };
+
+      const onUp = () => cleanup();
+      const cancelClick = (ce) => ce.stopPropagation();
+
+      const cleanup = () => {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+      };
+
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    },
+    [isViewer, handleDragStart],
+  );
+
+  // Scambia la posizione di due box non-pinnati
+  const handleReorderBoxes = useCallback(
+    async (dragId, targetId) => {
+      if (!project?.id || dragId === targetId) return;
+
+      const nonPinned = sortedBoxes.filter((b) => !b.isPinned);
+      if (nonPinned.length < 2) return;
+
+      const draggedIdx = nonPinned.findIndex((b) => b.id === dragId);
+      const targetIdx = nonPinned.findIndex((b) => b.id === targetId);
+      if (draggedIdx === -1 || targetIdx === -1) return;
+
+      // Assegna sortOrder esplicito a tutti, poi scambia i due
+      const updates = nonPinned.map((box, idx) => {
+        if (box.id === dragId) return { boxId: box.id, sortOrder: targetIdx };
+        if (box.id === targetId)
+          return { boxId: box.id, sortOrder: draggedIdx };
+        return { boxId: box.id, sortOrder: idx };
+      });
+
+      try {
+        await updateBoxesSortOrders(project.id, updates);
+      } catch (error) {
+        console.error("Errore scambio box:", error);
+      }
+    },
+    [project?.id, sortedBoxes],
+  );
+
+  // Mantieni handleReorderRef sempre aggiornato (evita closure stale nell'effect)
+  useEffect(() => {
+    handleReorderRef.current = handleReorderBoxes;
+  }, [handleReorderBoxes]);
+
+  // Gestori globali di pointer durante il drag
+  useEffect(() => {
+    if (!isDraggingBox) return;
+
+    const onMove = (e) => {
+      if (ghostRef.current) {
+        ghostRef.current.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
+        ghostRef.current.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
+      }
+
+      let newHoveredId = null;
+
+      if (containerRef.current) {
+        const elements =
+          containerRef.current.querySelectorAll("[data-bento-id]");
+        for (const el of elements) {
+          const bId = el.getAttribute("data-bento-id");
+          if (bId === draggedBoxId || bId === "tutorial") continue;
+          const rect = el.getBoundingClientRect();
+          if (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+          ) {
+            newHoveredId = bId;
+            break;
+          }
+        }
+      }
+
+      if (newHoveredId !== dragStateRef.current.hoveredId) {
+        dragStateRef.current = { hoveredId: newHoveredId };
+        setDropIndicator(newHoveredId ? { targetId: newHoveredId } : null);
+      }
+    };
+
+    const onUp = () => {
+      const { hoveredId } = dragStateRef.current;
+      if (hoveredId && hoveredId !== draggedBoxId) {
+        handleReorderRef.current?.(draggedBoxId, hoveredId);
+      }
+      setIsDraggingBox(false);
+      setDraggedBoxId(null);
+      setDropIndicator(null);
+    };
+
+    document.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerup", onUp);
+    return () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+  }, [isDraggingBox, draggedBoxId]);
+
+  // Classe CSS grabbing sul body durante il drag
+  useEffect(() => {
+    if (!isDraggingBox) return;
+    document.body.classList.add("is-dragging-box");
+    return () => document.body.classList.remove("is-dragging-box");
+  }, [isDraggingBox]);
 
   // Numero di colonne dinamico (si aggiorna al resize)
   const columnCount = useColumnCount(isChatSidebarOpen, 340);
@@ -938,23 +1110,16 @@ const ProjectPage = ({
 
   // Array di tutti gli items per distribuzione
   const allItems = useMemo(() => {
+    if (isLoading) return []; // Mentre carica prevIds resta vuoto, nessun flash di visibilità
     const items = [];
-
-    // 1. Tutorial box (primo) - solo se non ci sono box utente
     if (!hasBoxes) {
       items.push({ id: "tutorial", type: "tutorial" });
     }
-
-    // 2. Box utente
     sortedBoxes.forEach((box) => {
       items.push({ ...box, type: "box" });
     });
-
-    // Il FAB flottante è ora usato sia su mobile che desktop,
-    // quindi non aggiungiamo più l'add-button alla griglia
-
     return items;
-  }, [sortedBoxes, hasBoxes]);
+  }, [sortedBoxes, hasBoxes, isLoading]);
 
   // Hook per layout "shortest column first" + animazioni FLIP
   const { containerRef, getItemStyle, flatItems, containerHeight } =
@@ -1282,22 +1447,40 @@ const ProjectPage = ({
                       ? 0
                       : item.columnIndex * (BOX_WIDTH + GAP);
 
-                  // Stile per posizionare il box con posizione assoluta
-                  const itemStyle = {
+                  // Variabili per drag & drop
+                  const isHole = isDraggingBox && draggedBoxId === item.id;
+                  const isDropTarget = dropIndicator?.targetId === item.id;
+                  const isDraggable =
+                    !isViewer && !item.isPinned && item.type !== "tutorial";
+
+                  // Stile wrapper unificato (include effetto "buco" durante il drag)
+                  const wrapperStyle = {
                     ...getItemStyle(item.id),
                     position: "absolute",
                     top: item.top,
                     left: left,
                     width: columnCount === 1 ? "100%" : BOX_WIDTH,
+                    ...(isHole ? { opacity: 0.08, pointerEvents: "none" } : {}),
                   };
 
-                  // Tutorial box
+                  // Indicatore di swap (ring attorno al box target)
+                  const dropLine = isDropTarget ? (
+                    <div
+                      className="absolute z-30 pointer-events-none rounded-xl"
+                      style={{
+                        inset: "-3px",
+                        boxShadow: "0 0 0 3px var(--color-primary)",
+                      }}
+                    />
+                  ) : null;
+
+                  // Tutorial box (non draggabile)
                   if (item.type === "tutorial") {
                     return (
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        style={wrapperStyle}
                       >
                         <TutorialBox isMobile={isReallyMobile} />
                       </div>
@@ -1309,8 +1492,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <NoteBox
                           title={item.title}
                           content={item.content || ""}
@@ -1361,8 +1551,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <MarkdownBox
                           title={item.title}
                           content={item.content || ""}
@@ -1420,8 +1617,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <PhotoBox
                           projectId={project.id}
                           title={item.title}
@@ -1479,8 +1683,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <PdfBox
                           projectId={project.id}
                           title={item.title}
@@ -1537,8 +1748,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <FileBox
                           projectId={project.id}
                           title={item.title}
@@ -1589,8 +1807,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <ChecklistBox
                           title={item.title}
                           items={item.checklistItems || []}
@@ -1637,8 +1862,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <AnagraficaBox
                           title={item.title}
                           fields={item.anagraficaFields || {}}
@@ -1698,8 +1930,15 @@ const ProjectPage = ({
                       <div
                         key={item.id}
                         data-bento-id={item.id}
-                        style={itemStyle}
+                        data-draggable={isDraggable ? "true" : undefined}
+                        style={wrapperStyle}
+                        onPointerDown={
+                          isDraggable
+                            ? (e) => handleWrapperPointerDown(item, e)
+                            : undefined
+                        }
                       >
+                        {dropLine}
                         <VersionBox
                           projectId={project.id}
                           boxId={item.id}
@@ -1751,8 +1990,15 @@ const ProjectPage = ({
                     <div
                       key={item.id}
                       data-bento-id={item.id}
-                      style={itemStyle}
+                      data-draggable={isDraggable ? "true" : undefined}
+                      style={wrapperStyle}
+                      onPointerDown={
+                        isDraggable
+                          ? (e) => handleWrapperPointerDown(item, e)
+                          : undefined
+                      }
                     >
+                      {dropLine}
                       <BaseBentoBox
                         title={item.title}
                         isPinned={item.isPinned || false}
@@ -1778,6 +2024,49 @@ const ProjectPage = ({
             )}
           </div>
         </main>
+
+        {/* Ghost box che segue il cursore durante il drag */}
+        {isDraggingBox && (
+          <div
+            ref={ghostRef}
+            className="fixed pointer-events-none z-150"
+            style={{
+              left: `${dragBoxInfoRef.current.initialLeft}px`,
+              top: `${dragBoxInfoRef.current.initialTop}px`,
+              width: `${dragBoxInfoRef.current.width}px`,
+              willChange: "left, top",
+              transform: "rotate(1.5deg) scale(1.02)",
+              transformOrigin: "center top",
+              boxShadow:
+                "0 20px 60px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2)",
+              borderRadius: "12px",
+              overflow: "hidden",
+              opacity: 0.88,
+            }}
+          >
+            <div
+              className="border border-border rounded-xl bg-bg-secondary flex flex-col"
+              style={{ height: `${dragBoxInfoRef.current.height}px` }}
+            >
+              {/* Header che replica BaseBentoBox */}
+              <div className="flex items-center justify-between px-2 py-1.5 shrink-0">
+                <div className="w-7 h-7 rounded-full bg-bg-tertiary opacity-40" />
+                <div className="flex-1 flex items-center justify-center px-1 min-w-0">
+                  <div className="px-2.5 py-0.5 rounded-full bg-bg-tertiary max-w-full">
+                    <span className="text-xs font-semibold text-text-primary truncate block">
+                      {dragBoxInfoRef.current.title}
+                    </span>
+                  </div>
+                </div>
+                <div className="w-7 h-7 rounded-full bg-bg-tertiary opacity-40" />
+              </div>
+              {/* Divider */}
+              <div className="h-px shrink-0 mx-2 bg-border" />
+              {/* Area contenuto */}
+              <div className="flex-1 m-3 rounded-lg bg-bg-tertiary/25" />
+            </div>
+          </div>
+        )}
 
         {/* FAB aggiunta box - mobile (nascosti per viewer) */}
         {isReallyMobile && !isLoading && !isViewer && (
