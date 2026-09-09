@@ -380,9 +380,57 @@ async function renderMermaidInHtml(html) {
 
       const svgEl = wrapper.querySelector("svg");
       if (svgEl) {
-        svgEl.style.maxWidth = "100%";
+        // Mermaid v11 mette width/height="100%" e le dimensioni reali in:
+        //   1. viewBox="minX minY W H"  (fonte primaria)
+        //   2. style="max-width: XXpx"  (fonte secondaria)
+        // Stessa logica di Graphviz: scala per rispettare i limiti PDF e
+        // imposta SEMPRE width esplicita per evitare che SVG stretti/alti
+        // esplodano in altezza occupando più pagine.
+        const PDF_MAX_W = 450; // pt — stessa costante di Graphviz
+        const PDF_MAX_H = 400; // pt
+        const MIN_W = 50;      // pt
+        const PX_TO_PT = 0.75; // 1px = 0.75pt a 96dpi
+
+        // Fonte 1: viewBox (più affidabile per Mermaid v10/v11)
+        let rawWpx = 0;
+        let rawHpx = 0;
+        const viewBox = svgEl.getAttribute("viewBox");
+        if (viewBox) {
+          const vb = viewBox.trim().split(/[\s,]+/);
+          if (vb.length >= 4) {
+            rawWpx = parseFloat(vb[2]);
+            rawHpx = parseFloat(vb[3]);
+          }
+        }
+        // Fonte 2: style="max-width: XXpx" (solo per larghezza se viewBox manca)
+        if (!(rawWpx > 0)) {
+          const mw = svgEl.style.maxWidth;
+          if (mw && mw.endsWith("px")) rawWpx = parseFloat(mw);
+        }
+
+        // Rimuovi tutti i vincoli dimensionali di Mermaid
+        svgEl.removeAttribute("width");
+        svgEl.removeAttribute("height");
+        svgEl.style.removeProperty("max-width");
         svgEl.style.height = "auto";
+        svgEl.style.maxWidth = "100%";
         svgEl.style.display = "inline-block";
+
+        if (rawWpx > 0 && rawHpx > 0) {
+          const naturalW = rawWpx * PX_TO_PT;
+          const naturalH = rawHpx * PX_TO_PT;
+          const scaleByW = naturalW > PDF_MAX_W ? PDF_MAX_W / naturalW : 1;
+          const scaleByH = naturalH > PDF_MAX_H ? PDF_MAX_H / naturalH : 1;
+          const scale = Math.min(scaleByW, scaleByH);
+          const finalW = Math.min(
+            Math.max(Math.round(naturalW * scale), MIN_W),
+            PDF_MAX_W,
+          );
+          svgEl.style.width = `${finalW}pt`;
+        } else {
+          // Fallback sicuro: cappato a larghezza massima, non 100%
+          svgEl.style.width = `${PDF_MAX_W}pt`;
+        }
       }
 
       placeholder.replaceWith(wrapper);
