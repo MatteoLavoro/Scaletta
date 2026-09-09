@@ -33,6 +33,22 @@ function getVizModule() {
   return vizModulePromise;
 }
 
+// ─── Cache modulo mermaid ─────────────────────────────────────────────────────
+let mermaidModulePromise = null;
+let mermaidPdfRenderCounter = 0;
+
+function getMermaidModule() {
+  if (!mermaidModulePromise) {
+    mermaidModulePromise = import("mermaid")
+      .then((mod) => mod.default)
+      .catch((err) => {
+        mermaidModulePromise = null;
+        throw err;
+      });
+  }
+  return mermaidModulePromise;
+}
+
 // ─── Utilità colori per post-processing SVG light-theme ─────────────────────
 
 function parseHexColor(colorStr) {
@@ -312,6 +328,68 @@ async function renderGraphvizInHtml(html) {
       const errBox = document.createElement("div");
       errBox.className = "pdf-graphviz-error";
       errBox.textContent = `⚠ Impossibile renderizzare il grafico: ${err?.message || "errore sconosciuto"}`;
+      placeholder.replaceWith(errBox);
+    }
+  }
+
+  return tmpDiv.innerHTML;
+}
+
+/**
+ * Renderizza tutti i placeholder Mermaid nell'HTML in SVG reali.
+ * Restituisce l'HTML con i placeholder sostituiti dagli SVG inline.
+ *
+ * @param {string} html - HTML con elementi mermaid-placeholder
+ * @returns {Promise<string>} HTML con SVG inline al posto dei placeholder
+ */
+async function renderMermaidInHtml(html) {
+  const tmpDiv = document.createElement("div");
+  tmpDiv.innerHTML = html;
+
+  const placeholders = tmpDiv.querySelectorAll(".mermaid-placeholder");
+  if (placeholders.length === 0) return html;
+
+  const mermaid = await getMermaidModule();
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "default", // sempre tema chiaro per il PDF
+    securityLevel: "strict",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  });
+
+  for (const placeholder of placeholders) {
+    const encoded = placeholder.getAttribute("data-mermaid");
+    if (!encoded) continue;
+
+    let code;
+    try {
+      code = decodeURIComponent(encoded);
+    } catch {
+      continue;
+    }
+
+    try {
+      const id = `pdf-mermaid-${++mermaidPdfRenderCounter}`;
+      const { svg } = await mermaid.render(id, code);
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "pdf-mermaid-wrap";
+      wrapper.innerHTML = svg;
+
+      const svgEl = wrapper.querySelector("svg");
+      if (svgEl) {
+        svgEl.style.maxWidth = "100%";
+        svgEl.style.height = "auto";
+        svgEl.style.display = "inline-block";
+      }
+
+      placeholder.replaceWith(wrapper);
+    } catch (err) {
+      const errBox = document.createElement("div");
+      errBox.className = "pdf-graphviz-error";
+      errBox.textContent = `⚠ Impossibile renderizzare il diagramma Mermaid: ${err?.message || "errore sconosciuto"}`;
       placeholder.replaceWith(errBox);
     }
   }
@@ -604,6 +682,24 @@ function buildPdfCss() {
       font-size: 8.5pt;
     }
 
+    /* ── Diagrammi Mermaid ─────────────────────────────────────────────────── */
+    .pdf-mermaid-wrap {
+      margin: 1.25em 0;
+      text-align: center;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      background: #fafcff;
+      border: 1px solid var(--pdf-border);
+      border-radius: 6px;
+      padding: 1em;
+    }
+
+    .pdf-mermaid-wrap svg {
+      max-width: 100%;
+      height: auto;
+      display: inline-block;
+    }
+
     /* ── KaTeX (formule LaTeX) ─────────────────────────────────────────────── */
     /*
      * Non sovrascrivere font-size né display su .katex/.katex-html:
@@ -770,10 +866,11 @@ export async function exportNoteToPdf(title, markdownContent) {
   }
   const token = await auth.currentUser.getIdToken();
 
-  // 2. Costruisci l'HTML completo (Markdown -> HTML + SVG Graphviz inline)
+  // 2. Costruisci l'HTML completo (Markdown -> HTML + SVG Graphviz + SVG Mermaid inline)
   const rawHtml = renderMarkdown(markdownContent);
   const htmlWithGraphviz = await renderGraphvizInHtml(rawHtml);
-  const htmlDocument = buildHtmlDocument(title, htmlWithGraphviz);
+  const htmlWithDiagrams = await renderMermaidInHtml(htmlWithGraphviz);
+  const htmlDocument = buildHtmlDocument(title, htmlWithDiagrams);
 
   // 3. Invia alla Cloud Function e ricevi il PDF binario
   let response;
