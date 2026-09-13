@@ -11,7 +11,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 const H_PADDING = 24;
-const PAGE_GAP = 12;
+const PAGE_GAP = 24;
 const THUMB_WIDTH = 140;
 
 // ─── ErrorBoundary ─────────────────────────────────────────────────────────
