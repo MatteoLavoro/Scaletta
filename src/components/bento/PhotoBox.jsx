@@ -7,7 +7,7 @@ import {
   TrashIcon,
 } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { UploadModal, ConfirmModal, ImageModal } from "../modal";
+import { UploadModal, ConfirmModal, ImageDocumentViewer } from "../modal";
 import { uploadPhotos, deletePhoto } from "../../services/photos";
 
 // Altezza fissa del carosello
@@ -452,7 +452,7 @@ const PhotoBox = ({
       />
 
       {/* Modale immagine fullscreen */}
-      <ImageModal
+      <ImageDocumentViewer
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
         images={photos}

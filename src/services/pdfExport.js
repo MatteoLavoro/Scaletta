@@ -388,7 +388,7 @@ async function renderMermaidInHtml(html) {
         // esplodano in altezza occupando più pagine.
         const PDF_MAX_W = 450; // pt — stessa costante di Graphviz
         const PDF_MAX_H = 400; // pt
-        const MIN_W = 50;      // pt
+        const MIN_W = 50; // pt
         const PX_TO_PT = 0.75; // 1px = 0.75pt a 96dpi
 
         // Fonte 1: viewBox (più affidabile per Mermaid v10/v11)

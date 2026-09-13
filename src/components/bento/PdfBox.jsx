@@ -10,7 +10,7 @@ import {
   TrashIcon,
 } from "../icons";
 import BaseBentoBox from "./BaseBentoBox";
-import { PdfUploadModal, ConfirmModal, PdfViewerModal } from "../modal";
+import { PdfUploadModal, ConfirmModal, PdfDocumentViewer } from "../modal";
 import { uploadPdfs, deletePdf } from "../../services/pdfs";
 
 // Configura il worker per react-pdf
@@ -569,7 +569,7 @@ const PdfBox = ({
       />
 
       {/* Modale visualizzatore PDF fullscreen */}
-      <PdfViewerModal
+      <PdfDocumentViewer
         isOpen={isPdfViewerModalOpen}
         onClose={handleClosePdfViewer}
         pdfs={localPdfs}

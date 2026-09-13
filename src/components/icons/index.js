@@ -44,6 +44,7 @@ export { default as PhoneIcon } from "./PhoneIcon";
 export { default as PinIcon } from "./PinIcon";
 export { default as PlusIcon } from "./PlusIcon";
 export { default as PresentationIcon } from "./PresentationIcon";
+export { default as PrinterIcon } from "./PrinterIcon";
 export { default as RotateCwIcon } from "./RotateCwIcon";
 export { default as RulerIcon } from "./RulerIcon";
 export { default as SendIcon } from "./SendIcon";
