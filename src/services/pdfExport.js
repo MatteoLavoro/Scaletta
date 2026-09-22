@@ -5,9 +5,11 @@
  *  1. Renderizza il Markdown in HTML (già disponibile via markdownRenderer)
  *  2. Pre-renderizza tutti i grafici Graphviz DOT → SVG (via @viz-js/viz WASM)
  *     e post-processa gli SVG per il tema chiaro (colori fissi, non CSS var)
- *  3. Costruisce un documento HTML completo e autocontenuto con CSS light-theme
- *  4. Apre il documento in una nuova finestra e lancia il dialogo di stampa
- *     → l'utente sceglie "Salva come PDF" dal dialogo nativo del browser
+ *  3. Gestisce le emoji: le emoji nel testo vengono rasterizzate inline come
+ *     immagini data-URI (il Chromium headless della Cloud Function non ha font
+ *     emoji e i webfont COLRv1 non vengono incorporati nei PDF)
+ *  4. Costruisce un documento HTML completo e autocontenuto con CSS light-theme
+ *  5. Invia il documento alla Cloud Function generatePdf e scarica il PDF
  *
  * Vantaggi di questo approccio vs. librerie esterne (jsPDF, html2canvas…):
  *  - Testo realmente selezionabile nel PDF (rendering nativo del browser)
@@ -89,6 +91,37 @@ const PDF_FILL_BLACK = new Set(["black", "#000000", "#000"]);
 const PDF_TEXT_DARK = "#1a1a2e"; // Testo su sfondo bianco/chiaro
 const PDF_TEXT_WHITE = "#ffffff"; // Testo su sfondo scuro
 
+// ─── Font emoji per il PDF ────────────────────────────────────────────────────
+//
+// Il PDF è generato da un Chromium headless (@sparticuz/chromium) che NON
+// include i font di sistema, quindi nemmeno un font emoji: senza una gestione
+// dedicata le emoji non hanno glifo e non compaiono nel PDF esportato.
+// La strategia è descritta nella sezione "Supporto emoji": le emoji nel testo
+// vengono rasterizzate inline come immagini data URI, mentre quelle dentro il
+// testo SVG dei diagrammi sono coperte dal webfont puntato da EMOJI_FONT_URL.
+
+// Famiglia emoji, SEMPRE accodata ai font stack del documento PDF. La posizione
+// in coda è voluta: ogni altro font ha priorità, quindi il testo normale resta
+// identico e la famiglia emoji interviene solo sui caratteri senza glifo.
+const PDF_EMOJI_FONT_STACK =
+  '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Emoji"';
+
+// URL del webfont emoji dichiarato nel documento PDF tramite @font-face.
+// Nota tecnica (verificata con test locale di page.pdf):
+//  - Chromium incorpora nel PDF i glifi emoji SOLO per i font a bitmap CBDT.
+//    Con un webfont COLRv1 (es. @fontsource/noto-color-emoji o Noto Color Emoji
+//    di Google Fonts) i glifi risultano VUOTI nel PDF generato.
+//  - v2.038 è l'ultima release di Noto Color Emoji in formato CBDT (Unicode 14).
+//
+// Questo webfont serve solo per le emoji che non possono essere convertite in
+// immagini, cioè quelle dentro il testo SVG dei diagrammi (Graphviz/Mermaid):
+// le emoji nel testo normale vengono rasterizzate da emojisToInlineImagesHtml.
+// È dichiarato sempre ma viene scaricato da Chromium solo quando una emoji ha
+// davvero bisogno del glifo, quindi non ha alcun costo nelle note senza emoji
+// in grafi.
+const EMOJI_FONT_URL =
+  "https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@v2.038/fonts/NotoColorEmoji.ttf";
+
 /**
  * Post-processa un SVGElement generato da Graphviz per il tema chiaro del PDF.
  * A differenza di applyThemeToSVG (che usa var(--color-text-primary)),
@@ -105,10 +138,12 @@ function applyPdfThemeToSVG(svgElement) {
     }
   }
 
-  // 2. Font di sistema per tutti i testi
+  // 2. Font di sistema per tutti i testi (+ emoji in coda, così anche le
+  //    eventuali emoji nelle etichette dei grafi hanno un glifo nel PDF)
   svgElement.querySelectorAll("text, tspan").forEach((el) => {
     el.style.fontFamily =
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, " +
+      `${PDF_EMOJI_FONT_STACK}, sans-serif`;
   });
 
   // 3. Colore testo dei nodi basato sulla luminanza del fillcolor
@@ -356,7 +391,8 @@ async function renderMermaidInHtml(html) {
     theme: "default", // sempre tema chiaro per il PDF
     securityLevel: "strict",
     fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, " +
+      `${PDF_EMOJI_FONT_STACK}, sans-serif`,
   });
 
   for (const placeholder of placeholders) {
@@ -445,6 +481,176 @@ async function renderMermaidInHtml(html) {
   return tmpDiv.innerHTML;
 }
 
+// ─── Supporto emoji ───────────────────────────────────────────────────────────
+//
+// Le emoji sono normali caratteri Unicode: marked le lascia intatte e arrivano
+// nell'HTML così come sono state scritte nella nota. Il PDF però è generato da
+// un Chromium headless privo di font emoji e, come verificato con test locali di
+// page.pdf, i glifi emoji dei webfont COLRv1 non vengono incorporati (restano
+// vuoti). Strategia adottata:
+//  1. emoji nel testo normale (paragrafi, titoli, liste, tabelle, codice):
+//     rasterizzate inline come <img> data URI → sempre renderizzate, qualunque
+//     PDF viewer e qualunque emoji (anche le più recenti)
+//  2. emoji dentro il testo SVG dei diagrammi (dove un <img> HTML non
+//     renderizza): coperte dal webfont CBDT dichiarato in buildPdfCss()
+// Maggiori dettagli nelle funzioni emojisToInlineImagesHtml e buildPdfCss.
+
+// Regex di riconoscimento emoji. Si preferisce la proprietà RGI (sequenze emoji
+// complete, richiede il flag "v"); se il browser non la supporta si ripiega su
+// Extended_Pictographic + bandiere + keycap.
+let EMOJI_TEST_RE = null;
+try {
+  EMOJI_TEST_RE = new RegExp("\\p{RGI_Emoji}", "v");
+} catch {
+  try {
+    EMOJI_TEST_RE =
+      /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}]|[\d#*]\uFE0F?\u20E3/u;
+  } catch {
+    EMOJI_TEST_RE = null;
+  }
+}
+
+// Segmentazione in grapheme cluster: serve per non spezzare sequenze come
+// 👨‍👩‍👧‍👦 (ZWJ), 🏳️‍🌈, le bandiere 🇮🇹 o le emoji con tono pelle 👍🏽.
+const emojiGraphemeSegmenter =
+  typeof Intl !== "undefined" && typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter("it", { granularity: "grapheme" })
+    : null;
+
+function splitGraphemes(text) {
+  if (emojiGraphemeSegmenter) {
+    return Array.from(emojiGraphemeSegmenter.segment(text), (s) => s.segment);
+  }
+  return Array.from(text);
+}
+
+function isEmojiGrapheme(grapheme) {
+  if (!grapheme || !EMOJI_TEST_RE) return false;
+  return EMOJI_TEST_RE.test(grapheme);
+}
+
+/**
+ * Verifica se un testo contiene almeno una emoji.
+ * @param {string} text
+ * @returns {boolean}
+ */
+function containsEmoji(text) {
+  if (!text || !EMOJI_TEST_RE) return false;
+  return EMOJI_TEST_RE.test(text);
+}
+
+// Cache delle emoji già rasterizzate (grapheme → data URI oppure null)
+const emojiImageCache = new Map();
+
+/**
+ * Rasterizza una emoji in una data URI PNG usando i font emoji del dispositivo.
+ * @param {string} emoji - Grapheme cluster emoji
+ * @returns {string|null} Data URI PNG, oppure null se non rasterizzabile
+ */
+function emojiToPngDataUri(emoji) {
+  if (emojiImageCache.has(emoji)) return emojiImageCache.get(emoji);
+
+  let dataUri = null;
+  try {
+    const BOX = 96; // altezza canvas in px (→ ~400 dpi per una emoji a 10pt)
+    const FONT_SIZE = 72;
+    const fontStack =
+      `${FONT_SIZE}px "Apple Color Emoji", "Segoe UI Emoji", ` +
+      `"Noto Color Emoji", "Android Emoji", "Noto Emoji", sans-serif`;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (ctx) {
+      ctx.font = fontStack;
+      const metrics = ctx.measureText(emoji);
+
+      // Larghezza reale dell'inchiostro: gestisce anche le sequenze larghe
+      // (ZWJ, bandiere) che superano la larghezza dell'em quad.
+      const inkWidth = Math.ceil(
+        (metrics.actualBoundingBoxLeft || 0) +
+          (metrics.actualBoundingBoxRight || metrics.width || FONT_SIZE),
+      );
+      const PAD = 6;
+
+      canvas.width = Math.min(inkWidth + PAD * 2, 1024);
+      canvas.height = BOX;
+
+      // Il resize del canvas azzera lo stato del contesto: va riconfigurato
+      ctx.font = fontStack;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(emoji, canvas.width / 2, BOX / 2);
+
+      dataUri = canvas.toDataURL("image/png");
+    }
+  } catch {
+    dataUri = null; // in caso di errore l'emoji resta testo (come prima)
+  }
+
+  emojiImageCache.set(emoji, dataUri);
+  return dataUri;
+}
+
+/**
+ * Sostituisce le emoji nei nodi di testo dell'HTML con <img> inline in data URI.
+ * Le immagini sono incorporate nell'HTML, quindi la Cloud Function le
+ * renderizza senza bisogno di alcun font emoji installato e il risultato è
+ * identico in qualsiasi PDF viewer.
+ *
+ * Vengono toccati solo i nodi di testo (mai tag o attributi). Sono esclusi
+ * unicamente i testi in namespace SVG (es. <text> di Graphviz/Mermaid), dove un
+ * <img> HTML non verrebbe renderizzato: per quelli resta il webfont CBDT.
+ * I testi HTML dentro <foreignObject> (label dei diagrammi Mermaid) vengono
+ * invece convertiti, perché sono normali elementi HTML.
+ *
+ * @param {string} html - HTML del corpo del documento
+ * @returns {string} HTML con le emoji sostituite da immagini inline
+ */
+function emojisToInlineImagesHtml(html) {
+  if (!EMOJI_TEST_RE) return html;
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const tmpDiv = document.createElement("div");
+  tmpDiv.innerHTML = html;
+
+  const walker = document.createTreeWalker(tmpDiv, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  textNodes.forEach((node) => {
+    const text = node.nodeValue || "";
+    if (!text || !EMOJI_TEST_RE.test(text)) return;
+    if (node.parentElement?.namespaceURI === SVG_NS) return;
+
+    const fragment = document.createDocumentFragment();
+    let replaced = false;
+
+    for (const grapheme of splitGraphemes(text)) {
+      const dataUri = isEmojiGrapheme(grapheme)
+        ? emojiToPngDataUri(grapheme)
+        : null;
+
+      if (dataUri) {
+        const img = document.createElement("img");
+        img.className = "pdf-emoji";
+        img.src = dataUri;
+        img.alt = grapheme;
+        fragment.appendChild(img);
+        replaced = true;
+      } else {
+        fragment.appendChild(document.createTextNode(grapheme));
+      }
+    }
+
+    if (replaced && node.parentNode) {
+      node.parentNode.replaceChild(fragment, node);
+    }
+  });
+
+  return tmpDiv.innerHTML;
+}
+
 // ─── CSS del documento PDF ────────────────────────────────────────────────────
 
 function buildPdfCss() {
@@ -470,9 +676,21 @@ function buildPdfCss() {
       --pdf-line-height:    1.65;
     }
 
+    /*
+     * Webfont emoji (CBDT). Chromium lo scarica solo se nel documento serve un
+     * glifo emoji che non è già stato sostituito da un'immagine inline, cioè
+     * per le emoji dentro il testo SVG dei grafi.
+     */
+    @font-face {
+      font-family: "Noto Color Emoji";
+      src: url(${EMOJI_FONT_URL}) format("truetype");
+      font-display: swap;
+    }
+
     html, body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter",
-                   Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+                   Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial,
+                   ${PDF_EMOJI_FONT_STACK}, sans-serif;
       font-size: var(--pdf-font-size);
       line-height: var(--pdf-line-height);
       color: var(--pdf-text-primary);
@@ -637,7 +855,7 @@ function buildPdfCss() {
       color: #0f6cbd;
       font-size: 8.5pt;
       font-family: "JetBrains Mono", "Fira Code", "Cascadia Code",
-                   "Courier New", Courier, monospace;
+                   "Courier New", Courier, ${PDF_EMOJI_FONT_STACK}, monospace;
       padding: 0.1em 0.35em;
       border-radius: 3px;
       border: 1px solid var(--pdf-border-code);
@@ -664,7 +882,7 @@ function buildPdfCss() {
       border: none;
       border-radius: 0;
       font-family: "JetBrains Mono", "Fira Code", "Cascadia Code",
-                   "Courier New", Courier, monospace;
+                   "Courier New", Courier, ${PDF_EMOJI_FONT_STACK}, monospace;
       white-space: pre-wrap;
       word-break: break-all;
     }
@@ -825,6 +1043,23 @@ function buildPdfCss() {
       break-inside: avoid;
     }
 
+    /*
+     * Emoji rasterizzate inline come immagini data URI (vedi
+     * emojisToInlineImagesHtml). Sovrascrive la regola .pdf-body img: immagine
+     * inline, senza bordo/margini, allineata al testo.
+     */
+    .pdf-body img.pdf-emoji {
+      display: inline;
+      height: 1.15em;
+      width: auto;
+      max-width: none;
+      margin: 0 0.04em;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      vertical-align: -0.15em;
+    }
+
     /* ── Utility stampa ───────────────────────────────────────────────────── */
     @media print {
       html, body {
@@ -857,7 +1092,7 @@ const KATEX_CDN_CSS =
  * Inizia direttamente con il contenuto Markdown senza intestazione.
  *
  * @param {string} title    - Titolo della nota (usato come <title> del documento)
- * @param {string} bodyHtml - HTML del corpo (markdown renderizzato + SVG Graphviz)
+ * @param {string} bodyHtml - HTML del corpo (markdown + SVG Graphviz/Mermaid)
  * @returns {string} Documento HTML completo
  */
 function buildHtmlDocument(title, bodyHtml) {
@@ -892,9 +1127,12 @@ const GENERATE_PDF_URL = "https://generatepdf-3ujl6wiqia-uc.a.run.app";
  *
  * Flusso:
  *  1. Ottiene il token Firebase Auth dell'utente corrente
- *  2. Renderizza Markdown -> HTML + SVG Graphviz (client-side)
- *  3. Invia l'HTML completo alla Cloud Function generatePdf via POST
- *  4. Riceve il PDF binario e lo scarica direttamente (nessun dialogo)
+ *  2. Renderizza Markdown -> HTML + SVG Graphviz/Mermaid (client-side)
+ *  3. Gestisce le emoji: le emoji nel testo sono rasterizzate inline come
+ *     immagini data-URI (unico formato che Chromium incorpora sempre nel PDF),
+ *     quelle nei diagrammi sono coperte dal webfont CBDT
+ *  4. Invia l'HTML completo alla Cloud Function generatePdf via POST
+ *  5. Riceve il PDF binario e lo scarica direttamente (nessun dialogo)
  *
  * @param {string} title           - Titolo della nota
  * @param {string} markdownContent - Contenuto in formato Markdown
@@ -918,7 +1156,16 @@ export async function exportNoteToPdf(title, markdownContent) {
   const rawHtml = renderMarkdown(markdownContent);
   const htmlWithGraphviz = await renderGraphvizInHtml(rawHtml);
   const htmlWithDiagrams = await renderMermaidInHtml(htmlWithGraphviz);
-  const htmlDocument = buildHtmlDocument(title, htmlWithDiagrams);
+
+  // 2b. Emoji: le emoji nel testo vengono rasterizzate inline come immagini
+  // data-URI (unico modo perché Chromium le incorpori sempre nel PDF); le
+  // eventuali emoji dentro il testo SVG dei grafi restano glifi e sono coperte
+  // dal webfont CBDT dichiarato nel CSS del documento.
+  const bodyHtml = containsEmoji(markdownContent)
+    ? emojisToInlineImagesHtml(htmlWithDiagrams)
+    : htmlWithDiagrams;
+
+  const htmlDocument = buildHtmlDocument(title, bodyHtml);
 
   // 3. Invia alla Cloud Function e ricevi il PDF binario
   let response;
