@@ -11,15 +11,15 @@ const CreateProjectButton = ({ onClick }) => {
     <button
       onClick={onClick}
       className="
-        aspect-square min-w-0 flex flex-col items-center justify-center gap-2 p-3
+        aspect-square min-w-0 flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3
         border-2 border-dashed border-border rounded-xl
         text-text-secondary
         hover:border-primary hover:text-primary hover:bg-primary/5
         transition-all duration-200 active:scale-95
       "
     >
-      <PlusIcon className="w-6 h-6" />
-      <span className="text-xs font-medium text-center leading-tight">
+      <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+      <span className="text-[11px] sm:text-xs font-medium text-center leading-tight">
         Nuovo progetto
       </span>
     </button>

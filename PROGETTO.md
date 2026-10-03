@@ -326,7 +326,7 @@ projects/
 
 1. Click sulla **GroupCard** per espandere
 2. Viene mostrata la **ProjectGrid** con:
-   - Griglia di **ProjectCard** (3 colonne mobile, 4 tablet, 5 desktop)
+   - Griglia di **ProjectCard** (2 colonne su telefoni, 3 da 480px, 4 tablet, 5 desktop)
    - Tasto "+" per creare nuovo progetto
 3. I progetti sono ordinati: in corso → completati → archiviati → cestinati
 

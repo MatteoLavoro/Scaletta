@@ -86,7 +86,7 @@ const GroupCard = ({
         {/* Header della card - sempre visibile */}
         <div
           onClick={handleCardClick}
-          className="relative flex items-center p-4 cursor-pointer hover:bg-bg-tertiary/50 transition-colors active:scale-[0.99] active:bg-bg-tertiary/70"
+          className="relative flex items-center p-3 sm:p-4 cursor-pointer hover:bg-bg-tertiary/50 transition-colors active:scale-[0.99] active:bg-bg-tertiary/70"
         >
           {/* Info gruppo a sinistra */}
           <div className="flex-1 min-w-0">
@@ -137,8 +137,8 @@ const GroupCard = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="px-4 pb-4 pt-0 border-t border-border">
-              <div className="pt-4">
+            <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0 border-t border-border">
+              <div className="pt-3 sm:pt-4">
                 <ProjectGrid
                   groupId={group.id}
                   group={group}

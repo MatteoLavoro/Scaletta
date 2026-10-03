@@ -109,7 +109,7 @@ const Dashboard = ({ onProjectClick, deletingProjectIds }) => {
     <div className="min-h-dvh flex flex-col bg-bg-primary">
       {/* Header */}
       <header
-        className="flex items-center justify-between px-5 bg-bg-secondary border-b border-border sticky top-0 z-50"
+        className="flex items-center justify-between px-4 sm:px-5 bg-bg-secondary border-b border-border sticky top-0 z-50"
         style={{
           paddingTop: "calc(1rem + var(--safe-area-inset-top))",
           paddingBottom: "1rem",
@@ -141,7 +141,7 @@ const Dashboard = ({ onProjectClick, deletingProjectIds }) => {
       </header>
 
       {/* Main */}
-      <main className="flex-1 p-5">
+      <main className="flex-1 p-4 sm:p-5">
         <div className="max-w-2xl md:max-w-5xl mx-auto">
           {/* Lista gruppi */}
           <div className="space-y-3">

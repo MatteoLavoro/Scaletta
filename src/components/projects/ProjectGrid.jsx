@@ -14,7 +14,8 @@ import {
 import { validateProjectName } from "../../utils/projectValidation";
 
 /**
- * ProjectGrid - Griglia di progetti con 3 colonne su mobile
+ * ProjectGrid - Griglia di progetti: 2 colonne su telefoni (card grandi e
+ * leggibili), 3 da 480px, 4 su tablet, 5 su desktop
  *
  * @param {string} groupId - ID del gruppo
  * @param {object} group - Oggetto gruppo completo (per founder check)
@@ -140,8 +141,9 @@ const ProjectGrid = ({
 
   return (
     <>
-      {/* Griglia responsive: 3 colonne mobile, 4 tablet, 5 desktop */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+      {/* Griglia responsive: 2 colonne su telefoni (icona e nome ben visibili),
+          3 da 480px, 4 tablet, 5 desktop */}
+      <div className="grid grid-cols-2 min-[480px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {/* Progetti esistenti */}
         {visibleProjects.map((project) => (
           <ProjectCard

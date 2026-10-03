@@ -71,8 +71,8 @@
 
 | File                      | Descrizione                                         |
 | ------------------------- | --------------------------------------------------- |
-| `ProjectCard.jsx`         | Card progetto quadrata con icona stato e colore     |
-| `ProjectGrid.jsx`         | Griglia progetti (3 col mobile, 4 tablet, 5 desk)   |
+| `ProjectCard.jsx`         | Card progetto quadrata con icona, nome e stato      |
+| `ProjectGrid.jsx`         | Griglia progetti (2 col telefoni, 3 da 480px, 4 tab) |
 | `CreateProjectButton.jsx` | Tasto + per creare progetto                         |
 | `ProjectInfoModal.jsx`    | Modale info progetto (nome, creatore, data, colore) |
 | `StatusModal.jsx`         | Modale gestione stato con slider e elimina          |

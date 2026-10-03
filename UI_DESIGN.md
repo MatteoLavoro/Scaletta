@@ -182,8 +182,8 @@ Card tutorial che appare quando l'utente non ha gruppi:
 
 ### ProjectGrid (Griglia Progetti)
 
-- Griglia responsive: 3 colonne mobile, 4 tablet, 5 desktop
-- Gap 12px tra le card
+- Griglia responsive: 2 colonne su telefoni, 3 da 480px, 4 tablet, 5 desktop
+- Gap 10px su telefono, 12px da 640px
 - **ProjectCard** per ogni progetto
 - **CreateProjectButton** (+) sempre alla fine
 - Ordinamento automatico: in-corso → completati → archiviati → cestinati
@@ -192,9 +192,11 @@ Card tutorial che appare quando l'utente non ha gruppi:
 
 ```
 ┌─────────────────┐
-│    [ICONA]      │  ← Icona stato centrata
-│                 │
-│   Nome Prog     │  ← Nome progetto (truncate)
+│    ╭───────╮    │  ← Cerchio icona progetto (colore del progetto)
+│    │ ICONA │    │
+│    ╰───────╯    │
+│   Nome Prog     │  ← Nome progetto (max 2 righe)
+│ [stato]  [🔔]   │  ← Stato (sinistra) + pillole angolari (destra)
 └─────────────────┘
     ↑ Sfondo colorato
 ```
@@ -202,9 +204,19 @@ Card tutorial che appare quando l'utente non ha gruppi:
 - Aspect ratio quadrato
 - Sfondo con colore del progetto (opacità 15%)
 - Bordo con colore del progetto (opacità 30%)
-- Icona stato centrata (▶️ In corso, ✓ Completato, 📦 Archiviato, 🗑️ Cestinato)
-- Nome progetto in basso (truncate se lungo)
+- Cerchio icona progetto centrato, dimensionato in base alla larghezza della card:
+  - 56px (icona 28px) su telefoni → 2 colonne
+  - 48px (icona 24px) da 480px → 3 colonne
+  - 56px (icona 28px) da 640px → 4 colonne
+  - 64px (icona 32px) da 768px → 4 colonne
+  - 84px (icona 42px) da 1024px → 5 colonne
+- Nome progetto sotto l'icona: 12px su telefoni, 11px nelle fasce a 3/4 colonne
+  (max 2 righe, `line-clamp-2`)
+- Riquadro stato in basso a sinistra (▶️ In corso, ✓ Completato, 📦 Archiviato, 🗑️ Cestinato)
+- Pillole angolari in basso a destra, impilate: novità (⚡), messaggi non letti (🔔), progetto condiviso (🔗)
 - Click apre ProjectPage
+- **Importante**: le dimensioni interne sono tarate perché il contenuto entri sempre
+  nell'altezza della card quadrata (altrimenti `overflow-hidden` taglia icona e nome)
 
 ### CreateGroupButton / JoinGroupButton
 
