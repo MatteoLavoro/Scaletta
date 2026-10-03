@@ -108,13 +108,12 @@ self.addEventListener("fetch", (event) => {
 // ====================================
 // FIREBASE CLOUD MESSAGING
 // ====================================
-
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js",
-);
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.6.0/firebase-messaging-compat.js",
-);
+// ⚠️ Gli SDK Firebase compat sono GIÀ importati in cima a questo file
+// (blocco guardato da `typeof firebase === "undefined"`). Non vanno
+// re-importati qui: `importScripts` rivaluta lo script a ogni chiamata e un
+// secondo caricamento di firebase-app-compat.js ricrea il global `firebase`,
+// generando il warning "@firebase/app-compat: Firebase is already defined in
+// the global scope".
 
 // Configurazione Firebase (usa la stessa di config.js)
 const firebaseConfig = {
@@ -126,8 +125,12 @@ const firebaseConfig = {
   appId: "1:766379176366:web:f193a5ffc5a8921f8f183f",
 };
 
-// Inizializza Firebase
-firebase.initializeApp(firebaseConfig);
+// Inizializza Firebase una sola volta: se il service worker viene rivalutato
+// (o se un altro script ha già chiamato initializeApp) evitiamo l'errore
+// "Firebase App named '[DEFAULT]' already exists".
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 // Ottieni l'istanza di messaging
 const messaging = firebase.messaging();
