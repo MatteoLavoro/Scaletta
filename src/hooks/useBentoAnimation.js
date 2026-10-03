@@ -33,6 +33,8 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
   const isFirstRenderRef = useRef(true);
   const animatingRef = useRef(new Set());
   const resizeObserverRef = useRef(null);
+  // Elementi attualmente osservati dal ResizeObserver (per diff osserva/smaltisci)
+  const observedElsRef = useRef(new Set());
   const [heights, setHeights] = useState(new Map());
   // Ref per tracciare gli ID del ciclo precedente (per identificare nuovi elementi PRIMA del render)
   const prevItemIdsRef = useRef(new Set());
@@ -196,46 +198,64 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     return positions;
   }, [columns, columnCount, heights, gap]);
 
-  // Setup ResizeObserver per rilevare cambiamenti di altezza
+  // Setup ResizeObserver.
+  // IMPORTANTE: il contenitore dei box non esiste al mount (durante il loading
+  // viene mostrato lo spinner), quindi l'observer viene creato la PRIMA VOLTA
+  // che il contenitore è disponibile e poi riutilizzato. Osserva/smaltisce solo
+  // i box aggiunti/rimossi (diff), senza ricreare l'observer ad ogni update.
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    // Misura iniziale dopo il mount
-    const initialMeasure = () => {
-      measureHeights();
-    };
-    requestAnimationFrame(initialMeasure);
-
-    // Observer per cambiamenti di dimensione
-    resizeObserverRef.current = new ResizeObserver((entries) => {
-      // Controlla se qualche altezza è effettivamente cambiata
-      let hasHeightChange = false;
-      entries.forEach((entry) => {
-        const id = entry.target.getAttribute("data-bento-id");
-        const currentHeight = heightsRef.current.get(id);
-        const newHeight = entry.contentRect.height;
-        if (Math.abs((currentHeight || 0) - newHeight) > 2) {
-          hasHeightChange = true;
+    // Crea l'observer una sola volta
+    if (!resizeObserverRef.current) {
+      resizeObserverRef.current = new ResizeObserver((entries) => {
+        // Basta UN box effettivamente cambiato per ricalcolare le altezze
+        let hasHeightChange = false;
+        for (const entry of entries) {
+          const id = entry.target.getAttribute("data-bento-id");
+          const currentHeight = heightsRef.current.get(id);
+          const newHeight = entry.contentRect.height;
+          if (Math.abs((currentHeight || 0) - newHeight) > 2) {
+            hasHeightChange = true;
+            break;
+          }
         }
+        if (hasHeightChange) measureHeights();
       });
+    }
+    const observer = resizeObserverRef.current;
 
-      if (hasHeightChange) {
-        measureHeights();
+    // Osserva i nuovi box e smaltisci quelli rimossi
+    const current = new Set(container.querySelectorAll("[data-bento-id]"));
+    observedElsRef.current.forEach((el) => {
+      if (!current.has(el)) {
+        observer.unobserve(el);
+        observedElsRef.current.delete(el);
+      }
+    });
+    current.forEach((el) => {
+      if (!observedElsRef.current.has(el)) {
+        observer.observe(el);
+        observedElsRef.current.add(el);
       }
     });
 
-    // Osserva tutti i box
-    const elements = containerRef.current.querySelectorAll("[data-bento-id]");
-    elements.forEach((el) => {
-      resizeObserverRef.current.observe(el);
-    });
+    // Misura iniziale quando i box sono effettivamente nel DOM
+    requestAnimationFrame(() => measureHeights());
+  }, [itemsKey, measureHeights]);
 
+  // Chiudi l'observer solo allo smontaggio del componente
+  useEffect(() => {
+    const observed = observedElsRef.current;
     return () => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
       }
+      observed.clear();
     };
-  }, [items, measureHeights]);
+  }, []);
 
   // Rileva cambiamenti di columnCount per trigger ricalcolo
   useEffect(() => {
@@ -321,7 +341,7 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
     // FASE 2: Applica le animazioni FLIP solo ai box che si muovono
     const elements = containerRef.current.querySelectorAll("[data-bento-id]");
 
-    // Prima gestiamo i nuovi elementi (devono apparire immediatamente nella posizione corretta)
+    // Nuovi elementi: gestiti separatamente (devono apparire nella posizione corretta)
     const newElementsToShow = [];
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
@@ -330,20 +350,17 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
       }
     });
 
-    // Poi gestiamo le animazioni dei box esistenti
+    // INVERT: applica la trasformazione inversa a TUTTI i box che si muovono.
+    // Fase di sole SCRITTURE: nessuna lettura di layout qui (evita forced reflow).
+    const toPlay = [];
     elements.forEach((el) => {
       const id = el.getAttribute("data-bento-id");
+      if (newItemIds.has(id)) return; // nuovi → gestiti a parte
 
-      // Skip nuovi elementi (gestiti separatamente)
-      if (newItemIds.has(id)) {
-        return;
-      }
-
-      // Controlla se questo box deve essere animato
       const animationData = boxesToAnimate.get(id);
 
       if (!animationData) {
-        // Box NON si muove: assicurati che non abbia transform residui
+        // Box fermo: rimuovi eventuali transform residui
         if (el.style.transform) {
           el.style.transition = "none";
           el.style.transform = "";
@@ -351,10 +368,7 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
         return;
       }
 
-      // Box SI MUOVE: applica animazione FLIP
-      const { deltaX, deltaY } = animationData;
-
-      // Cancella eventuali animazioni in corso
+      // Annulla eventuali animazioni in corso
       if (animatingRef.current.has(id)) {
         el.style.transition = "none";
         el.style.transform = "";
@@ -362,32 +376,38 @@ const useBentoAnimation = (items, columnCount, gap = 16) => {
 
       animatingRef.current.add(id);
 
-      // INVERT: applica trasformazione inversa (istantanea) per riportare visivamente alla posizione vecchia
+      // INVERT istantaneo (nessuna lettura di layout)
       el.style.transition = "none";
-      el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+      el.style.transform = `translate(${animationData.deltaX}px, ${animationData.deltaY}px)`;
+      toPlay.push({ el, id });
+    });
 
-      // Force reflow per assicurare che il transform venga applicato
-      el.offsetHeight;
+    // UN SOLO forced reflow per l'intero batch (invece di uno per box)
+    if (toPlay.length > 0) {
+      containerRef.current.offsetHeight;
+    }
 
-      // PLAY: anima verso la posizione finale (transform = 0)
+    // PLAY: un solo rAF (doppio) che avvia tutte le animazioni insieme
+    if (toPlay.length > 0) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          // Animazione fluida: 500ms con easing Material Design "emphasized"
-          // cubic-bezier(0.2, 0, 0, 1) = emphasize deceleration
-          el.style.transition = "transform 500ms cubic-bezier(0.2, 0, 0, 1)";
-          el.style.transform = "translate(0, 0)";
+          toPlay.forEach(({ el, id }) => {
+            // Animazione fluida: 500ms con easing Material Design "emphasized"
+            el.style.transition = "transform 500ms cubic-bezier(0.2, 0, 0, 1)";
+            el.style.transform = "translate(0, 0)";
 
-          const cleanup = () => {
-            el.style.transform = "";
-            el.style.transition = "";
-            animatingRef.current.delete(id);
-          };
+            const cleanup = () => {
+              el.style.transform = "";
+              el.style.transition = "";
+              animatingRef.current.delete(id);
+            };
 
-          el.addEventListener("transitionend", cleanup, { once: true });
-          setTimeout(cleanup, 550); // Cleanup di sicurezza
+            el.addEventListener("transitionend", cleanup, { once: true });
+            setTimeout(cleanup, 550); // Cleanup di sicurezza
+          });
         });
       });
-    });
+    }
 
     // FASE 3: Mostra i nuovi elementi nella posizione corretta (dopo il layout)
     // Aspettiamo che il DOM sia stabile, poi facciamo apparire i nuovi box

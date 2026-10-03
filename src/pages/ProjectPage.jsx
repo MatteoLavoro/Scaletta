@@ -6,6 +6,10 @@ import {
   BellIcon,
   MessageSquareIcon,
   LinkIcon,
+  SortIcon,
+  ClockIcon,
+  ListChecksIcon,
+  PencilIcon,
 } from "../components/icons";
 import useColumnCount, { BOX_WIDTH, GAP } from "../hooks/useColumnCount";
 import useBentoAnimation from "../hooks/useBentoAnimation";
@@ -17,7 +21,7 @@ import {
   StatusModal,
   ProjectShareModal,
 } from "../components/projects";
-import { DropdownMenu } from "../components/ui";
+import { DropdownMenu, SearchBar, IconPicker, ProjectIcon } from "../components/ui";
 import {
   MobileAddFab,
   DesktopAddFab,
@@ -33,10 +37,16 @@ import {
   TutorialBox,
   CameraFab,
 } from "../components/bento";
-import { MoreBoxesModal } from "../components/modal";
+import { MoreBoxesModal, InputModal } from "../components/modal";
 import { ChatSidebar, ChatFab } from "../components/chat";
 import { getProjectColor, DEFAULT_PROJECT_COLOR } from "../utils/projectColors";
 import { markProjectAsViewed } from "../utils/projectViews";
+import { validateProjectName } from "../utils/projectValidation";
+import {
+  sortBoxes,
+  BOX_SORT_OPTIONS,
+  DEFAULT_BOX_SORT,
+} from "../utils/boxSort";
 import {
   createBentoBox,
   updateBentoBoxTitle,
@@ -54,6 +64,7 @@ import {
   deleteBentoBox,
   subscribeToBentoBoxes,
   updateBoxesSortOrders,
+  projectNameExists,
 } from "../services/projects";
 import { deletePhotos, uploadPhoto, uploadPhotos } from "../services/photos";
 import { deleteFiles, uploadFiles } from "../services/files";
@@ -86,6 +97,7 @@ const ProjectPage = ({
   onBack,
   onUpdateName,
   onUpdateColor,
+  onUpdateIcon,
   onUpdateStatus,
   onDelete,
 }) => {
@@ -104,7 +116,8 @@ const ProjectPage = ({
   // Stato drag & drop riordinamento box
   const [isDraggingBox, setIsDraggingBox] = useState(false);
   const [draggedBoxId, setDraggedBoxId] = useState(null);
-  const [dropIndicator, setDropIndicator] = useState(null); // { targetId, before }
+  // Ordine provvisorio (preview) dei box non-pinnati, attivo solo durante il drag
+  const [dragPreviewOrder, setDragPreviewOrder] = useState(null);
   const ghostRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const dragBoxInfoRef = useRef({
@@ -114,12 +127,23 @@ const ProjectPage = ({
     initialLeft: 0,
     initialTop: 0,
   });
-  const dragStateRef = useRef({ hoveredId: null });
-  const handleReorderRef = useRef(null);
+  const dragPreviewOrderRef = useRef(null);
+  const dragInitialOrderRef = useRef(null);
+  // Snapshot dei rect dei box trascinabili a inizio drag (coordinate "congelate")
+  const dragRectsRef = useRef(null);
   const { isDark } = useTheme();
   const { hasNestedModals, wasPopstateHandled } = useModal();
 
   const isViewer = userRole === "viewer";
+
+  // Modalità di ordinamento delle card (persistita per progetto)
+  const [boxSort, setBoxSort] = useState(DEFAULT_BOX_SORT);
+
+  // Rinomina rapida dalla bolla del titolo
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+
+  // Box evidenziato "live" mentre si esplorano i risultati di ricerca
+  const [searchHighlightId, setSearchHighlightId] = useState(null);
 
   // Stato per i bento box del progetto
   const [bentoBoxes, setBentoBoxes] = useState([]);
@@ -164,6 +188,27 @@ const ProjectPage = ({
     if (!project?.id) return;
     markProjectAsViewed(project.id);
   }, [project?.id]);
+
+  // Carica la modalità di ordinamento salvata per questo progetto
+  useEffect(() => {
+    if (!project?.id) return;
+    try {
+      const saved = localStorage.getItem(`scaletta_box_sort_${project.id}`);
+      setBoxSort(saved || DEFAULT_BOX_SORT);
+    } catch {
+      setBoxSort(DEFAULT_BOX_SORT);
+    }
+  }, [project?.id]);
+
+  // Salva la modalità di ordinamento quando cambia
+  useEffect(() => {
+    if (!project?.id) return;
+    try {
+      localStorage.setItem(`scaletta_box_sort_${project.id}`, boxSort);
+    } catch {
+      // localStorage non disponibile: ignora
+    }
+  }, [project?.id, boxSort]);
 
   // Funzione per verificare se un box è vuoto (nessun contenuto significativo)
   const isBoxEmpty = useCallback((box) => {
@@ -953,16 +998,43 @@ const ProjectPage = ({
       initialLeft: originalEvent.clientX - offsetX,
       initialTop: originalEvent.clientY - offsetY,
     };
-    dragStateRef.current = { hoveredId: null };
+    // Ordine iniziale dei box non-pinnati (base del riordino provvisorio)
+    const initialOrder = sortedBoxes
+      .filter((b) => !b.isPinned)
+      .map((b) => b.id);
+    dragInitialOrderRef.current = initialOrder;
+    dragPreviewOrderRef.current = initialOrder;
+
+    // Snapshot delle posizioni dei box trascinabili: l'inserimento verrà
+    // calcolato su queste coordinate "congelate", non su quelle animate.
+    const rects = new Map();
+    containerRef.current
+      ?.querySelectorAll("[data-draggable='true']")
+      .forEach((el) => {
+        const id = el.getAttribute("data-bento-id");
+        if (!id || id === boxId) return;
+        const r = el.getBoundingClientRect();
+        rects.set(id, {
+          left: r.left,
+          top: r.top,
+          right: r.right,
+          bottom: r.bottom,
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+        });
+      });
+    dragRectsRef.current = rects;
 
     setIsDraggingBox(true);
     setDraggedBoxId(boxId);
-    setDropIndicator(null);
-  }, []);
+    setDragPreviewOrder(initialOrder);
+  }, [sortedBoxes]);
 
   // Gestisce il pointerdown sul wrapper del box: rileva la soglia di movimento prima di avviare il drag
   const handleWrapperPointerDown = useCallback(
     (item, e) => {
+      // Il riordino manuale è disponibile solo in modalità "standard"
+      if (boxSort !== "standard") return;
       if (isViewer || item.isPinned || item.type === "tutorial") return;
       if (e.button !== undefined && e.button !== 0) return; // solo tasto sinistro
       if (!e.target.closest("[data-drag-handle]")) return;
@@ -999,88 +1071,128 @@ const ProjectPage = ({
       document.addEventListener("pointermove", onMove);
       document.addEventListener("pointerup", onUp);
     },
-    [isViewer, handleDragStart],
+    [isViewer, handleDragStart, boxSort],
   );
 
-  // Scambia la posizione di due box non-pinnati
-  const handleReorderBoxes = useCallback(
-    async (dragId, targetId) => {
-      if (!project?.id || dragId === targetId) return;
+  // Persiste l'ordine corrente dei box non-pinnati (riordino stile Google Keep).
+  // Ogni posizione diventa un sortOrder esplicito (0, 1, 2, …).
+  const persistReorder = useCallback(
+    async (order) => {
+      if (!project?.id || !order?.length) return;
 
-      const nonPinned = sortedBoxes.filter((b) => !b.isPinned);
-      if (nonPinned.length < 2) return;
+      // Nessun cambiamento reale → evita una scrittura inutile
+      const initial = dragInitialOrderRef.current;
+      if (
+        initial &&
+        initial.length === order.length &&
+        initial.every((id, i) => id === order[i])
+      ) {
+        return;
+      }
 
-      const draggedIdx = nonPinned.findIndex((b) => b.id === dragId);
-      const targetIdx = nonPinned.findIndex((b) => b.id === targetId);
-      if (draggedIdx === -1 || targetIdx === -1) return;
-
-      // Assegna sortOrder esplicito a tutti, poi scambia i due
-      const updates = nonPinned.map((box, idx) => {
-        if (box.id === dragId) return { boxId: box.id, sortOrder: targetIdx };
-        if (box.id === targetId)
-          return { boxId: box.id, sortOrder: draggedIdx };
-        return { boxId: box.id, sortOrder: idx };
-      });
+      const updates = order.map((boxId, index) => ({
+        boxId,
+        sortOrder: index,
+      }));
 
       try {
         await updateBoxesSortOrders(project.id, updates);
       } catch (error) {
-        console.error("Errore scambio box:", error);
+        console.error("Errore riordino box:", error);
       }
     },
-    [project?.id, sortedBoxes],
+    [project?.id],
   );
 
-  // Mantieni handleReorderRef sempre aggiornato (evita closure stale nell'effect)
-  useEffect(() => {
-    handleReorderRef.current = handleReorderBoxes;
-  }, [handleReorderBoxes]);
-
-  // Gestori globali di pointer durante il drag
+  // Gestori globali di pointer durante il drag (riordino live stile Google Keep)
   useEffect(() => {
     if (!isDraggingBox) return;
+
+    const pointer = { x: 0, y: 0 };
+    let rafId = null;
+
+    // In base alla posizione del cursore decide prima/dopo quale box inserire e
+    // aggiorna l'ordine provvisorio: gli altri box si spostano con le animazioni
+    // FLIP già presenti.
+    const computeInsert = () => {
+      rafId = null;
+      const rects = dragRectsRef.current;
+      if (!rects || rects.size === 0) return;
+
+      let overId = null;
+      let overRect = null;
+
+      // 1. Box sotto il cursore
+      for (const [id, rect] of rects) {
+        if (
+          pointer.x >= rect.left &&
+          pointer.x <= rect.right &&
+          pointer.y >= rect.top &&
+          pointer.y <= rect.bottom
+        ) {
+          overId = id;
+          overRect = rect;
+          break;
+        }
+      }
+
+      // 2. Nessun box sotto il cursore (gap/margini) → prendi il più vicino
+      if (!overId) {
+        let bestDist = Infinity;
+        for (const [id, rect] of rects) {
+          const ddx = pointer.x - rect.cx;
+          const ddy = pointer.y - rect.cy;
+          const dist = ddx * ddx + ddy * ddy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            overId = id;
+            overRect = rect;
+          }
+        }
+      }
+      if (!overId || !overRect) return;
+
+      // 3. Prima/dopo in base all'asse con scarto maggiore dal centro del box
+      const ddx = pointer.x - overRect.cx;
+      const ddy = pointer.y - overRect.cy;
+      const insertAfter = Math.abs(ddx) > Math.abs(ddy) ? ddx > 0 : ddy > 0;
+
+      setDragPreviewOrder((prev) => {
+        if (!prev) return prev;
+        const next = prev.filter((id) => id !== draggedBoxId);
+        const targetIdx = next.indexOf(overId);
+        if (targetIdx === -1) return prev;
+        next.splice(insertAfter ? targetIdx + 1 : targetIdx, 0, draggedBoxId);
+        // Nessun cambiamento reale → mantieni lo stesso riferimento
+        if (
+          next.length === prev.length &&
+          next.every((id, i) => id === prev[i])
+        ) {
+          return prev;
+        }
+        dragPreviewOrderRef.current = next;
+        return next;
+      });
+    };
 
     const onMove = (e) => {
       if (ghostRef.current) {
         ghostRef.current.style.left = `${e.clientX - dragOffsetRef.current.x}px`;
         ghostRef.current.style.top = `${e.clientY - dragOffsetRef.current.y}px`;
       }
-
-      let newHoveredId = null;
-
-      if (containerRef.current) {
-        const elements =
-          containerRef.current.querySelectorAll("[data-bento-id]");
-        for (const el of elements) {
-          const bId = el.getAttribute("data-bento-id");
-          if (bId === draggedBoxId || bId === "tutorial") continue;
-          const rect = el.getBoundingClientRect();
-          if (
-            e.clientX >= rect.left &&
-            e.clientX <= rect.right &&
-            e.clientY >= rect.top &&
-            e.clientY <= rect.bottom
-          ) {
-            newHoveredId = bId;
-            break;
-          }
-        }
-      }
-
-      if (newHoveredId !== dragStateRef.current.hoveredId) {
-        dragStateRef.current = { hoveredId: newHoveredId };
-        setDropIndicator(newHoveredId ? { targetId: newHoveredId } : null);
-      }
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      if (rafId === null) rafId = requestAnimationFrame(computeInsert);
     };
 
     const onUp = () => {
-      const { hoveredId } = dragStateRef.current;
-      if (hoveredId && hoveredId !== draggedBoxId) {
-        handleReorderRef.current?.(draggedBoxId, hoveredId);
-      }
+      persistReorder(dragPreviewOrderRef.current);
       setIsDraggingBox(false);
       setDraggedBoxId(null);
-      setDropIndicator(null);
+      setDragPreviewOrder(null);
+      dragPreviewOrderRef.current = null;
+      dragInitialOrderRef.current = null;
+      dragRectsRef.current = null;
     };
 
     document.addEventListener("pointermove", onMove, { passive: true });
@@ -1088,8 +1200,9 @@ const ProjectPage = ({
     return () => {
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [isDraggingBox, draggedBoxId]);
+  }, [isDraggingBox, draggedBoxId, persistReorder]);
 
   // Classe CSS grabbing sul body durante il drag
   useEffect(() => {
@@ -1108,6 +1221,36 @@ const ProjectPage = ({
   // Se non ci sono box, mostra il tutorial
   const hasBoxes = sortedBoxes.length > 0;
 
+  // Ordine base: pinnati in testa + non-pinnati ordinati secondo la modalità scelta
+  const orderedBoxes = useMemo(() => {
+    const pinned = sortedBoxes.filter((b) => b.isPinned);
+    const nonPinned = sortedBoxes.filter((b) => !b.isPinned);
+    return [...pinned, ...sortBoxes(nonPinned, boxSort)];
+  }, [sortedBoxes, boxSort]);
+
+  // Box nell'ordine mostrato: in modalità "standard" applica anche il preview di
+  // drag; nelle altre modalità l'ordine è quello calcolato dalla modalità scelta.
+  const displayBoxes = useMemo(() => {
+    const pinned = orderedBoxes.filter((b) => b.isPinned);
+    const nonPinned = orderedBoxes.filter((b) => !b.isPinned);
+    if (boxSort !== "standard" || !dragPreviewOrder) {
+      return [...pinned, ...nonPinned];
+    }
+
+    const byId = new Map(nonPinned.map((b) => [b.id, b]));
+    const ordered = [];
+    dragPreviewOrder.forEach((id) => {
+      const box = byId.get(id);
+      if (box) {
+        ordered.push(box);
+        byId.delete(id);
+      }
+    });
+    // Eventuali box non presenti nell'ordine (es. appena aggiunti) in coda
+    byId.forEach((box) => ordered.push(box));
+    return [...pinned, ...ordered];
+  }, [orderedBoxes, dragPreviewOrder, boxSort]);
+
   // Array di tutti gli items per distribuzione
   const allItems = useMemo(() => {
     if (isLoading) return []; // Mentre carica prevIds resta vuoto, nessun flash di visibilità
@@ -1115,11 +1258,11 @@ const ProjectPage = ({
     if (!hasBoxes) {
       items.push({ id: "tutorial", type: "tutorial" });
     }
-    sortedBoxes.forEach((box) => {
+    displayBoxes.forEach((box) => {
       items.push({ ...box, type: "box" });
     });
     return items;
-  }, [sortedBoxes, hasBoxes, isLoading]);
+  }, [displayBoxes, hasBoxes, isLoading]);
 
   // Hook per layout "shortest column first" + animazioni FLIP
   const { containerRef, getItemStyle, flatItems, containerHeight } =
@@ -1288,6 +1431,37 @@ const ProjectPage = ({
       : []),
   ];
 
+  // Voci del menù di ordinamento (icona + spunta sulla modalità attiva)
+  const sortOptionIcons = {
+    standard: <SettingsIcon className="w-5 h-5" />,
+    "created-desc": <ClockIcon className="w-5 h-5" />,
+    type: <ListChecksIcon className="w-5 h-5" />,
+    "updated-desc": <PencilIcon className="w-5 h-5" />,
+    alpha: <SortIcon className="w-5 h-5" />,
+  };
+  const sortMenuItems = BOX_SORT_OPTIONS.map((opt) => ({
+    label: opt.label,
+    icon: sortOptionIcons[opt.id],
+    active: boxSort === opt.id,
+    onClick: () => setBoxSort(opt.id),
+  }));
+
+  // Validazione + salvataggio del nuovo nome (rinomina dalla bolla del titolo)
+  const validateProjectRename = async (name) => {
+    const formatError = validateProjectName(name);
+    if (formatError) return formatError;
+    if (project?.groupId) {
+      const exists = await projectNameExists(project.groupId, name, project.id);
+      if (exists) return "Esiste già un progetto con questo nome nel gruppo";
+    }
+    return null;
+  };
+
+  const handleRenameConfirm = async (newName) => {
+    if (onUpdateName) await onUpdateName(newName.trim());
+    setIsRenameModalOpen(false);
+  };
+
   if (!project) return null;
 
   return (
@@ -1295,81 +1469,135 @@ const ProjectPage = ({
       <div className="min-h-dvh flex flex-col bg-bg-primary">
         {/* Header - stile standard con colore progetto */}
         <header
-          className="flex items-center justify-between px-4 min-h-14 border-b border-border sticky top-0 z-60"
+          className="flex flex-col gap-2 px-3 sm:px-4 min-h-14 border-b border-border sticky top-0 z-60"
           style={{
             backgroundColor: projectColor.bg,
             paddingTop: `calc(0.75rem + var(--safe-area-inset-top))`,
             paddingBottom: "0.75rem",
           }}
         >
-          {/* Freccia indietro - Sinistra con cerchietto */}
-          <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
-            <button
-              onClick={handleClose}
-              className="
-                flex items-center justify-center w-full h-full
-                rounded-full
-                hover:bg-black/10 active:bg-black/20
-                transition-colors duration-150
-              "
-              style={{ color: projectColor.text }}
-              aria-label="Torna alla home"
-            >
-              <ArrowLeftIcon className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Nome progetto - Centro */}
-          <h1
-            className="text-lg font-semibold text-center flex-1 truncate px-2"
-            style={{ color: projectColor.text }}
-          >
-            {project.name}
-          </h1>
-
-          {/* Kebab menu - Destra */}
-          <div className="flex items-center gap-2">
-            {/* Tasto Chat - solo mobile */}
-            {isReallyMobile && (
-              <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center relative">
+          {/* Riga principale */}
+          <div className="flex items-center gap-2 min-h-10">
+            {/* Sinistra: indietro + titolo (click = rinomina) + icona progetto */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+              <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center shrink-0">
                 <button
-                  onClick={
-                    isChatSidebarOpen
-                      ? handleCloseChatSidebar
-                      : handleOpenNotifications
-                  }
-                  className="
-                    flex items-center justify-center w-full h-full
-                    rounded-full
-                    hover:bg-black/10 active:bg-black/20
-                    transition-colors duration-150
-                  "
+                  onClick={handleClose}
+                  className="flex items-center justify-center w-full h-full rounded-full hover:bg-black/10 active:bg-black/20 transition-colors duration-150"
                   style={{ color: projectColor.text }}
-                  aria-label={isChatSidebarOpen ? "Chiudi chat" : "Apri chat"}
+                  aria-label="Torna alla home"
                 >
-                  <MessageSquareIcon className="w-5 h-5" />
+                  <ArrowLeftIcon className="w-6 h-6" />
                 </button>
-                {/* Badge messaggi non letti */}
-                {!isChatSidebarOpen && unreadCount > 0 && (
-                  <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  </div>
-                )}
+              </div>
+
+              {/* Bolla titolo: click → rinomina.
+                  PC: si adatta esattamente al nome (nessun limite, una riga).
+                  Mobile: occupa lo spazio disponibile e va a capo. */}
+              <button
+                type="button"
+                onClick={() => setIsRenameModalOpen(true)}
+                className="min-h-10 rounded-full bg-black/10 flex items-center px-4 flex-1 min-w-0 sm:flex-none sm:w-fit sm:shrink-0 hover:bg-black/15 active:bg-black/20 transition-colors text-left"
+                title="Rinomina progetto"
+                aria-label="Rinomina progetto"
+              >
+                <span
+                  className="text-base font-semibold leading-tight break-words sm:whitespace-nowrap"
+                  style={{ color: projectColor.text }}
+                >
+                  {project.name}
+                </span>
+              </button>
+
+              {/* Bolla icona progetto: click → menù a tendina icone */}
+              <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center shrink-0">
+                <IconPicker
+                  value={project.icon}
+                  onChange={onUpdateIcon}
+                  buttonColor={projectColor.text}
+                  ariaLabel="Scegli icona progetto"
+                  trigger={
+                    <ProjectIcon name={project.icon} className="w-5 h-5" />
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Centro (desktop): barra di ricerca */}
+            {!isReallyMobile && (
+              <div className="flex-1 flex justify-center min-w-0 px-2">
+                <SearchBar
+                  boxes={bentoBoxes}
+                  onSelect={handleHighlightBox}
+                  onResultHover={setSearchHighlightId}
+                  projectColor={projectColor}
+                />
               </div>
             )}
 
-            {/* Kebab menu dropdown con cerchietto */}
-            <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
-              <DropdownMenu
-                items={menuItems}
-                buttonColor={projectColor.text}
-                ariaLabel="Menu progetto"
-                compact
-              />
+            {/* Mobile: spinge i bottoni a destra */}
+            {isReallyMobile && <div className="flex-1" />}
+
+            {/* Destra: chat (mobile) + ordina + kebab */}
+            <div className="flex items-center gap-2 shrink-0">
+              {isReallyMobile && (
+                <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center relative">
+                  <button
+                    onClick={
+                      isChatSidebarOpen
+                        ? handleCloseChatSidebar
+                        : handleOpenNotifications
+                    }
+                    className="flex items-center justify-center w-full h-full rounded-full hover:bg-black/10 active:bg-black/20 transition-colors duration-150"
+                    style={{ color: projectColor.text }}
+                    aria-label={isChatSidebarOpen ? "Chiudi chat" : "Apri chat"}
+                  >
+                    <MessageSquareIcon className="w-5 h-5" />
+                  </button>
+                  {/* Badge messaggi non letti */}
+                  {!isChatSidebarOpen && unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Ordina le card */}
+              <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+                <DropdownMenu
+                  items={sortMenuItems}
+                  triggerIcon={<SortIcon className="w-5 h-5" />}
+                  buttonColor={projectColor.text}
+                  ariaLabel="Ordina le card"
+                  compact
+                />
+              </div>
+
+              {/* Kebab menu progetto */}
+              <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+                <DropdownMenu
+                  items={menuItems}
+                  buttonColor={projectColor.text}
+                  ariaLabel="Menu progetto"
+                  compact
+                />
+              </div>
             </div>
           </div>
+
+          {/* Ricerca (mobile): seconda riga a tutta larghezza */}
+          {isReallyMobile && (
+            <SearchBar
+              boxes={bentoBoxes}
+              onSelect={handleHighlightBox}
+              onResultHover={setSearchHighlightId}
+              projectColor={projectColor}
+              isMobile
+            />
+          )}
         </header>
 
         {/* Contenuto principale - Bento Grid */}
@@ -1449,9 +1677,14 @@ const ProjectPage = ({
 
                   // Variabili per drag & drop
                   const isHole = isDraggingBox && draggedBoxId === item.id;
-                  const isDropTarget = dropIndicator?.targetId === item.id;
                   const isDraggable =
-                    !isViewer && !item.isPinned && item.type !== "tutorial";
+                    boxSort === "standard" &&
+                    !isViewer &&
+                    !item.isPinned &&
+                    item.type !== "tutorial";
+
+                  // Evidenziazione "live" durante l'esplorazione dei risultati di ricerca
+                  const isSearchHighlighted = searchHighlightId === item.id;
 
                   // Stile wrapper unificato (include effetto "buco" durante il drag)
                   const wrapperStyle = {
@@ -1461,18 +1694,18 @@ const ProjectPage = ({
                     left: left,
                     width: columnCount === 1 ? "100%" : BOX_WIDTH,
                     ...(isHole ? { opacity: 0.08, pointerEvents: "none" } : {}),
+                    ...(isSearchHighlighted
+                      ? {
+                          boxShadow: "0 0 0 3px var(--color-primary)",
+                          borderRadius: "12px",
+                          zIndex: 20,
+                        }
+                      : {}),
                   };
 
-                  // Indicatore di swap (ring attorno al box target)
-                  const dropLine = isDropTarget ? (
-                    <div
-                      className="absolute z-30 pointer-events-none rounded-xl"
-                      style={{
-                        inset: "-3px",
-                        boxShadow: "0 0 0 3px var(--color-primary)",
-                      }}
-                    />
-                  ) : null;
+                  // L'indicatore di inserimento è il "buco" che si sposta nella
+                  // posizione di drop: nessun anello di swap fisso.
+                  const dropLine = null;
 
                   // Tutorial box (non draggabile)
                   if (item.type === "tutorial") {
@@ -2106,6 +2339,20 @@ const ProjectPage = ({
         )}
       </div>
 
+      {/* Modale rinomina (dalla bolla del titolo) */}
+      <InputModal
+        isOpen={isRenameModalOpen}
+        title="Rinomina progetto"
+        label="Nome progetto"
+        placeholder="Inserisci il nuovo nome"
+        initialValue={project.name || ""}
+        confirmText="Salva"
+        onConfirm={handleRenameConfirm}
+        onClose={() => setIsRenameModalOpen(false)}
+        validate={validateProjectRename}
+        zIndex={1000}
+      />
+
       {/* Modale info progetto */}
       <ProjectInfoModal
         isOpen={isInfoModalOpen}
@@ -2115,6 +2362,7 @@ const ProjectPage = ({
         onClose={() => setIsInfoModalOpen(false)}
         onUpdateName={onUpdateName}
         onUpdateColor={onUpdateColor}
+        onUpdateIcon={onUpdateIcon}
       />
 
       {/* Modale gestione stato */}

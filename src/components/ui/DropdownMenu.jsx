@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MoreVerticalIcon } from "../icons";
+import { MoreVerticalIcon, CheckIcon } from "../icons";
 
 /**
  * DropdownMenu - Menu dropdown con icona kebab
@@ -16,6 +16,7 @@ const DropdownMenu = ({
   buttonColor,
   ariaLabel = "Menu",
   compact = false,
+  triggerIcon = null,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -122,7 +123,9 @@ const DropdownMenu = ({
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <MoreVerticalIcon className={compact ? "w-5 h-5" : "w-6 h-6"} />
+        {triggerIcon || (
+          <MoreVerticalIcon className={compact ? "w-5 h-5" : "w-6 h-6"} />
+        )}
       </button>
 
       {/* Menu dropdown - Gruppi separati */}
@@ -185,8 +188,13 @@ const DropdownMenu = ({
                     `}
                     role="menuitem"
                   >
-                    {item.icon && <span className="w-5 h-5">{item.icon}</span>}
-                    {item.label}
+                    {item.icon && (
+                      <span className="w-5 h-5 shrink-0">{item.icon}</span>
+                    )}
+                    <span className="flex-1 min-w-0 truncate">{item.label}</span>
+                    {item.active && (
+                      <CheckIcon className="w-4 h-4 shrink-0 text-primary" />
+                    )}
                   </button>
                 );
               })}

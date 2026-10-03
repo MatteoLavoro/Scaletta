@@ -4,7 +4,17 @@ import SplitModal from "./SplitModal";
 import MarkdownRenderer from "../ui/MarkdownRenderer";
 import renderMarkdown from "../../utils/markdownRenderer";
 import { exportNoteToPdf } from "../../services/pdfExport";
-import { DownloadIcon, FileTextIcon, PencilIcon, ZoomInIcon } from "../icons";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { useModal } from "../../contexts/ModalContext";
+import {
+  ArrowLeftIcon,
+  DownloadIcon,
+  FileTextIcon,
+  ListChecksIcon,
+  MoreVerticalIcon,
+  PencilIcon,
+  ZoomInIcon,
+} from "../icons";
 
 // ─── Estrazione Table of Contents dal markdown renderizzato ────────────────
 
@@ -25,50 +35,95 @@ import { DownloadIcon, FileTextIcon, PencilIcon, ZoomInIcon } from "../icons";
  * @param {string} markdown - Sorgente markdown
  * @returns {{ depth: number, text: string, slug: string }[]}
  */
+/**
+ * Verifica se un elemento heading è composto SOLO da link interni (anchor link).
+ * Serve a riconoscere le voci di un indice automatico (es. "## [Intro](#intro)").
+ */
+function isInternalLinkOnly(el) {
+  const nodes = Array.from(el.childNodes);
+  if (nodes.length === 0) return false;
+  let hasLink = false;
+  for (const node of nodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent.trim()) return false;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (
+        node.tagName === "A" &&
+        (node.getAttribute("href") || "").startsWith("#")
+      ) {
+        hasLink = true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  return hasLink;
+}
+
+/** Riconosce i titoli che introducono una sezione indice. */
+function isIndexTitle(text) {
+  const t = (text || "").trim().toLowerCase();
+  return (
+    t === "indice" ||
+    t === "sommario" ||
+    t === "index" ||
+    t === "toc" ||
+    t === "contents" ||
+    t === "table of contents"
+  );
+}
+
+/**
+ * Estrae il table of contents dal markdown renderizzato.
+ *
+ * Strategia robusta:
+ * 1. Estrae TUTTI gli heading h1-h6[id]
+ * 2. Salta la sezione indice in cima, riconosciuta come:
+ *    - un titolo "Indice"/"Sommario"/… (con o senza link), oppure
+ *    - una sequenza iniziale di heading composti SOLO da link interni
+ * 3. Deduplica gli slug: una voce di indice e l'heading di contenuto possono
+ *    condividere lo stesso id (es. "[Intro](#intro)" → id "intro")
+ *
+ * @param {string} markdown - Sorgente markdown
+ * @returns {{ depth: number, text: string, slug: string }[]}
+ */
 function extractTableOfContents(markdown) {
   if (!markdown || typeof DOMParser === "undefined") return [];
   try {
     const html = renderMarkdown(markdown);
     const doc = new DOMParser().parseFromString(html, "text/html");
 
-    // Estrai TUTTI gli heading h1-h6 con id
     const allHeadings = Array.from(
       doc.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]"),
-    ).map((el) => {
-      // Verifica se l'heading contiene SOLO link interni (sezione indice)
-      const hasOnlyInternalLinks = Array.from(el.childNodes).every(
-        (node) =>
-          (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) ||
-          (node.nodeType === Node.ELEMENT_NODE &&
-            node.tagName === "A" &&
-            (node.getAttribute("href") || "").startsWith("#")),
-      );
+    ).map((el) => ({
+      id: el.id,
+      text: el.textContent?.trim() || "",
+      depth: parseInt(el.tagName[1]),
+      linksOnly: isInternalLinkOnly(el),
+    }));
 
-      return {
-        id: el.id,
-        text: el.textContent?.trim() || "",
-        depth: parseInt(el.tagName[1]),
-        hasOnlyInternalLinks,
-      };
-    });
-
-    // Identifica dove finisce la sezione indice:
-    // i primi heading CONSECUTIVI che contengono solo link interni
-    let indexSectionEnd = 0;
-    for (let i = 0; i < allHeadings.length; i++) {
-      if (allHeadings[i].hasOnlyInternalLinks) {
-        indexSectionEnd = i + 1;
-      } else {
-        break; // Fine della sezione indice
+    // Individua l'inizio del contenuto reale saltando la sezione indice.
+    let start = 0;
+    while (start < allHeadings.length && allHeadings[start].linksOnly) start++;
+    if (start < allHeadings.length && isIndexTitle(allHeadings[start].text)) {
+      start++;
+      while (start < allHeadings.length && allHeadings[start].linksOnly) {
+        start++;
       }
     }
 
-    // Ritorna solo gli heading dopo la sezione indice
-    return allHeadings.slice(indexSectionEnd).map(({ id, text, depth }) => ({
-      slug: id,
-      text,
-      depth,
-    }));
+    // Deduplica gli slug ed esclude eventuali heading-indice superstiti
+    const seen = new Set();
+    const result = [];
+    for (let i = start; i < allHeadings.length; i++) {
+      const h = allHeadings[i];
+      if (h.linksOnly || !h.id || seen.has(h.id)) continue;
+      seen.add(h.id);
+      result.push({ slug: h.id, text: h.text, depth: h.depth });
+    }
+    return result;
   } catch {
     return [];
   }
@@ -188,6 +243,8 @@ const NoteViewerModal = ({
   onEdit,
 }) => {
   // ── Tutti gli hook prima di qualsiasi return condizionale ────────────────
+  const isMobile = useIsMobile();
+  const { registerNestedClose, modalDepth } = useModal();
 
   // Disabilita selezione testo in background
   useEffect(() => {
@@ -232,10 +289,17 @@ const NoteViewerModal = ({
   // Ref al div scrollabile del pannello centrale (esposto via contentRef di SplitModal)
   const centerScrollRef = useRef(null);
 
+  // Gestione history dedicata al layout mobile
+  const hasAddedHistoryRef = useRef(false);
+
   // Scala di visualizzazione del contenuto markdown (50%–250%, step 25%)
   const [scale, setScale] = useState(100);
 
   const [isExporting, setIsExporting] = useState(false);
+
+  // Pannelli a comparsa (solo mobile): indice e strumenti
+  const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
+  const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
 
   const handleExportPdf = async () => {
     if (isExporting || !content?.trim()) return;
@@ -260,27 +324,34 @@ const NoteViewerModal = ({
     URL.revokeObjectURL(url);
   };
 
-  // Click su voce TOC → scorre SOLO nel pannello centrale (non nel documento)
-  const handleHeadingClick = useCallback((slug) => {
+  // Risolve uno slug nell'elemento heading di CONTENUTO. Importante: una voce
+  // d'indice e l'heading di contenuto possono condividere lo stesso id, ma la
+  // voce d'indice sta in cima al documento: prendiamo l'ULTIMO heading valido.
+  const resolveHeadingEl = useCallback((slug) => {
     const container = markdownContainerRef.current;
-    if (!container) return;
-    const el = container.querySelector(`[id="${CSS.escape(slug)}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!container) return null;
+    const matches = Array.from(
+      container.querySelectorAll(`[id="${CSS.escape(slug)}"]`),
+    ).filter((el) => /^H[1-6]$/.test(el.tagName) && !isInternalLinkOnly(el));
+    return matches[matches.length - 1] || null;
   }, []);
 
-  // Traccia la posizione di lettura: evidenzia nel TOC la sezione attualmente visibile.
+  // Click su voce TOC → scorre SOLO nel pannello centrale (non nel documento)
+  const handleHeadingClick = useCallback(
+    (slug) => {
+      const el = resolveHeadingEl(slug);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    [resolveHeadingEl],
+  );
+
+  // Traccia la posizione di lettura: evidenzia nel TOC la sezione corrente.
   //
-  // Algoritmo:
-  //   1. Se il titolo (heading) di una sezione è visibile nel viewport,
-  //      evidenzia QUELLA sezione (scegli il primo titolo se più di uno).
-  //   2. Se nessun titolo è visibile, evidenzia la sezione che occupa
-  //      più spazio nel viewport.
-  //   3. Ogni "sezione" va dal suo titolo al titolo successivo (o fine doc).
-  //
-  // Questo funziona sempre anche quando si salta tra paragrafi.
-  // scale nei dep: quando cambia lo zoom il contenuto si sposta e il tracking
-  // si riavvia per ricalcolare la posizione con le nuove coordinate.
-  // Alla chiusura del modale si azzera il slug (evita stato stale).
+  // Algoritmo (linea di riferimento): la sezione attiva è l'ULTIMO heading il cui
+  // top è sopra una linea posta poco sotto il bordo superiore del pannello. È
+  // stabile e non risente degli heading dell'indice (esclusi da resolveHeadingEl).
+  // scale nei dep: al cambio zoom le posizioni cambiano e va ricalcolato.
+  // Alla chiusura del modale si azzera lo slug (evita stato stale).
   useEffect(() => {
     if (!isOpen) {
       setActiveSlug(null);
@@ -288,47 +359,29 @@ const NoteViewerModal = ({
     }
 
     const scrollEl = centerScrollRef.current;
-    const container = markdownContainerRef.current;
-    if (!scrollEl || !container || !headings.length) {
+    if (!scrollEl || !headings.length) {
       setActiveSlug(null);
       return;
     }
 
-    // Selettore che cerca SOLO gli h1-h6 con gli id del TOC
-    // (esclude gli heading della sezione indice, che non sono nel TOC)
-    const sel = headings
-      .flatMap(({ slug }) => {
-        const e = CSS.escape(slug);
-        return [
-          `h1[id="${e}"]`,
-          `h2[id="${e}"]`,
-          `h3[id="${e}"]`,
-          `h4[id="${e}"]`,
-          `h5[id="${e}"]`,
-          `h6[id="${e}"]`,
-        ];
-      })
-      .join(", ");
-
-    // Filtra gli heading che contengono solo link interni: sono heading dell'indice
-    // (es. "## [Sezione 1](#sezione-1)") e hanno lo stesso id degli heading del contenuto.
-    // Senza questo filtro il tracking si inceppa su di essi perché sono in cima al DOM.
-    const headingEls = Array.from(container.querySelectorAll(sel)).filter(
-      (el) => {
-        const hasOnlyInternalLinks = Array.from(el.childNodes).every(
-          (node) =>
-            (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) ||
-            (node.nodeType === Node.ELEMENT_NODE &&
-              node.tagName === "A" &&
-              (node.getAttribute("href") || "").startsWith("#")),
-        );
-        return !hasOnlyInternalLinks;
-      },
-    );
+    // Elementi heading di CONTENUTO, ordinati per posizione REALE nel DOM.
+    // L'ordinamento per DOM li rende immuni all'ordine del TOC (che può essere
+    // falsato dalle voci d'indice che ripetono gli id dei titoli).
+    const headingEls = headings
+      .map((h) => resolveHeadingEl(h.slug))
+      .filter(Boolean)
+      .filter((el, i, arr) => arr.indexOf(el) === i);
     if (!headingEls.length) {
       setActiveSlug(null);
       return;
     }
+    headingEls.sort((a, b) => {
+      if (a === b) return 0;
+      const pos = a.compareDocumentPosition(b);
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return 0;
+    });
 
     let rafId = null;
 
@@ -337,51 +390,50 @@ const NoteViewerModal = ({
       rafId = requestAnimationFrame(() => {
         rafId = null;
 
-        const viewportTop = scrollEl.getBoundingClientRect().top;
-        const viewportBottom = scrollEl.getBoundingClientRect().bottom;
+        const containerTop = scrollEl.getBoundingClientRect().top;
+        // Linea di riferimento poco sotto il bordo superiore del pannello
+        const referenceOffset = Math.min(scrollEl.clientHeight * 0.25, 120);
 
-        let firstVisibleHeading = null;
-        let mostRecentPassedHeading = null;
-        let maxTopPassedHeading = -Infinity; // traccia il top massimo tra heading passati
-
-        // Itera through all headings per trovare:
-        // 1. Il primo heading VISIBILE nel viewport
-        // 2. L'heading SOPRA al viewport il cui top è MASSIMO
-        //    (quello più vicino al top del viewport = paragrafo più recente letto)
-        for (const heading of headingEls) {
-          const headingRect = heading.getBoundingClientRect();
-          const headingTop = headingRect.top;
-
-          // Se il titolo è visibile nel viewport
-          if (headingTop >= viewportTop && headingTop < viewportBottom) {
-            if (!firstVisibleHeading) {
-              firstVisibleHeading = heading;
-            }
-          }
-
-          // Se il titolo è SOPRA al top del viewport (lo hai già passato):
-          // Scegli l'heading il cui top è MASSIMO (più vicino al top del viewport).
-          // Questo è il paragrafo che stai attualmente leggendo.
-          if (headingTop < viewportTop && headingTop > maxTopPassedHeading) {
-            maxTopPassedHeading = headingTop;
-            mostRecentPassedHeading = heading;
+        // Sezione attiva = ULTIMO heading il cui top è sopra la linea di
+        // riferimento. Calcolo su TUTTI gli elementi (senza "break"): l'ordine
+        // per DOM garantisce che sia quello corretto anche con id duplicati.
+        let activeEl = null;
+        let bestOffset = -Infinity;
+        for (const el of headingEls) {
+          const elTop = el.getBoundingClientRect().top - containerTop;
+          if (elTop <= referenceOffset && elTop > bestOffset) {
+            bestOffset = elTop;
+            activeEl = el;
           }
         }
-
-        // Priorità: se un titolo è visibile nel viewport, usalo.
-        // Altrimenti, usa il paragrafo più recente che hai letto (il cui titolo è più vicino).
-        const activeEl = firstVisibleHeading || mostRecentPassedHeading;
+        if (!activeEl) activeEl = headingEls[0];
         setActiveSlug(activeEl?.id ?? null);
       });
     };
 
     scrollEl.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
     handleScroll(); // stato iniziale immediato all'apertura
     return () => {
       scrollEl.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [isOpen, headings, scale]);
+  }, [isOpen, headings, scale, resolveHeadingEl]);
+
+  // ── Mobile: gestione history dedicata (sul desktop la gestisce SplitModal) ──
+  useEffect(() => {
+    if (!isOpen || !isMobile || contentType !== "markdown") {
+      hasAddedHistoryRef.current = false;
+      return;
+    }
+    if (!hasAddedHistoryRef.current) {
+      window.history.pushState({ nestedModal: true }, "");
+      hasAddedHistoryRef.current = true;
+    }
+    const unregister = registerNestedClose(onClose);
+    return unregister;
+  }, [isOpen, isMobile, contentType, onClose, registerNestedClose]);
 
   // ── Modalità TXT: modale classico invariato ──────────────────────────────
   if (contentType !== "markdown") {
@@ -562,6 +614,231 @@ const NoteViewerModal = ({
       },
     ],
   };
+
+  // ── Modalità Markdown su MOBILE: layout dedicato a tutto schermo ──────────
+  // Contenuto con un solo scroll, Indice in un pannello a scomparsa (FAB) e
+  // Strumenti in un pannello a scomparsa (menu in alto). Il desktop non cambia.
+  if (isMobile) {
+    if (!isOpen) return null;
+    const zIndex = 1000 + modalDepth * 10;
+
+    return (
+      <>
+        <div
+          className="fixed inset-0 bg-bg-primary flex flex-col"
+          style={{
+            zIndex,
+            paddingTop: "var(--safe-area-inset-top)",
+            paddingBottom: "var(--safe-area-inset-bottom)",
+          }}
+        >
+          {/* Header */}
+          <header className="shrink-0 relative flex items-center gap-2 px-3 h-14 border-b border-divider">
+            <button
+              onClick={() => window.history.back()}
+              className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-text-primary hover:bg-bg-tertiary active:bg-divider transition-colors"
+              aria-label="Chiudi"
+            >
+              <ArrowLeftIcon className="w-6 h-6" />
+            </button>
+            <h2 className="flex-1 text-base font-semibold text-text-primary text-center truncate px-1">
+              {title || "Nota"}
+            </h2>
+            <button
+              onClick={() => setIsMobileToolsOpen(true)}
+              className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-text-primary hover:bg-bg-tertiary active:bg-divider transition-colors"
+              aria-label="Strumenti"
+            >
+              <MoreVerticalIcon className="w-6 h-6" />
+            </button>
+          </header>
+
+          {/* Contenuto markdown (scroll unico) */}
+          <div
+            ref={centerScrollRef}
+            className="flex-1 overflow-y-auto overflow-x-auto overscroll-contain p-4"
+          >
+            <div ref={markdownContainerRef}>
+              <MarkdownRenderer
+                content={content || ""}
+                className="note-markdown text-sm"
+                style={{ userSelect: "text" }}
+                enableAnchorLinks
+                renderGraphviz
+                scale={scale / 100}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* FAB Indice */}
+        {headings.length > 0 && (
+          <button
+            onClick={() => setIsMobileTocOpen(true)}
+            className="fixed right-4 flex items-center gap-2 px-4 h-12 rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            style={{
+              zIndex: zIndex + 1,
+              bottom: "calc(var(--safe-area-inset-bottom, 0px) + 16px)",
+            }}
+            aria-label="Apri indice"
+          >
+            <ListChecksIcon className="w-5 h-5" />
+            <span className="text-sm font-semibold">Indice</span>
+          </button>
+        )}
+
+        {/* Pannello Indice */}
+        {isMobileTocOpen && (
+          <div
+            className="fixed inset-0 flex flex-col justify-end"
+            style={{ zIndex: zIndex + 2 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setIsMobileTocOpen(false)}
+            />
+            <div className="relative bg-bg-secondary rounded-t-2xl max-h-[70vh] flex flex-col animate-slide-in-bottom">
+              <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-divider">
+                <h3 className="text-base font-semibold text-text-primary">
+                  Indice
+                </h3>
+                <button
+                  onClick={() => setIsMobileTocOpen(false)}
+                  className="text-sm text-primary font-medium px-2 py-1"
+                >
+                  Chiudi
+                </button>
+              </div>
+              <div className="overflow-y-auto p-3">
+                <TocContent
+                  headings={headings}
+                  onHeadingClick={(slug) => {
+                    setIsMobileTocOpen(false);
+                    // Attende la chiusura del pannello prima di scorrere
+                    setTimeout(() => handleHeadingClick(slug), 60);
+                  }}
+                  activeSlug={activeSlug}
+                  favorites={favorites}
+                  onFavoriteToggle={toggleFavorite}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Pannello Strumenti */}
+        {isMobileToolsOpen && (
+          <div
+            className="fixed inset-0 flex flex-col justify-end"
+            style={{ zIndex: zIndex + 2 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setIsMobileToolsOpen(false)}
+            />
+            <div className="relative bg-bg-secondary rounded-t-2xl flex flex-col animate-slide-in-bottom">
+              <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-divider">
+                <h3 className="text-base font-semibold text-text-primary">
+                  Strumenti
+                </h3>
+                <button
+                  onClick={() => setIsMobileToolsOpen(false)}
+                  className="text-sm text-primary font-medium px-2 py-1"
+                >
+                  Chiudi
+                </button>
+              </div>
+              <div className="p-4 flex flex-col gap-3">
+                {/* Zoom */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-text-secondary">
+                    <ZoomInIcon className="w-5 h-5" />
+                    <span className="text-sm">Zoom</span>
+                  </div>
+                  <div className="flex items-center bg-bg-tertiary rounded-xl p-0.5">
+                    <button
+                      onClick={() => setScale((s) => Math.max(50, s - 25))}
+                      disabled={scale <= 50}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-lg font-bold text-text-primary hover:bg-divider active:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                      aria-label="Riduci scala"
+                    >
+                      −
+                    </button>
+                    <span className="text-sm font-semibold text-text-primary min-w-14 text-center tabular-nums">
+                      {scale}%
+                    </span>
+                    <button
+                      onClick={() => setScale((s) => Math.min(250, s + 25))}
+                      disabled={scale >= 250}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-lg font-bold text-text-primary hover:bg-divider active:bg-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors select-none"
+                      aria-label="Aumenta scala"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="h-px bg-divider" />
+
+                {/* Esporta PDF */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileToolsOpen(false);
+                    handleExportPdf();
+                  }}
+                  disabled={isExporting || !content?.trim()}
+                  className="flex items-center gap-2 w-full px-2 py-2.5 rounded-xl hover:bg-bg-tertiary active:bg-divider disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-text-primary"
+                >
+                  <DownloadIcon
+                    className={`w-5 h-5 shrink-0 ${
+                      isExporting ? "text-primary animate-pulse" : ""
+                    }`}
+                  />
+                  <span
+                    className={`text-sm ${
+                      isExporting ? "text-primary font-medium" : ""
+                    }`}
+                  >
+                    {isExporting ? "Generazione…" : "Esporta PDF"}
+                  </span>
+                </button>
+
+                {/* Esporta MD */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileToolsOpen(false);
+                    handleExportMd();
+                  }}
+                  disabled={!content?.trim()}
+                  className="flex items-center gap-2 w-full px-2 py-2.5 rounded-xl hover:bg-bg-tertiary active:bg-divider disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-text-primary"
+                >
+                  <FileTextIcon className="w-5 h-5 shrink-0" />
+                  <span className="text-sm">Esporta MD</span>
+                </button>
+
+                {/* Modifica */}
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileToolsOpen(false);
+                      onClose();
+                      onEdit();
+                    }}
+                    className="flex items-center gap-2 w-full px-2 py-2.5 rounded-xl hover:bg-bg-tertiary active:bg-divider transition-colors text-text-primary"
+                  >
+                    <PencilIcon className="w-5 h-5 shrink-0" />
+                    <span className="text-sm">Modifica</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <SplitModal

@@ -10,6 +10,7 @@ import { usePWAInstall } from "./hooks/usePWAInstall";
 import {
   updateProjectName,
   updateProjectColor,
+  updateProjectIcon,
   updateProjectStatus,
   deleteProject,
 } from "./services/projects";
@@ -163,6 +164,14 @@ const AppContent = () => {
     setDashboardRefreshKey((k) => k + 1);
   };
 
+  const handleUpdateProjectIcon = async (newIcon) => {
+    if (!currentProject) return;
+    await updateProjectIcon(currentProject.id, newIcon);
+    setCurrentProject((prev) => ({ ...prev, icon: newIcon }));
+    // Forza refresh Dashboard in background per aggiornare la card
+    setDashboardRefreshKey((k) => k + 1);
+  };
+
   const handleUpdateProjectStatus = async (newStatus) => {
     if (!currentProject) return;
     await updateProjectStatus(currentProject.id, newStatus);
@@ -248,6 +257,7 @@ const AppContent = () => {
               onBack={handleBackFromProject}
               onUpdateName={handleUpdateProjectName}
               onUpdateColor={handleUpdateProjectColor}
+              onUpdateIcon={handleUpdateProjectIcon}
               onUpdateStatus={handleUpdateProjectStatus}
               onDelete={handleDeleteProject}
             />

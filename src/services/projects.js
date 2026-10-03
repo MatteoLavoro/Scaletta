@@ -24,6 +24,7 @@ import {
   PROJECT_COLOR_ORDER,
 } from "../utils/projectColors";
 import { DEFAULT_PROJECT_STATUS } from "../utils/projectStatuses";
+import { DEFAULT_PROJECT_ICON } from "../utils/projectIcons";
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -83,6 +84,7 @@ export const createProject = async (name, groupId, creator, color = null) => {
     name: name.trim(),
     groupId,
     color: projectColor,
+    icon: DEFAULT_PROJECT_ICON,
     status: DEFAULT_PROJECT_STATUS,
     shareCode,
     sharedGroups: [],
@@ -267,6 +269,17 @@ export const updateProjectName = async (projectId, newName) => {
 export const updateProjectColor = async (projectId, color) => {
   await updateDoc(doc(db, PROJECTS_COLLECTION, projectId), {
     color,
+  });
+};
+
+/**
+ * Aggiorna l'icona del progetto
+ * @param {string} projectId - ID del progetto
+ * @param {string} icon - Chiave dell'icona (vedi utils/projectIcons)
+ */
+export const updateProjectIcon = async (projectId, icon) => {
+  await updateDoc(doc(db, PROJECTS_COLLECTION, projectId), {
+    icon,
   });
 };
 
@@ -594,6 +607,7 @@ export const createBentoBox = async (projectId, boxData) => {
     createdBy: boxData.createdBy || null, // UID dell'utente che ha creato il box
     createdByName: boxData.createdByName || null, // Nome dell'utente che ha creato il box
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(), // Ultima modifica (per l'ordinamento "per ultima modifica")
   };
 
   await setDoc(doc(boxesRef, boxId), newBox);
@@ -618,7 +632,10 @@ export const createBentoBox = async (projectId, boxData) => {
  */
 export const updateBentoBoxTitle = async (projectId, boxId, newTitle) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { title: newTitle.trim() });
+  await updateDoc(boxRef, {
+    title: newTitle.trim(),
+    updatedAt: serverTimestamp(),
+  });
 };
 
 /**
@@ -637,7 +654,10 @@ export const updateBentoBoxContent = async (
   userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { content: newContent });
+  await updateDoc(boxRef, {
+    content: newContent,
+    updatedAt: serverTimestamp(),
+  });
 
   // Aggiorna timestamp attività progetto
   if (userId && userName) {
@@ -663,7 +683,7 @@ export const updateBentoBoxNoteContent = async (
   userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { content, contentType });
+  await updateDoc(boxRef, { content, contentType, updatedAt: serverTimestamp() });
 
   // Aggiorna timestamp attività progetto
   if (userId && userName) {
@@ -693,6 +713,7 @@ export const updateBentoBoxPhotos = async (
     uploadProgress: 0,
     uploadTotal: 0,
     content: "", // Pulisce anche il content usato per il progresso
+    updatedAt: serverTimestamp(),
   });
 
   // Aggiorna timestamp attività progetto
@@ -723,6 +744,7 @@ export const updateBentoBoxPdfs = async (
     uploadProgress: 0,
     uploadTotal: 0,
     content: "", // Pulisce anche il content usato per il progresso
+    updatedAt: serverTimestamp(),
   });
 
   // Aggiorna timestamp attività progetto
@@ -753,6 +775,7 @@ export const updateBentoBoxFiles = async (
     uploadProgress: 0,
     uploadTotal: 0,
     content: "", // Pulisce anche il content usato per il progresso
+    updatedAt: serverTimestamp(),
   });
 
   // Aggiorna timestamp attività progetto
@@ -777,7 +800,10 @@ export const updateBentoBoxChecklistItems = async (
   userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { checklistItems: items });
+  await updateDoc(boxRef, {
+    checklistItems: items,
+    updatedAt: serverTimestamp(),
+  });
 
   // Aggiorna timestamp attività progetto
   if (userId && userName) {
@@ -801,7 +827,10 @@ export const updateBentoBoxAnagraficaFields = async (
   userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { anagraficaFields: fields });
+  await updateDoc(boxRef, {
+    anagraficaFields: fields,
+    updatedAt: serverTimestamp(),
+  });
 
   // Aggiorna timestamp attività progetto
   if (userId && userName) {
@@ -825,7 +854,10 @@ export const updateBentoBoxAnagraficaCustomFields = async (
   userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { anagraficaCustomFields: customFields });
+  await updateDoc(boxRef, {
+    anagraficaCustomFields: customFields,
+    updatedAt: serverTimestamp(),
+  });
 
   // Aggiorna timestamp attività progetto
   if (userId && userName) {
@@ -849,7 +881,7 @@ export const updateBentoBoxVersions = async (
   userName = null,
 ) => {
   const boxRef = doc(db, PROJECTS_COLLECTION, projectId, "bentoBoxes", boxId);
-  await updateDoc(boxRef, { versions });
+  await updateDoc(boxRef, { versions, updatedAt: serverTimestamp() });
 
   // Aggiorna timestamp attività progetto
   if (userId && userName) {
@@ -895,7 +927,10 @@ export const addBentoBoxVersionAtomic = async (
 
     // Aggiorna l'array atomicamente
     const updatedVersions = [...currentVersions, newVersion];
-    transaction.update(boxRef, { versions: updatedVersions });
+    transaction.update(boxRef, {
+      versions: updatedVersions,
+      updatedAt: serverTimestamp(),
+    });
 
     return nextVersionNumber;
   });

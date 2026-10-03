@@ -46,11 +46,57 @@ marked.use({
 // ===== KaTeX: supporto LaTeX =====
 // $...$ per inline, $$...$$ per display block.
 
+// Mappa caratteri Unicode "matematici" → comandi LaTeX equivalenti.
+// Evita i warning di KaTeX (unknownSymbol / "No character metrics") quando
+// nelle formule compaiono simboli Unicode greci o operatori incollati da testo,
+// e ne garantisce il rendering corretto.
+const UNICODE_MATH_MAP = {
+  // Greco minuscolo
+  "α": "\\alpha", "β": "\\beta", "γ": "\\gamma", "δ": "\\delta",
+  "ε": "\\varepsilon", "ϵ": "\\epsilon", "ζ": "\\zeta", "η": "\\eta",
+  "θ": "\\theta", "ϑ": "\\vartheta", "ι": "\\iota", "κ": "\\kappa",
+  "λ": "\\lambda", "μ": "\\mu", "ν": "\\nu", "ξ": "\\xi",
+  "π": "\\pi", "ϖ": "\\varpi", "ρ": "\\rho", "ϱ": "\\varrho",
+  "σ": "\\sigma", "ς": "\\varsigma", "τ": "\\tau", "υ": "\\upsilon",
+  "φ": "\\varphi", "ϕ": "\\phi", "χ": "\\chi", "ψ": "\\psi", "ω": "\\omega",
+  // Greco maiuscolo
+  "Γ": "\\Gamma", "Δ": "\\Delta", "Θ": "\\Theta", "Λ": "\\Lambda",
+  "Ξ": "\\Xi", "Π": "\\Pi", "Σ": "\\Sigma", "Υ": "\\Upsilon",
+  "Φ": "\\Phi", "Ψ": "\\Psi", "Ω": "\\Omega",
+  // Operatori e simboli comuni
+  "×": "\\times", "÷": "\\div", "±": "\\pm", "∓": "\\mp",
+  "−": "-", "–": "-", "—": "-",
+  "≤": "\\le", "≥": "\\ge", "≠": "\\ne", "≈": "\\approx",
+  "≡": "\\equiv", "∞": "\\infty", "∝": "\\propto",
+  "→": "\\to", "←": "\\leftarrow", "↔": "\\leftrightarrow",
+  "⇒": "\\Rightarrow", "⇐": "\\Leftarrow", "⇔": "\\Leftrightarrow",
+  "∈": "\\in", "∉": "\\notin", "⊂": "\\subset", "⊆": "\\subseteq",
+  "∪": "\\cup", "∩": "\\cap", "∅": "\\emptyset",
+  "∑": "\\sum", "∏": "\\prod", "∫": "\\int",
+  "∂": "\\partial", "∇": "\\nabla", "⋅": "\\cdot", "∘": "\\circ",
+  "°": "^\\circ", "¹": "^1", "²": "^2", "³": "^3",
+  "′": "'", "″": "''", "…": "\\dots", "⋯": "\\cdots",
+};
+
+const UNICODE_MATH_RE = new RegExp(
+  `[${Object.keys(UNICODE_MATH_MAP).join("")}]`,
+  "g",
+);
+
+/**
+ * Sostituisce i caratteri Unicode matematici con i comandi LaTeX equivalenti.
+ * @param {string} str
+ * @returns {string}
+ */
+const normalizeMathUnicode = (str) =>
+  str.replace(UNICODE_MATH_RE, (ch) => UNICODE_MATH_MAP[ch] || ch);
+
 function renderKatex(formula, displayMode) {
   try {
-    return katex.renderToString(formula, {
+    return katex.renderToString(normalizeMathUnicode(formula), {
       displayMode,
       throwOnError: false,
+      strict: false,
       output: "html",
     });
   } catch {

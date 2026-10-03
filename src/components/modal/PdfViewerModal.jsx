@@ -234,7 +234,6 @@ const SinglePdfContent = ({ pdf, containerRef }) => {
           <div
             className="flex flex-col items-center py-4"
             style={{
-              gap: PAGE_GAP,
               paddingLeft: H_PADDING,
               paddingRight: H_PADDING,
             }}
@@ -256,7 +255,14 @@ const SinglePdfContent = ({ pdf, containerRef }) => {
                         pageRefs.current[pageNumber] = el;
                       }}
                       className="bg-white shadow-2xl"
-                      style={{ lineHeight: 0, flexShrink: 0 }}
+                      style={{
+                        lineHeight: 0,
+                        flexShrink: 0,
+                        // Spazio tra i fogli (react-pdf avvolge le pagine in un
+                        // proprio wrapper, quindi il gap del contenitore non basta)
+                        marginBottom:
+                          pageNumber < (numPages || 0) ? PAGE_GAP : 0,
+                      }}
                     >
                       {pageWidth && (
                         <Page

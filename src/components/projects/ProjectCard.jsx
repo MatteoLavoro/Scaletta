@@ -11,6 +11,7 @@ import {
 import { subscribeToUnreadCount } from "../../services/notifications";
 import { hasProjectNews } from "../../utils/projectViews";
 import { ZapIcon, BellIcon, LinkIcon, ClockIcon } from "../icons";
+import { ProjectIcon } from "../ui";
 
 /**
  * ProjectCard - Quadrato cliccabile per un progetto
@@ -68,22 +69,12 @@ const ProjectCard = ({
   );
   const StatusIcon = status.icon;
 
-  // Formatta la data di creazione in formato gg/mm/aa
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2);
-    return `${day}/${month}/${year}`;
-  };
-
   return (
     <button
       onClick={isPending ? undefined : onClick}
       disabled={isPending}
       className={`
-        aspect-square min-w-0 w-full flex flex-col p-2.5
+        aspect-square min-w-0 w-full flex flex-col p-2
         rounded-xl relative
         transition-all duration-200
         ${isPending ? "cursor-default opacity-70" : "active:scale-95"}
@@ -104,63 +95,77 @@ const ProjectCard = ({
         e.currentTarget.style.borderColor = `${projectColor.bg}50`;
       }}
     >
-      {/* Badge News - in alto a sinistra */}
-      {showNews && !isPending && (
+      {/* Contenuto centrale: icona progetto in cerchietto + nome */}
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1.5 overflow-hidden">
+        {/* Icona progetto: +50% da sm in su (mobile invariato per non
+            far crescere le card) — cerchietto 56→84px, icona 28→42px */}
         <div
-          className="absolute top-1.5 left-1.5 flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
-          style={{ backgroundColor: projectColor.bg }}
+          className="w-14 h-14 sm:w-[84px] sm:h-[84px] rounded-full flex items-center justify-center shrink-0"
+          style={{ backgroundColor: `${projectColor.bg}30` }}
         >
-          <ZapIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
+          <ProjectIcon
+            name={project?.icon}
+            className="w-7 h-7 sm:w-[42px] sm:h-[42px]"
+            style={{ color: projectColor.bg }}
+          />
         </div>
-      )}
-
-      {/* Badge Notifiche - in alto a destra */}
-      {unreadCount > 0 && !isPending && !isShared && (
-        <div className="absolute top-1.5 right-1.5 flex items-center justify-center gap-1 px-1.5 h-5 bg-red-500 rounded-md shadow-lg">
-          <BellIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
-          {unreadCount > 1 && (
-            <span className="text-[10px] font-bold text-white leading-none">
-              {unreadCount}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Badge Condiviso (catena) - in alto a destra per viewer/editor */}
-      {isShared && !isPending && (
-        <div
-          className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
-          style={{ backgroundColor: projectColor.bg }}
-        >
-          <LinkIcon className="w-3 h-3 text-white" />
-        </div>
-      )}
-
-      {/* Badge In attesa - in alto a destra per pending */}
-      {isPending && (
-        <div className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 rounded-md bg-orange-500 shadow-lg">
-          <ClockIcon className="w-3 h-3 text-white" />
-        </div>
-      )}
-
-      {/* Nome progetto - in alto */}
-      <span className="text-[11px] text-text-primary font-semibold text-center line-clamp-2 leading-tight">
-        {project.name}
-      </span>
-
-      {/* Icona: orologio se pending, altrimenti icona stato */}
-      <div className="flex-1 flex items-center justify-center">
-        {isPending ? (
-          <ClockIcon className="w-7 h-7 text-orange-500" />
-        ) : (
-          <StatusIcon className="w-7 h-7" style={{ color: status.bg }} />
-        )}
+        <span className="text-[11px] text-text-primary font-semibold text-center line-clamp-2 leading-tight">
+          {project.name}
+        </span>
       </div>
 
-      {/* Data creazione - in basso */}
-      <span className="text-[10px] text-text-secondary text-center">
-        {isPending ? "In attesa" : formatDate(project.createdAt)}
-      </span>
+      {/* Riga inferiore: stato (sinistra, 2x) + pillole angolari impilate (destra) */}
+      <div className="shrink-0 flex items-end justify-between gap-1">
+        {/* Stato - riquadro grande il doppio delle pillole angolari */}
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: isPending ? "#f97316" : status.bg }}
+          title={isPending ? "In attesa" : status.label}
+        >
+          {isPending ? (
+            <ClockIcon className="w-5 h-5 text-white" strokeWidth={2.5} />
+          ) : (
+            <StatusIcon className="w-5 h-5" style={{ color: status.text }} />
+          )}
+        </div>
+
+        {/* Pillole angolari: notifiche / news / link, impilate una sopra l'altra */}
+        <div className="flex flex-col-reverse items-end gap-1 shrink-0">
+          {showNews && !isPending && (
+            <div
+              className="flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
+              style={{ backgroundColor: projectColor.bg }}
+              title="Novità"
+            >
+              <ZapIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
+            </div>
+          )}
+
+          {unreadCount > 0 && !isPending && !isShared && (
+            <div
+              className="flex items-center justify-center gap-0.5 px-1 h-5 bg-red-500 rounded-md shadow-lg"
+              title="Messaggi non letti"
+            >
+              <BellIcon className="w-3 h-3 text-white" strokeWidth={2.5} />
+              {unreadCount > 1 && (
+                <span className="text-[10px] font-bold text-white leading-none">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+          )}
+
+          {isShared && !isPending && (
+            <div
+              className="flex items-center justify-center w-5 h-5 rounded-md shadow-lg"
+              style={{ backgroundColor: projectColor.bg }}
+              title="Progetto condiviso"
+            >
+              <LinkIcon className="w-3 h-3 text-white" />
+            </div>
+          )}
+        </div>
+      </div>
     </button>
   );
 };

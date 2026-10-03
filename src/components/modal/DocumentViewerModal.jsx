@@ -167,6 +167,37 @@ const DocumentViewerModalContent = ({
     [document, currentIndex, onDelete],
   );
 
+  // ── Swipe orizzontale (mobile) per passare al documento successivo/precedente ──
+  const touchStartRef = useRef(null);
+  const handleTouchStart = useCallback(
+    (e) => {
+      if (!isMobile || !hasMultiple) return;
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    },
+    [isMobile, hasMultiple],
+  );
+  const handleTouchEnd = useCallback(
+    (e) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (!start || !isMobile || !hasMultiple) return;
+      const dx = e.changedTouches[0].clientX - start.x;
+      const dy = e.changedTouches[0].clientY - start.y;
+      // Solo swipe orizzontali netti (non interferisce con lo scroll verticale)
+      if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8) {
+        if (dx < 0) {
+          goToNext();
+        } else {
+          goToPrevious();
+        }
+      }
+    },
+    [isMobile, hasMultiple, goToNext, goToPrevious],
+  );
+
   // Gestione tastiera
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -197,9 +228,111 @@ const DocumentViewerModalContent = ({
     showPrint ||
     showDelete;
 
+  // Contenuto della toolbar in pillola, condiviso tra layout desktop (dentro la
+  // riga header) e mobile (in una seconda riga). Su mobile il contatore pagine
+  // è mostrato separatamente nell'header per risparmiare spazio.
+  const toolbarPill = showToolbarPill ? (
+    <div className="flex items-center gap-1 px-2 py-1.5 bg-white/10 rounded-full backdrop-blur-sm">
+      {!isMobile && pageCounter && pageCounter.total > 1 && (
+        <>
+          <span className="px-2 text-sm text-white font-medium tabular-nums select-none">
+            {pageCounter.current}/{pageCounter.total}
+          </span>
+          <div className="w-px h-5 bg-white/20" />
+        </>
+      )}
+
+      {showZoom && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onZoomOut?.();
+            }}
+            disabled={zoomDisabled}
+            className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30"
+            aria-label="Riduci zoom"
+          >
+            <ZoomOutIcon className="w-5 h-5 text-white" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onZoomReset?.();
+            }}
+            disabled={zoomDisabled}
+            className="px-2 h-8 text-xs text-white/80 hover:bg-white/10 rounded-full transition-colors tabular-nums min-w-[3rem] text-center disabled:opacity-30"
+          >
+            {typeof currentZoom === "number"
+              ? `${Math.round(currentZoom)}%`
+              : "—"}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onZoomIn?.();
+            }}
+            disabled={zoomDisabled}
+            className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30"
+            aria-label="Aumenta zoom"
+          >
+            <ZoomInIcon className="w-5 h-5 text-white" />
+          </button>
+          <div className="w-px h-5 bg-white/20" />
+        </>
+      )}
+
+      {showRotate && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRotate?.();
+          }}
+          className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+          aria-label="Ruota documento"
+        >
+          <RotateCwIcon className="w-5 h-5 text-white" />
+        </button>
+      )}
+
+      {showDownload && (
+        <button
+          onClick={handleDownload}
+          className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+          aria-label="Scarica"
+        >
+          <DownloadIcon className="w-5 h-5 text-white" />
+        </button>
+      )}
+
+      {showPrint && (
+        <button
+          onClick={handlePrint}
+          className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+          aria-label="Stampa"
+        >
+          <PrinterIcon className="w-5 h-5 text-white" />
+        </button>
+      )}
+
+      {showDelete && onDelete && (
+        <>
+          <div className="w-px h-5 bg-white/20" />
+          <button
+            onClick={handleDelete}
+            className="w-9 h-9 rounded-full hover:bg-red-500/20 flex items-center justify-center transition-colors"
+            aria-label="Elimina"
+          >
+            <TrashIcon className="w-5 h-5 text-red-400" />
+          </button>
+        </>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div
-      className={`fixed inset-0 z-2000 ${backgroundClassName} flex flex-col`}
+      className={`fixed inset-0 z-[2000] ${backgroundClassName} flex flex-col`}
       style={{
         paddingTop: isMobile ? "var(--safe-area-inset-top)" : 0,
         paddingBottom: isMobile ? "var(--safe-area-inset-bottom)" : 0,
@@ -207,7 +340,7 @@ const DocumentViewerModalContent = ({
     >
       {/* ── Header ── */}
       <div className="shrink-0 bg-white/5 border-b border-white/10">
-        <div className="h-16 flex items-center justify-between px-4">
+        <div className="h-14 sm:h-16 flex items-center justify-between gap-2 px-3 sm:px-4">
           {/* Sinistra: Back button (mobile) / Pillola nome file (desktop) */}
           {isMobile ? (
             <button
@@ -227,104 +360,17 @@ const DocumentViewerModalContent = ({
             <div className="w-10" />
           )}
 
-          {/* Centro: Toolbar in pillola */}
-          {showToolbarPill && (
-            <div className="flex items-center gap-1 px-2 py-1.5 bg-white/10 rounded-full backdrop-blur-sm">
-              {pageCounter && pageCounter.total > 1 && (
-                <>
-                  <span className="px-2 text-sm text-white font-medium tabular-nums select-none">
-                    {pageCounter.current}/{pageCounter.total}
-                  </span>
-                  <div className="w-px h-5 bg-white/20" />
-                </>
-              )}
-
-              {showZoom && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onZoomOut?.();
-                    }}
-                    disabled={zoomDisabled}
-                    className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30"
-                    aria-label="Riduci zoom"
-                  >
-                    <ZoomOutIcon className="w-5 h-5 text-white" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onZoomReset?.();
-                    }}
-                    disabled={zoomDisabled}
-                    className="px-2 h-8 text-xs text-white/80 hover:bg-white/10 rounded-full transition-colors tabular-nums min-w-[3rem] text-center disabled:opacity-30"
-                  >
-                    {typeof currentZoom === "number"
-                      ? `${Math.round(currentZoom)}%`
-                      : "—"}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onZoomIn?.();
-                    }}
-                    disabled={zoomDisabled}
-                    className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30"
-                    aria-label="Aumenta zoom"
-                  >
-                    <ZoomInIcon className="w-5 h-5 text-white" />
-                  </button>
-                  <div className="w-px h-5 bg-white/20" />
-                </>
-              )}
-
-              {showRotate && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRotate?.();
-                  }}
-                  className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-                  aria-label="Ruota documento"
-                >
-                  <RotateCwIcon className="w-5 h-5 text-white" />
-                </button>
-              )}
-
-              {showDownload && (
-                <button
-                  onClick={handleDownload}
-                  className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-                  aria-label="Scarica"
-                >
-                  <DownloadIcon className="w-5 h-5 text-white" />
-                </button>
-              )}
-
-              {showPrint && (
-                <button
-                  onClick={handlePrint}
-                  className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-                  aria-label="Stampa"
-                >
-                  <PrinterIcon className="w-5 h-5 text-white" />
-                </button>
-              )}
-
-              {showDelete && onDelete && (
-                <>
-                  <div className="w-px h-5 bg-white/20" />
-                  <button
-                    onClick={handleDelete}
-                    className="w-9 h-9 rounded-full hover:bg-red-500/20 flex items-center justify-center transition-colors"
-                    aria-label="Elimina"
-                  >
-                    <TrashIcon className="w-5 h-5 text-red-400" />
-                  </button>
-                </>
-              )}
-            </div>
+          {/* Centro: mobile → contatore pagine; desktop → toolbar in pillola */}
+          {isMobile ? (
+            pageCounter && pageCounter.total > 1 ? (
+              <span className="text-sm text-white font-medium tabular-nums select-none">
+                {pageCounter.current}/{pageCounter.total}
+              </span>
+            ) : (
+              <div className="w-10" />
+            )
+          ) : (
+            toolbarPill
           )}
 
           {/* Destra: Close button (desktop) / Spacer (mobile) */}
@@ -340,6 +386,13 @@ const DocumentViewerModalContent = ({
             <div className="w-10" />
           )}
         </div>
+
+        {/* Mobile: toolbar su una seconda riga per evitare overflow */}
+        {isMobile && toolbarPill && (
+          <div className="px-3 pb-2 -mt-1 flex justify-center overflow-x-auto">
+            {toolbarPill}
+          </div>
+        )}
       </div>
 
       {/* ── Corpo: sidebar + contenuto ── */}
@@ -354,9 +407,13 @@ const DocumentViewerModalContent = ({
           </aside>
         )}
 
-        {/* Contenuto + frecce navigazione */}
-        <div className="flex-1 relative flex overflow-hidden">
-          {hasMultiple && (
+        {/* Contenuto + frecce navigazione (frecce solo desktop; su mobile swipe) */}
+        <div
+          className="flex-1 relative flex overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {hasMultiple && !isMobile && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -372,14 +429,14 @@ const DocumentViewerModalContent = ({
           <div
             className="flex-1 flex flex-col overflow-hidden"
             style={{
-              marginLeft: hasMultiple ? "3.5rem" : 0,
-              marginRight: hasMultiple ? "3.5rem" : 0,
+              marginLeft: hasMultiple && !isMobile ? "3.5rem" : 0,
+              marginRight: hasMultiple && !isMobile ? "3.5rem" : 0,
             }}
           >
             {renderContent?.(document, currentIndex)}
           </div>
 
-          {hasMultiple && (
+          {hasMultiple && !isMobile && (
             <button
               onClick={(e) => {
                 e.stopPropagation();

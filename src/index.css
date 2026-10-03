@@ -880,6 +880,9 @@ kbd {
 /* Cursore grab sull'area drag handle quando il box è trascinabile */
 [data-draggable="true"] [data-drag-handle] {
   cursor: grab;
+  /* Impedisce al browser di interpretare il drag come scroll su touch:
+     senza questo il pointercancel interrompe il drag su telefono. */
+  touch-action: none;
 }
 [data-draggable="true"] [data-drag-handle]:active {
   cursor: grabbing;

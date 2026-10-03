@@ -4,6 +4,7 @@ import InfoBox from "../ui/InfoBox";
 import EditableInfoBox from "../ui/EditableInfoBox";
 import CopyableInfoBox from "../ui/CopyableInfoBox";
 import ProjectColorPicker from "../ui/ProjectColorPicker";
+import IconPicker from "../ui/IconPicker";
 import { validateProjectName } from "../../utils/projectValidation";
 import {
   projectNameExists,
@@ -26,6 +27,7 @@ const ProjectInfoModal = ({
   onClose,
   onUpdateName,
   onUpdateColor,
+  onUpdateIcon,
   isOwner = true,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
@@ -102,6 +104,16 @@ const ProjectInfoModal = ({
     }
   };
 
+  const handleIconChange = async (newIcon) => {
+    try {
+      if (onUpdateIcon) {
+        await onUpdateIcon(newIcon);
+      }
+    } catch (error) {
+      console.error("Errore aggiornamento icona progetto:", error);
+    }
+  };
+
   // Formatta la data di creazione
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/D";
@@ -151,6 +163,16 @@ const ProjectInfoModal = ({
             <ProjectColorPicker
               value={project.color || "blue"}
               onChange={handleColorChange}
+            />
+          </InfoBox>
+
+          {/* Icona progetto */}
+          <InfoBox title="Icona progetto" color="amber">
+            <IconPicker
+              value={project.icon}
+              onChange={handleIconChange}
+              buttonColor="var(--color-text-primary)"
+              ariaLabel="Scegli icona progetto"
             />
           </InfoBox>
 
